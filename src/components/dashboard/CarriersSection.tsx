@@ -1,26 +1,55 @@
 
+import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { getCarriers, Carrier } from "@/services/carriersService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CarrierCard } from "@/components/carriers/CarrierCard";
+import { CarrierForm } from "@/components/carriers/CarrierForm";
 import { Plus, Search, FileUp, Filter } from "lucide-react";
-import { useState } from "react";
-
-// Mock carrier data
-const mockCarriers = [
-  { id: 1, name: "ABC Logistics", status: "Active", type: "FTL", locations: "US, Canada", lastUpdated: "2025-04-10" },
-  { id: 2, name: "XYZ Transport", status: "Active", type: "LTL", locations: "US, Mexico", lastUpdated: "2025-04-09" },
-  { id: 3, name: "Swift Carriers", status: "Inactive", type: "FTL", locations: "US", lastUpdated: "2025-04-05" },
-  { id: 4, name: "Global Shipping", status: "Active", type: "FTL, LTL", locations: "Global", lastUpdated: "2025-04-01" },
-  { id: 5, name: "Mexico Express", status: "Pending", type: "FTL", locations: "Mexico", lastUpdated: "2025-03-28" },
-];
 
 export function CarriersSection() {
   const [searchQuery, setSearchQuery] = useState("");
-  
-  const filteredCarriers = mockCarriers.filter(carrier => 
+  const [carriers, setCarriers] = useState<Carrier[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [formOpen, setFormOpen] = useState(false);
+  const { toast } = useToast();
+
+  const loadCarriers = async () => {
+    try {
+      setIsLoading(true);
+      const data = await getCarriers();
+      setCarriers(data);
+    } catch (error) {
+      console.error("Failed to load carriers:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load carriers. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCarriers();
+  }, []);
+
+  const handleCarrierCreated = () => {
+    setFormOpen(false);
+    loadCarriers();
+  };
+
+  const filteredCarriers = carriers.filter(carrier => 
     carrier.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const activeCarriers = filteredCarriers.filter(carrier => carrier.status === 'active');
+  const pendingCarriers = filteredCarriers.filter(carrier => carrier.status === 'pending');
+  const inactiveCarriers = filteredCarriers.filter(carrier => carrier.status === 'inactive');
 
   return (
     <div className="space-y-6">
@@ -34,7 +63,10 @@ export function CarriersSection() {
             <FileUp className="h-4 w-4 mr-2" />
             Import
           </Button>
-          <Button className="bg-forest hover:bg-forest-600 sm:w-auto">
+          <Button 
+            className="bg-forest hover:bg-forest-600 sm:w-auto"
+            onClick={() => setFormOpen(true)}
+          >
             <Plus className="h-4 w-4 mr-2" />
             Add Carrier
           </Button>
@@ -44,10 +76,10 @@ export function CarriersSection() {
       <Tabs defaultValue="all">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
           <TabsList>
-            <TabsTrigger value="all">All Carriers</TabsTrigger>
-            <TabsTrigger value="active">Active</TabsTrigger>
-            <TabsTrigger value="pending">Pending</TabsTrigger>
-            <TabsTrigger value="inactive">Inactive</TabsTrigger>
+            <TabsTrigger value="all">All Carriers ({filteredCarriers.length})</TabsTrigger>
+            <TabsTrigger value="active">Active ({activeCarriers.length})</TabsTrigger>
+            <TabsTrigger value="pending">Pending ({pendingCarriers.length})</TabsTrigger>
+            <TabsTrigger value="inactive">Inactive ({inactiveCarriers.length})</TabsTrigger>
           </TabsList>
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -60,7 +92,7 @@ export function CarriersSection() {
           </div>
         </div>
 
-        <TabsContent value="all" className="space-y-4">
+        <TabsContent value="all">
           <Card>
             <CardHeader className="px-6 py-4">
               <div className="flex justify-between items-center">
@@ -74,53 +106,29 @@ export function CarriersSection() {
                 {filteredCarriers.length} carriers found
               </CardDescription>
             </CardHeader>
-            <CardContent className="px-6">
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="py-3 px-2 text-left font-medium text-muted-foreground">Name</th>
-                      <th className="py-3 px-2 text-left font-medium text-muted-foreground">Status</th>
-                      <th className="py-3 px-2 text-left font-medium text-muted-foreground">Type</th>
-                      <th className="py-3 px-2 text-left font-medium text-muted-foreground">Locations</th>
-                      <th className="py-3 px-2 text-left font-medium text-muted-foreground">Last Updated</th>
-                      <th className="py-3 px-2 text-left font-medium text-muted-foreground"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredCarriers.length > 0 ? (
-                      filteredCarriers.map((carrier) => (
-                        <tr key={carrier.id} className="border-b hover:bg-muted/50">
-                          <td className="py-3 px-2">
-                            <div className="font-medium">{carrier.name}</div>
-                          </td>
-                          <td className="py-3 px-2">
-                            <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              carrier.status === "Active" ? "bg-green-100 text-green-800" :
-                              carrier.status === "Inactive" ? "bg-gray-100 text-gray-800" :
-                              "bg-yellow-100 text-yellow-800"
-                            }`}>
-                              {carrier.status}
-                            </div>
-                          </td>
-                          <td className="py-3 px-2">{carrier.type}</td>
-                          <td className="py-3 px-2">{carrier.locations}</td>
-                          <td className="py-3 px-2">{carrier.lastUpdated}</td>
-                          <td className="py-3 px-2 text-right">
-                            <Button variant="ghost" size="sm">View</Button>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={6} className="py-6 text-center text-muted-foreground">
-                          No carriers found
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+            <CardContent className="px-6 pb-6">
+              {isLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
+                </div>
+              ) : filteredCarriers.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredCarriers.map(carrier => (
+                    <CarrierCard key={carrier.id} carrier={carrier} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No carriers found</p>
+                  <Button 
+                    className="mt-4"
+                    onClick={() => setFormOpen(true)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Your First Carrier
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -131,10 +139,22 @@ export function CarriersSection() {
               <CardTitle>Active Carriers</CardTitle>
               <CardDescription>View and manage your active carriers</CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                This tab would display only the active carriers in a similar table layout.
-              </p>
+            <CardContent className="pb-6">
+              {isLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
+                </div>
+              ) : activeCarriers.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {activeCarriers.map(carrier => (
+                    <CarrierCard key={carrier.id} carrier={carrier} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No active carriers found</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -145,10 +165,22 @@ export function CarriersSection() {
               <CardTitle>Pending Carriers</CardTitle>
               <CardDescription>Carriers waiting for approval or additional information</CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                This tab would display only the pending carriers in a similar table layout.
-              </p>
+            <CardContent className="pb-6">
+              {isLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
+                </div>
+              ) : pendingCarriers.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {pendingCarriers.map(carrier => (
+                    <CarrierCard key={carrier.id} carrier={carrier} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No pending carriers found</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -159,14 +191,32 @@ export function CarriersSection() {
               <CardTitle>Inactive Carriers</CardTitle>
               <CardDescription>Carriers that are currently not in use</CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                This tab would display only the inactive carriers in a similar table layout.
-              </p>
+            <CardContent className="pb-6">
+              {isLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
+                </div>
+              ) : inactiveCarriers.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {inactiveCarriers.map(carrier => (
+                    <CarrierCard key={carrier.id} carrier={carrier} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No inactive carriers found</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      <CarrierForm 
+        open={formOpen} 
+        onClose={() => setFormOpen(false)} 
+        onSuccess={handleCarrierCreated}
+      />
     </div>
   );
 }

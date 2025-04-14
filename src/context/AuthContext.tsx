@@ -37,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(null);
           setOrganization(null);
           setDataFetched(false);
+          localStorage.removeItem("authContext");
           navigate("/login");
         } else if (currentSession?.user && !dataFetched) {
           // Use setTimeout to prevent recursion in the auth state change handler
@@ -63,6 +64,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       subscription.unsubscribe();
     };
   }, [navigate, dataFetched]);
+
+  // Save context to localStorage when it changes
+  useEffect(() => {
+    if (session && user && profile) {
+      localStorage.setItem("authContext", JSON.stringify({
+        user: {
+          id: user.id,
+          email: user.email,
+        },
+        profile,
+        organization,
+      }));
+    }
+  }, [session, user, profile, organization]);
 
   // Load user profile and organization data
   const loadUserData = async (userId: string) => {
@@ -128,6 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(null);
       setOrganization(null);
       setDataFetched(false);
+      localStorage.removeItem("authContext");
     } catch (error: any) {
       console.error("Sign out error:", error);
       toast({
