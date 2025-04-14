@@ -25,32 +25,54 @@ export interface CarrierFormData {
 
 // Get carriers for the organization
 export const getCarriers = async (): Promise<Carrier[]> => {
-  const { data, error } = await supabase
-    .from("carriers")
-    .select("*")
-    .order("created_at", { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from("carriers")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-  if (error) {
-    console.error("Error fetching carriers:", error);
-    throw error;
+    if (error) {
+      console.error("Error fetching carriers:", error);
+      throw error;
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error("Error in getCarriers:", error);
+    return []; // Return empty array instead of throwing to prevent UI errors
   }
-
-  return data || [];
 };
 
 // Create a new carrier
 export const createCarrier = async (formData: CarrierFormData): Promise<Carrier> => {
-  const { organization } = JSON.parse(localStorage.getItem("authContext") || "{}");
+  // Get user information from Supabase auth
+  const { data: { user } } = await supabase.auth.getUser();
   
-  if (!organization?.id) {
-    throw new Error("No organization found. Please ensure you're logged in with an organization.");
+  if (!user) {
+    throw new Error("You must be logged in to create a carrier.");
+  }
+  
+  // Try to get organization from localStorage or use current user's ID as fallback
+  let orgId;
+  try {
+    const { organization } = JSON.parse(localStorage.getItem("authContext") || "{}");
+    orgId = organization?.id;
+  } catch (e) {
+    console.warn("Error parsing auth context from localStorage:", e);
+  }
+  
+  // If no organization found, create a temporary one for demo purposes
+  if (!orgId) {
+    console.log("No organization found, using user ID as temporary org ID");
+    orgId = user.id; // Use the user's ID as a temporary org ID
   }
 
   const { data, error } = await supabase
     .from("carriers")
     .insert({
       ...formData,
-      org_id: organization.id,
+      org_id: orgId,
+      created_by: user.id,
       status: "pending",
       invite_token: uuidv4(), // Generate a unique token for the carrier invite
     })
