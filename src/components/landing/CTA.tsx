@@ -1,11 +1,8 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
-
 export function CTA() {
-  return (
-    <section className="landing-section bg-forest text-white">
+  return <section className="landing-section bg-forest text-white">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">
@@ -22,9 +19,7 @@ export function CTA() {
               </Button>
             </Link>
             <Link to="/login">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 w-full sm:w-auto">
-                Log in
-              </Button>
+              
             </Link>
           </div>
           <p className="mt-6 text-white/80 text-sm">
@@ -32,6 +27,5 @@ export function CTA() {
           </p>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 }
