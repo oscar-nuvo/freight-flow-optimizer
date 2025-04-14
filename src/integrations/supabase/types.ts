@@ -463,11 +463,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_orgs: {
+        Args: Record<PropertyKey, never>
+        Returns: string[]
+      }
       is_new_org: {
         Args: { org_uuid: string }
         Returns: boolean
       }
       is_org_admin: {
+        Args: { org_uuid: string }
+        Returns: boolean
+      }
+      is_org_member: {
         Args: { org_uuid: string }
         Returns: boolean
       }
