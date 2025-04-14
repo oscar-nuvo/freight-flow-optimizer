@@ -22,11 +22,11 @@ export function Hero() {
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
-            <Link to="#features">
+            <a href="#benefits">
               <Button size="lg" variant="secondary" className="border-2 border-white bg-white/10 text-white hover:bg-white/20 w-full sm:w-auto">
-                Explore features
+                See the benefits
               </Button>
-            </Link>
+            </a>
           </div>
         </div>
       </div>

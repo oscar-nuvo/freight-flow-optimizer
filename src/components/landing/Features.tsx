@@ -3,11 +3,7 @@ import {
   Users, 
   FileSpreadsheet, 
   Map, 
-  BarChart, 
-  Truck, 
-  DollarSign, 
-  ClipboardCheck, 
-  Clock 
+  BarChart
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -31,26 +27,6 @@ const features = [
     title: "Data-Driven Insights",
     description: "Access detailed dashboards and analytics about carriers, bids, and routes.",
     icon: BarChart,
-  },
-  {
-    title: "Carrier Profiles",
-    description: "Maintain detailed information on carrier capabilities, performance, and compliance.",
-    icon: Truck,
-  },
-  {
-    title: "Market Benchmarks",
-    description: "Compare your rates against market standards to ensure competitive pricing.",
-    icon: DollarSign,
-  },
-  {
-    title: "Procurement Oversight",
-    description: "Track team activities and ensure follow-up with carriers during the bidding process.",
-    icon: ClipboardCheck,
-  },
-  {
-    title: "Time Efficiency",
-    description: "Reduce the time spent on administrative tasks and focus on strategic decisions.",
-    icon: Clock,
   },
 ];
 
