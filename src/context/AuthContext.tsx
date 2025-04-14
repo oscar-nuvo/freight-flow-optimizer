@@ -22,21 +22,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<any | null>(null);
   const [organization, setOrganization] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [dataFetched, setDataFetched] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
+      (event, currentSession) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
         if (event === "SIGNED_OUT") {
           setProfile(null);
           setOrganization(null);
+          setDataFetched(false);
           navigate("/login");
-        } else if (currentSession?.user) {
+        } else if (currentSession?.user && !dataFetched) {
           // Use setTimeout to prevent recursion in the auth state change handler
           setTimeout(() => {
             loadUserData(currentSession.user.id);
@@ -50,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       
-      if (currentSession?.user) {
+      if (currentSession?.user && !dataFetched) {
         loadUserData(currentSession.user.id);
       } else {
         setIsLoading(false);
@@ -60,10 +62,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, dataFetched]);
 
   // Load user profile and organization data
   const loadUserData = async (userId: string) => {
+    console.log("Loading user data for:", userId);
     setIsLoading(true);
     
     try {
@@ -76,23 +79,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (profileError) throw profileError;
       setProfile(profileData);
+      console.log("Profile loaded:", profileData);
       
-      // Fetch primary organization membership using maybeSingle to handle case with no memberships
-      const { data: membershipData, error: membershipError } = await supabase
-        .from("org_memberships")
-        .select("*, organizations(*)")
-        .eq("user_id", userId)
-        .eq("is_primary", true)
-        .maybeSingle();
-      
-      if (membershipError && membershipError.code !== "PGRST116") {
-        // PGRST116 is "No rows returned" error, which is fine if the user doesn't have a primary org yet
-        throw membershipError;
+      try {
+        // Fetch primary organization membership using maybeSingle to handle case with no memberships
+        const { data: membershipData, error: membershipError } = await supabase
+          .from("org_memberships")
+          .select("*, organizations(*)")
+          .eq("user_id", userId)
+          .eq("is_primary", true)
+          .maybeSingle();
+        
+        if (membershipError && membershipError.code !== "PGRST116") {
+          // PGRST116 is "No rows returned" error, which is fine if the user doesn't have a primary org yet
+          console.warn("Non-critical membership error:", membershipError);
+        }
+        
+        if (membershipData) {
+          setOrganization(membershipData.organizations);
+          console.log("Organization loaded:", membershipData.organizations);
+        }
+      } catch (orgError) {
+        console.error("Error loading organization:", orgError);
+        // This is non-critical, so we'll continue without an organization
       }
       
-      if (membershipData) {
-        setOrganization(membershipData.organizations);
-      }
+      // Mark data as fetched to prevent duplicate loading
+      setDataFetched(true);
     } catch (error) {
       console.error("Error loading user data:", error);
       toast({
@@ -110,6 +123,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      
+      // Reset state
+      setProfile(null);
+      setOrganization(null);
+      setDataFetched(false);
     } catch (error: any) {
       console.error("Sign out error:", error);
       toast({
