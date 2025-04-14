@@ -11,6 +11,7 @@ export interface Carrier {
   status: string;
   created_at: string;
   updated_at: string;
+  invite_token?: string;
   invite_sent_at?: string;
   profile_completed_at?: string;
 }
