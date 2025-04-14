@@ -157,7 +157,7 @@ export function RoutesSection() {
                     <td className="py-3 px-2">{route.distance.toLocaleString()}</td>
                     <td className="py-3 px-2">{route.carriers}</td>
                     <td className="py-3 px-2">{route.avgRate}</td>
-                    <td className="py-3 px-2" className="text-forest font-medium">{route.bestRate}</td>
+                    <td className="py-3 px-2 text-forest font-medium">{route.bestRate}</td>
                     <td className="py-3 px-2">{route.bids}</td>
                     <td className="py-3 px-2 text-right">
                       <Button variant="ghost" size="sm">View</Button>

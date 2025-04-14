@@ -10,7 +10,7 @@ import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Carriers from "./pages/Carriers";
 import Bids from "./pages/Bids";
-import Routes from "./pages/Routes";
+import RoutesList from "./pages/RoutesList";
 import Analysis from "./pages/Analysis";
 import NotFound from "./pages/NotFound";
 
@@ -29,7 +29,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/carriers" element={<Carriers />} />
           <Route path="/bids" element={<Bids />} />
-          <Route path="/routes" element={<Routes />} />
+          <Route path="/routes" element={<RoutesList />} />
           <Route path="/analysis" element={<Analysis />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

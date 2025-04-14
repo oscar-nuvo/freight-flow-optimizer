@@ -2,7 +2,7 @@
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { RoutesSection } from "@/components/dashboard/RoutesSection";
 
-const Routes = () => {
+const RoutesList = () => {
   return (
     <DashboardLayout>
       <RoutesSection />
@@ -10,4 +10,4 @@ const Routes = () => {
   );
 };
 
-export default Routes;
+export default RoutesList;
