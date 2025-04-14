@@ -78,9 +78,7 @@ export const sendCarrierInvite = async (carrierId: string, email: string): Promi
     throw fetchError;
   }
 
-  // In a real application, you would send an email to the carrier with a link to the profile form
-  // For this example, we'll just update the invite_sent_at timestamp
-
+  // Update invite_sent_at timestamp
   const { error: updateError } = await supabase
     .from("carriers")
     .update({ invite_sent_at: new Date().toISOString() })
