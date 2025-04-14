@@ -135,9 +135,9 @@ export function BidsSection() {
                         <td className="py-3 px-2">
                           <Badge variant={
                             bid.status === "Active" ? "default" :
-                            bid.status === "Completed" ? "success" :
-                            bid.status === "Draft" ? "secondary" :
-                            "outline"
+                            bid.status === "Completed" ? "secondary" :
+                            bid.status === "Draft" ? "outline" :
+                            "default"
                           }>
                             {bid.status}
                           </Badge>
