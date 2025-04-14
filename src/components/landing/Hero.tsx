@@ -23,7 +23,7 @@ export function Hero() {
               </Button>
             </Link>
             <Link to="#features">
-              <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/10 w-full sm:w-auto">
+              <Button size="lg" variant="secondary" className="border-2 border-white bg-white/10 text-white hover:bg-white/20 w-full sm:w-auto">
                 Explore features
               </Button>
             </Link>

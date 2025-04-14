@@ -176,8 +176,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </div>
             </div>
             <Button 
-              variant="outline" 
-              className="w-full justify-start text-sidebar-foreground border-sidebar-border hover:bg-sidebar-accent/50" 
+              variant="destructive" 
+              className="w-full justify-start bg-red-600 hover:bg-red-700 text-white" 
               onClick={handleLogout}
             >
               <LogOut className="h-4 w-4 mr-2" />

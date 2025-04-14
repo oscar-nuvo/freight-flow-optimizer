@@ -52,7 +52,10 @@ export function Navbar() {
           <Link to="/#pricing" className="hover:opacity-80 transition-opacity">Pricing</Link>
           <div className="flex items-center space-x-4">
             <Link to="/login">
-              <Button variant={isHomePage ? "outline" : "ghost"}>Log in</Button>
+              <Button variant={isHomePage ? "secondary" : "outline"} 
+                className={isHomePage ? "border-2 border-white bg-transparent text-white hover:bg-white/20" : "border-forest text-forest hover:bg-forest/10"}>
+                Log in
+              </Button>
             </Link>
             <Link to="/signup">
               <Button className={isHomePage ? "bg-white text-forest hover:bg-gray-100" : "bg-forest text-white hover:bg-forest-600"}>
@@ -77,7 +80,10 @@ export function Navbar() {
             <Link to="/#features" className="py-2 hover:opacity-80" onClick={toggleMenu}>Features</Link>
             <Link to="/#pricing" className="py-2 hover:opacity-80" onClick={toggleMenu}>Pricing</Link>
             <Link to="/login" onClick={toggleMenu}>
-              <Button variant="outline" className="w-full">Log in</Button>
+              <Button variant={isHomePage ? "secondary" : "outline"} 
+                className={`w-full ${isHomePage ? "border-2 border-white bg-transparent text-white hover:bg-white/20" : "border-forest text-forest hover:bg-forest/10"}`}>
+                Log in
+              </Button>
             </Link>
             <Link to="/signup" onClick={toggleMenu}>
               <Button className={`w-full ${isHomePage ? "bg-white text-forest hover:bg-gray-100" : "bg-forest text-white hover:bg-forest-600"}`}>
