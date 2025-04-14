@@ -19,6 +19,14 @@ export function Navbar() {
     setIsMenuOpen(!isMenuOpen);
   };
 
+  const scrollToSection = (sectionId: string) => {
+    const section = document.getElementById(sectionId);
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth" });
+    }
+    if (isMenuOpen) setIsMenuOpen(false);
+  };
+
   if (isDashboard) {
     return null; // Don't show regular navbar on dashboard pages
   }
@@ -48,8 +56,18 @@ export function Navbar() {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-8">
-          <Link to="/#features" className="hover:opacity-80 transition-opacity">Features</Link>
-          <Link to="/#pricing" className="hover:opacity-80 transition-opacity">Pricing</Link>
+          <button 
+            onClick={() => scrollToSection("features")} 
+            className="hover:opacity-80 transition-opacity"
+          >
+            Features
+          </button>
+          <button 
+            onClick={() => scrollToSection("pricing")} 
+            className="hover:opacity-80 transition-opacity"
+          >
+            Pricing
+          </button>
           <div className="flex items-center space-x-4">
             <Link to="/login">
               <Button variant={isHomePage ? "secondary" : "outline"} 
@@ -77,8 +95,18 @@ export function Navbar() {
       {isMenuOpen && (
         <div className={`md:hidden absolute top-16 left-0 w-full z-20 p-4 shadow-md ${isHomePage ? 'bg-forest-500' : 'bg-white'}`}>
           <div className="flex flex-col space-y-4">
-            <Link to="/#features" className="py-2 hover:opacity-80" onClick={toggleMenu}>Features</Link>
-            <Link to="/#pricing" className="py-2 hover:opacity-80" onClick={toggleMenu}>Pricing</Link>
+            <button 
+              onClick={() => scrollToSection("features")} 
+              className="py-2 hover:opacity-80"
+            >
+              Features
+            </button>
+            <button 
+              onClick={() => scrollToSection("pricing")} 
+              className="py-2 hover:opacity-80"
+            >
+              Pricing
+            </button>
             <Link to="/login" onClick={toggleMenu}>
               <Button variant={isHomePage ? "secondary" : "outline"} 
                 className={`w-full ${isHomePage ? "border-2 border-white bg-transparent text-white hover:bg-white/20" : "border-forest text-forest hover:bg-forest/10"}`}>

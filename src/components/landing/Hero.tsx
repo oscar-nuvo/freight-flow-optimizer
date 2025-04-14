@@ -4,6 +4,13 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 
 export function Hero() {
+  const scrollToSection = (sectionId: string) => {
+    const section = document.getElementById(sectionId);
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
     <section className="hero-section landing-section flex flex-col justify-center min-h-[85vh]">
       <div className="container mx-auto px-4">
@@ -22,16 +29,26 @@ export function Hero() {
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
-            <a href="#benefits">
-              <Button size="lg" variant="secondary" className="border-2 border-white bg-white/10 text-white hover:bg-white/20 w-full sm:w-auto">
-                See the benefits
-              </Button>
-            </a>
+            <Button 
+              size="lg" 
+              variant="secondary" 
+              className="border-2 border-white bg-white/10 text-white hover:bg-white/20 w-full sm:w-auto"
+              onClick={() => scrollToSection("benefits")}
+            >
+              See the benefits
+            </Button>
           </div>
         </div>
       </div>
       <div className="absolute bottom-10 left-0 right-0 flex justify-center animate-bounce">
-        <a href="#features" className="text-white/80 hover:text-white">
+        <a 
+          href="#features" 
+          className="text-white/80 hover:text-white"
+          onClick={(e) => {
+            e.preventDefault();
+            scrollToSection("features");
+          }}
+        >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-8 w-8">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
