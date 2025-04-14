@@ -167,7 +167,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_new_org: {
+        Args: { org_uuid: string }
+        Returns: boolean
+      }
+      is_org_admin: {
+        Args: { org_uuid: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

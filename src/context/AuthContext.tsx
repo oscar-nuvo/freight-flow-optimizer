@@ -36,6 +36,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(null);
           setOrganization(null);
           navigate("/login");
+        } else if (currentSession?.user) {
+          // Use setTimeout to prevent recursion in the auth state change handler
+          setTimeout(() => {
+            loadUserData(currentSession.user.id);
+          }, 0);
         }
       }
     );
@@ -72,13 +77,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (profileError) throw profileError;
       setProfile(profileData);
       
-      // Fetch primary organization membership
+      // Fetch primary organization membership using maybeSingle to handle case with no memberships
       const { data: membershipData, error: membershipError } = await supabase
         .from("org_memberships")
         .select("*, organizations(*)")
         .eq("user_id", userId)
         .eq("is_primary", true)
-        .single();
+        .maybeSingle();
       
       if (membershipError && membershipError.code !== "PGRST116") {
         // PGRST116 is "No rows returned" error, which is fine if the user doesn't have a primary org yet
