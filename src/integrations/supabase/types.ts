@@ -14,39 +14,54 @@ export type Database = {
           carriers: number | null
           created_at: string
           end_date: string | null
+          equipment_type: string | null
           id: string
+          instructions: string | null
           lanes: number | null
+          mode: string | null
           name: string
           org_id: string
           progress: number | null
+          rate_duration: string | null
           start_date: string | null
           status: string
+          submission_date: string | null
           updated_at: string
         }
         Insert: {
           carriers?: number | null
           created_at?: string
           end_date?: string | null
+          equipment_type?: string | null
           id?: string
+          instructions?: string | null
           lanes?: number | null
+          mode?: string | null
           name: string
           org_id: string
           progress?: number | null
+          rate_duration?: string | null
           start_date?: string | null
           status?: string
+          submission_date?: string | null
           updated_at?: string
         }
         Update: {
           carriers?: number | null
           created_at?: string
           end_date?: string | null
+          equipment_type?: string | null
           id?: string
+          instructions?: string | null
           lanes?: number | null
+          mode?: string | null
           name?: string
           org_id?: string
           progress?: number | null
+          rate_duration?: string | null
           start_date?: string | null
           status?: string
+          submission_date?: string | null
           updated_at?: string
         }
         Relationships: [

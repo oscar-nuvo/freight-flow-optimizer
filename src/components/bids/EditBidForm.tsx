@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface EditBidFormProps {
   bid: {
@@ -57,6 +65,11 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
         .update({
           name: formData.name,
           start_date: formData.start_date || null,
+          submission_date: formData.submission_date || null,
+          rate_duration: formData.rate_duration || null,
+          mode: formData.mode,
+          equipment_type: formData.equipment_type || null,
+          instructions: formData.instructions || null,
         })
         .eq("id", bid.id)
         .eq("org_id", organization?.id);
@@ -116,9 +129,6 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
               value={formData.submission_date}
               onChange={(e) => handleChange("submission_date", e.target.value)}
             />
-            <p className="text-xs text-muted-foreground">
-              Note: This field will be stored locally but is not yet supported in the database.
-            </p>
           </div>
 
           <div className="space-y-2">
@@ -133,54 +143,54 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
 
           <div className="space-y-2">
             <Label htmlFor="rate_duration">Rate Duration</Label>
-            <select
-              id="rate_duration"
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            <Select
               value={formData.rate_duration}
-              onChange={(e) => handleChange("rate_duration", e.target.value)}
+              onValueChange={(value) => handleChange("rate_duration", value)}
             >
-              <option value="">Select duration</option>
-              <option value="1">1 Month</option>
-              <option value="3">3 Months</option>
-              <option value="6">6 Months</option>
-              <option value="12">12 Months</option>
-            </select>
-            <p className="text-xs text-muted-foreground">
-              Note: This field will be stored locally but is not yet supported in the database.
-            </p>
+              <SelectTrigger>
+                <SelectValue placeholder="Select duration" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Select duration</SelectItem>
+                <SelectItem value="1">1 Month</SelectItem>
+                <SelectItem value="3">3 Months</SelectItem>
+                <SelectItem value="6">6 Months</SelectItem>
+                <SelectItem value="12">12 Months</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="mode">Mode</Label>
-            <select
-              id="mode"
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            <Select
               value={formData.mode}
-              onChange={(e) => handleChange("mode", e.target.value)}
+              onValueChange={(value) => handleChange("mode", value)}
             >
-              <option value="over_the_road">Over the Road</option>
-            </select>
-            <p className="text-xs text-muted-foreground">
-              Note: This field will be stored locally but is not yet supported in the database.
-            </p>
+              <SelectTrigger>
+                <SelectValue placeholder="Select mode" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="over_the_road">Over the Road</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="equipment_type">Equipment Type</Label>
-            <select
-              id="equipment_type"
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            <Select
               value={formData.equipment_type}
-              onChange={(e) => handleChange("equipment_type", e.target.value)}
+              onValueChange={(value) => handleChange("equipment_type", value)}
             >
-              <option value="">Select equipment type</option>
-              <option value="dry_van">53' Dry Van</option>
-              <option value="reefer">Reefer</option>
-              <option value="flatbed">Flatbed</option>
-            </select>
-            <p className="text-xs text-muted-foreground">
-              Note: This field will be stored locally but is not yet supported in the database.
-            </p>
+              <SelectTrigger>
+                <SelectValue placeholder="Select equipment type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Select equipment type</SelectItem>
+                <SelectItem value="dry_van">53' Dry Van</SelectItem>
+                <SelectItem value="reefer">Reefer</SelectItem>
+                <SelectItem value="flatbed">Flatbed</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
@@ -191,9 +201,6 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
               onChange={(e) => handleChange("instructions", e.target.value)}
               rows={4}
             />
-            <p className="text-xs text-muted-foreground">
-              Note: This field will be stored locally but is not yet supported in the database.
-            </p>
           </div>
         </CardContent>
       </Card>
