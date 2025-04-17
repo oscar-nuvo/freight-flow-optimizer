@@ -31,7 +31,7 @@ const EditBid = () => {
         throw new Error("Organization not found");
       }
 
-      // Simplify query to avoid triggering complex RLS policies
+      // Direct approach using match for simple equality conditions
       const { data, error } = await supabase
         .from("bids")
         .select("*")
@@ -95,6 +95,10 @@ const EditBid = () => {
         <EditBidForm 
           bid={bid} 
           onSuccess={() => {
+            toast({
+              title: "Success",
+              description: "Bid updated successfully"
+            });
             navigate(`/bids/${id}`);
           }} 
         />

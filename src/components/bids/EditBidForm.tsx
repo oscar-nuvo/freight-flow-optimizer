@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,8 +69,6 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
         formData
       });
 
-      // Use a direct update query without complex joins or checks 
-      // that might involve the missing org_memberships table
       const updates = {
         name: formData.name,
         submission_date: formData.submission_date || null,
@@ -80,11 +77,9 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
         mode: formData.mode,
         equipment_type: formData.equipment_type === "none" ? null : formData.equipment_type,
         instructions: formData.instructions || null,
-        // Add updated_at to trigger the update properly
         updated_at: new Date().toISOString()
       };
 
-      // Simpler query that only checks for the ID and org_id
       const { error: updateError } = await supabase
         .from("bids")
         .update(updates)
@@ -96,11 +91,7 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
       }
 
       console.log("Bid updated successfully");
-      toast({
-        title: "Success",
-        description: "Bid updated successfully",
-      });
-
+      
       if (onSuccess) {
         onSuccess();
       }
