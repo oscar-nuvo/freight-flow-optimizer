@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
@@ -5,35 +6,33 @@ import { EditBidForm } from "@/components/bids/EditBidForm";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { AlertCircle, Info } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+
 const EditBid = () => {
-  const {
-    id
-  } = useParams<{
-    id: string;
-  }>();
+  const { id } = useParams<{ id: string }>();
   const [bid, setBid] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const {
-    organization
-  } = useAuth();
-  const {
-    toast
-  } = useToast();
+  const { organization } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
+
   useEffect(() => {
     if (id && organization) {
       fetchBid();
     }
   }, [id, organization]);
+
   const fetchBid = async () => {
     try {
-      const {
-        data,
-        error
-      } = await supabase.from("bids").select("*").eq("id", id).eq("org_id", organization?.id).single();
+      // Direct query without relying on org_memberships
+      const { data, error } = await supabase
+        .from("bids")
+        .select("*")
+        .eq("id", id)
+        .eq("org_id", organization?.id)
+        .single();
+
       if (error) throw error;
       if (!data) {
         throw new Error("Bid not found");
@@ -61,15 +60,20 @@ const EditBid = () => {
       setLoading(false);
     }
   };
+
   if (loading) {
-    return <DashboardLayout>
+    return (
+      <DashboardLayout>
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-forest"></div>
         </div>
-      </DashboardLayout>;
+      </DashboardLayout>
+    );
   }
+
   if (!bid) {
-    return <DashboardLayout>
+    return (
+      <DashboardLayout>
         <div className="flex flex-col items-center justify-center h-64">
           <AlertCircle className="h-12 w-12 text-destructive mb-4" />
           <h2 className="text-xl font-bold mb-2">Bid Not Found</h2>
@@ -78,20 +82,25 @@ const EditBid = () => {
           </p>
           <Button onClick={() => navigate("/bids")}>Back to Bids</Button>
         </div>
-      </DashboardLayout>;
+      </DashboardLayout>
+    );
   }
-  return <DashboardLayout>
+
+  return (
+    <DashboardLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Edit Bid</h1>
         </div>
-        
-        
-        
-        <EditBidForm bid={bid} onSuccess={() => {
-        navigate(`/bids/${id}`);
-      }} />
+        <EditBidForm 
+          bid={bid} 
+          onSuccess={() => {
+            navigate(`/bids/${id}`);
+          }} 
+        />
       </div>
-    </DashboardLayout>;
+    </DashboardLayout>
+  );
 };
+
 export default EditBid;
