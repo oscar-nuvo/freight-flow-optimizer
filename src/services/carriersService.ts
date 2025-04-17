@@ -52,20 +52,23 @@ export const createCarrier = async (formData: CarrierFormData): Promise<Carrier>
     throw new Error("You must be logged in to create a carrier.");
   }
   
-  // Try to get organization from localStorage or use current user's ID as fallback
-  let orgId;
-  try {
-    const { organization } = JSON.parse(localStorage.getItem("authContext") || "{}");
-    orgId = organization?.id;
-  } catch (e) {
-    console.warn("Error parsing auth context from localStorage:", e);
+  // Get user's organizations
+  const { data: memberships, error: membershipError } = await supabase
+    .from("org_memberships")
+    .select("org_id, is_primary")
+    .eq("user_id", user.id);
+  
+  if (membershipError) {
+    console.error("Error fetching user organization:", membershipError);
+    throw membershipError;
   }
   
-  // If no organization found, create a temporary one for demo purposes
-  if (!orgId) {
-    console.log("No organization found, using user ID as temporary org ID");
-    orgId = user.id; // Use the user's ID as a temporary org ID
+  if (!memberships || memberships.length === 0) {
+    throw new Error("You must be a member of an organization to create carriers.");
   }
+  
+  // Find primary organization or use the first one
+  let orgId = memberships.find(m => m.is_primary)?.org_id || memberships[0].org_id;
 
   const { data, error } = await supabase
     .from("carriers")
@@ -123,13 +126,9 @@ export const getCarrierByToken = async (token: string): Promise<Carrier | null> 
     .from("carriers")
     .select("*")
     .eq("invite_token", token)
-    .single();
+    .maybeSingle();
 
   if (error) {
-    if (error.code === "PGRST116") {
-      // No carrier found with this token
-      return null;
-    }
     console.error("Error fetching carrier by token:", error);
     throw error;
   }
