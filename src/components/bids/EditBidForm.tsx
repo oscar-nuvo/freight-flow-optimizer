@@ -60,7 +60,11 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
     setError(null);
 
     try {
-      const { error } = await supabase
+      if (!organization?.id) {
+        throw new Error("Organization not found");
+      }
+
+      const { error: updateError } = await supabase
         .from("bids")
         .update({
           name: formData.name,
@@ -72,9 +76,9 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
           instructions: formData.instructions || null,
         })
         .eq("id", bid.id)
-        .eq("org_id", organization?.id);
+        .eq("org_id", organization.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
       toast({
         title: "Success",
