@@ -122,16 +122,21 @@ export const sendCarrierInvite = async (carrierId: string, email: string): Promi
 
 // Get a carrier by its invite token
 export const getCarrierByToken = async (token: string): Promise<Carrier | null> => {
-  const { data, error } = await supabase
-    .from("carriers")
-    .select("*")
-    .eq("invite_token", token)
-    .maybeSingle();
+  try {
+    const { data, error } = await supabase
+      .from("carriers")
+      .select("*")
+      .eq("invite_token", token)
+      .maybeSingle();
 
-  if (error) {
-    console.error("Error fetching carrier by token:", error);
-    throw error;
+    if (error) {
+      console.error("Error fetching carrier by token:", error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error in getCarrierByToken:", error);
+    return null; // Return null instead of throwing to prevent UI errors
   }
-
-  return data;
 };
