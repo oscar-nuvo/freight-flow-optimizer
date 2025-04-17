@@ -64,6 +64,7 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
         throw new Error("Organization not found");
       }
 
+      // Directly use the update operation without RLS functions
       const { error: updateError } = await supabase
         .from("bids")
         .update({
@@ -78,7 +79,10 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
         .eq("id", bid.id)
         .eq("org_id", organization.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error("Error updating bid:", updateError);
+        throw new Error(updateError.message);
+      }
 
       toast({
         title: "Success",
@@ -201,7 +205,7 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
             <Label htmlFor="instructions">Instructions for the RFP</Label>
             <Textarea
               id="instructions"
-              value={formData.instructions}
+              value={formData.instructions || ""}
               onChange={(e) => handleChange("instructions", e.target.value)}
               rows={4}
             />
