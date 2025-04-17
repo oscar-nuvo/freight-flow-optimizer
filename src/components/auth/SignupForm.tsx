@@ -3,7 +3,6 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
@@ -51,13 +50,15 @@ export function SignupForm() {
     setIsLoading(true);
     
     try {
-      // 1. Create the user with Supabase auth
+      // Create the user with Supabase auth - passing company name in metadata
+      // The trigger will automatically create the organization and profile
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
           data: {
             full_name: data.fullName,
+            companyName: data.companyName,
           },
         },
       });
@@ -66,38 +67,6 @@ export function SignupForm() {
       
       if (!authData.user) {
         throw new Error("User creation failed");
-      }
-
-      // 2. Create an organization for the user
-      const { data: orgData, error: orgError } = await supabase
-        .from("organizations")
-        .insert([{ name: data.companyName }])
-        .select()
-        .single();
-
-      if (orgError) {
-        console.error("Organization creation error:", orgError);
-        // If organization creation fails, we should clean up the user to prevent orphaned accounts
-        await supabase.auth.admin.deleteUser(authData.user.id);
-        throw new Error(`Failed to create organization: ${orgError.message}`);
-      }
-
-      // 3. Link the user to the organization with admin role
-      // Note: Removed is_primary flag as it's no longer in the schema
-      const { error: membershipError } = await supabase
-        .from("org_memberships")
-        .insert([{
-          user_id: authData.user.id,
-          org_id: orgData.id,
-          role: "admin"
-        }]);
-
-      if (membershipError) {
-        console.error("Membership creation error:", membershipError);
-        // Clean up both the user and organization if membership creation fails
-        await supabase.from("organizations").delete().eq("id", orgData.id);
-        await supabase.auth.admin.deleteUser(authData.user.id);
-        throw new Error(`Failed to create membership: ${membershipError.message}`);
       }
 
       toast({

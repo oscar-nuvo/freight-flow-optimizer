@@ -5,11 +5,27 @@ import { Session, User } from "@supabase/supabase-js";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
+interface Profile {
+  id: string;
+  full_name: string;
+  email: string;
+  org_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Organization {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface AuthContextProps {
   session: Session | null;
   user: User | null;
-  profile: any | null;
-  organization: any | null;
+  profile: Profile | null;
+  organization: Organization | null;
   isLoading: boolean;
   signOut: () => Promise<void>;
 }
@@ -19,8 +35,8 @@ const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<any | null>(null);
-  const [organization, setOrganization] = useState<any | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [organization, setOrganization] = useState<Organization | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [dataFetched, setDataFetched] = useState(false);
   const navigate = useNavigate();
@@ -93,39 +109,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .single();
       
       if (profileError) throw profileError;
+      
       setProfile(profileData);
       console.log("Profile loaded:", profileData);
       
-      try {
-        // With our simplified approach, each user has at most one organization membership
-        // No need to check for is_primary anymore
-        const { data: membershipData, error: membershipError } = await supabase
-          .from("org_memberships")
-          .select("org_id")
-          .eq("user_id", userId)
-          .maybeSingle();
+      // If profile has an org_id, fetch the organization
+      if (profileData.org_id) {
+        const { data: orgData, error: orgError } = await supabase
+          .from("organizations")
+          .select("*")
+          .eq("id", profileData.org_id)
+          .single();
         
-        if (membershipError) {
-          console.warn("Membership query error:", membershipError);
-          // Continue without organization data
-        } else if (membershipData?.org_id) {
-          // If we found an org membership, fetch the organization details
-          const { data: orgData, error: orgError } = await supabase
-            .from("organizations")
-            .select("*")
-            .eq("id", membershipData.org_id)
-            .single();
-          
-          if (orgError) {
-            console.warn("Organization fetch error:", orgError);
-          } else {
-            setOrganization(orgData);
-            console.log("Organization loaded:", orgData);
-          }
-        }
-      } catch (orgError) {
-        console.error("Error in organization data flow:", orgError);
-        // This is non-critical, so we'll continue without an organization
+        if (orgError) throw orgError;
+        
+        setOrganization(orgData);
+        console.log("Organization loaded:", orgData);
       }
       
       // Mark data as fetched to prevent duplicate loading
