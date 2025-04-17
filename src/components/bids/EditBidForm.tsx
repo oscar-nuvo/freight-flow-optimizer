@@ -64,7 +64,13 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
         throw new Error("Organization not found");
       }
 
-      // Direct update without relying on org_memberships table
+      console.log("Updating bid with data:", {
+        id: bid.id,
+        org_id: organization.id,
+        formData
+      });
+
+      // Simple update without any complex queries
       const { error: updateError } = await supabase
         .from("bids")
         .update({
@@ -76,14 +82,14 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
           equipment_type: formData.equipment_type || null,
           instructions: formData.instructions || null,
         })
-        .eq("id", bid.id)
-        .eq("org_id", organization.id);
+        .eq("id", bid.id);
 
       if (updateError) {
         console.error("Error updating bid:", updateError);
         throw new Error(updateError.message);
       }
 
+      console.log("Bid updated successfully");
       toast({
         title: "Success",
         description: "Bid updated successfully",
@@ -94,10 +100,10 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
       }
     } catch (error: any) {
       console.error("Error updating bid:", error);
-      setError("Failed to update bid. Please try again.");
+      setError(`Failed to update bid: ${error.message}`);
       toast({
         title: "Error",
-        description: "Failed to update bid. Please try again.",
+        description: `Failed to update bid: ${error.message}`,
         variant: "destructive",
       });
     } finally {
@@ -159,7 +165,7 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
                 <SelectValue placeholder="Select duration" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="placeholder" disabled>Select duration</SelectItem>
+                <SelectItem value="">Select duration</SelectItem>
                 <SelectItem value="1">1 Month</SelectItem>
                 <SelectItem value="3">3 Months</SelectItem>
                 <SelectItem value="6">6 Months</SelectItem>
@@ -193,7 +199,7 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
                 <SelectValue placeholder="Select equipment type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="placeholder" disabled>Select equipment type</SelectItem>
+                <SelectItem value="">Select equipment type</SelectItem>
                 <SelectItem value="dry_van">53' Dry Van</SelectItem>
                 <SelectItem value="reefer">Reefer</SelectItem>
                 <SelectItem value="flatbed">Flatbed</SelectItem>
