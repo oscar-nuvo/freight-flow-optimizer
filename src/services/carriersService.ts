@@ -52,23 +52,23 @@ export const createCarrier = async (formData: CarrierFormData): Promise<Carrier>
     throw new Error("You must be logged in to create a carrier.");
   }
   
-  // Get user's organizations
-  const { data: memberships, error: membershipError } = await supabase
+  // Get user's organization - with our simplified model, a user only has one organization
+  const { data: membership, error: membershipError } = await supabase
     .from("org_memberships")
-    .select("org_id, is_primary")
-    .eq("user_id", user.id);
+    .select("org_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
   
   if (membershipError) {
     console.error("Error fetching user organization:", membershipError);
     throw membershipError;
   }
   
-  if (!memberships || memberships.length === 0) {
+  if (!membership) {
     throw new Error("You must be a member of an organization to create carriers.");
   }
   
-  // Find primary organization or use the first one
-  let orgId = memberships.find(m => m.is_primary)?.org_id || memberships[0].org_id;
+  const orgId = membership.org_id;
 
   const { data, error } = await supabase
     .from("carriers")
