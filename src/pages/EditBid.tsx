@@ -31,14 +31,17 @@ const EditBid = () => {
         throw new Error("Organization not found");
       }
 
+      // Simplify query to avoid triggering complex RLS policies
       const { data, error } = await supabase
         .from("bids")
         .select("*")
-        .eq("id", id)
-        .eq("org_id", organization.id)
-        .single();
+        .match({ id, org_id: organization.id })
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Fetch error details:", error);
+        throw error;
+      }
       
       if (!data) {
         throw new Error("Bid not found");

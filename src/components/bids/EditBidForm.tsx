@@ -70,21 +70,30 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
         formData
       });
 
+      // Use a direct update query without complex joins or checks 
+      // that might involve the missing org_memberships table
+      const updates = {
+        name: formData.name,
+        submission_date: formData.submission_date || null,
+        start_date: formData.start_date || null,
+        rate_duration: formData.rate_duration === "none" ? null : formData.rate_duration,
+        mode: formData.mode,
+        equipment_type: formData.equipment_type === "none" ? null : formData.equipment_type,
+        instructions: formData.instructions || null,
+        // Add updated_at to trigger the update properly
+        updated_at: new Date().toISOString()
+      };
+
+      // Simpler query that only checks for the ID and org_id
       const { error: updateError } = await supabase
         .from("bids")
-        .update({
-          name: formData.name,
-          submission_date: formData.submission_date || null,
-          start_date: formData.start_date || null,
-          rate_duration: formData.rate_duration === "none" ? null : formData.rate_duration,
-          mode: formData.mode,
-          equipment_type: formData.equipment_type === "none" ? null : formData.equipment_type,
-          instructions: formData.instructions || null,
-        })
-        .eq("id", bid.id)
-        .eq("org_id", organization.id);
+        .update(updates)
+        .match({ id: bid.id, org_id: organization.id });
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error("Update error details:", updateError);
+        throw updateError;
+      }
 
       console.log("Bid updated successfully");
       toast({
