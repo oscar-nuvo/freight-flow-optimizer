@@ -61,46 +61,211 @@ export type Database = {
       }
       carriers: {
         Row: {
+          account_name: string | null
+          account_number: string | null
+          additional_contacts: Json[] | null
+          address_line1: string | null
+          address_line2: string | null
+          authority_types: string[] | null
+          authorized_for_hazmat: boolean | null
+          b1_drivers_count: number | null
+          bank_name: string | null
+          bank_statement_doc: string | null
+          billing_email: string | null
+          cargo_insurance_doc: string | null
+          cdl_drivers_count: number | null
+          city: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          countries_of_operation: string[] | null
+          country: string | null
           created_at: string
+          cross_border_routes: string[] | null
+          ctpat_svi_number: string | null
+          currency: string | null
+          description: string | null
+          dry_van_trailers_count: number | null
+          engages_in_trailer_exchanges: boolean | null
+          flatbed_trailers_count: number | null
+          fmcsa_authority_active: boolean | null
+          handles_inbond_ca_shipments: boolean | null
           id: string
+          insurance_expiry: string | null
+          insurance_policy_number: string | null
+          insurance_provider: string | null
           invite_sent_at: string | null
           invite_token: string | null
+          is_ctpat_certified: boolean | null
+          legal_business_name: string | null
           mc_number: string | null
           name: string
+          offers_team_driver_services: boolean | null
           org_id: string
+          payments_via_intermediary: boolean | null
+          payout_method: string | null
+          power_units_count: number | null
+          primary_lanes: Json[] | null
+          primary_liability_doc: string | null
           profile_completed_at: string | null
+          provides_cross_border_services: boolean | null
+          reefer_trailers_count: number | null
+          registration_type: string | null
           rfc_number: string | null
+          routing_number: string | null
+          scac: string | null
+          service_types: string[] | null
+          state: string | null
           status: string
+          swift_code: string | null
+          tax_id: string | null
+          telematics_provider: string | null
+          tracking_method: string | null
+          trailer_exchange_partners: string | null
           updated_at: string
           usdot_number: string | null
+          w9_form_doc: string | null
+          website: string | null
+          yard_locations: Json[] | null
+          zip_code: string | null
         }
         Insert: {
+          account_name?: string | null
+          account_number?: string | null
+          additional_contacts?: Json[] | null
+          address_line1?: string | null
+          address_line2?: string | null
+          authority_types?: string[] | null
+          authorized_for_hazmat?: boolean | null
+          b1_drivers_count?: number | null
+          bank_name?: string | null
+          bank_statement_doc?: string | null
+          billing_email?: string | null
+          cargo_insurance_doc?: string | null
+          cdl_drivers_count?: number | null
+          city?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          countries_of_operation?: string[] | null
+          country?: string | null
           created_at?: string
+          cross_border_routes?: string[] | null
+          ctpat_svi_number?: string | null
+          currency?: string | null
+          description?: string | null
+          dry_van_trailers_count?: number | null
+          engages_in_trailer_exchanges?: boolean | null
+          flatbed_trailers_count?: number | null
+          fmcsa_authority_active?: boolean | null
+          handles_inbond_ca_shipments?: boolean | null
           id?: string
+          insurance_expiry?: string | null
+          insurance_policy_number?: string | null
+          insurance_provider?: string | null
           invite_sent_at?: string | null
           invite_token?: string | null
+          is_ctpat_certified?: boolean | null
+          legal_business_name?: string | null
           mc_number?: string | null
           name: string
+          offers_team_driver_services?: boolean | null
           org_id: string
+          payments_via_intermediary?: boolean | null
+          payout_method?: string | null
+          power_units_count?: number | null
+          primary_lanes?: Json[] | null
+          primary_liability_doc?: string | null
           profile_completed_at?: string | null
+          provides_cross_border_services?: boolean | null
+          reefer_trailers_count?: number | null
+          registration_type?: string | null
           rfc_number?: string | null
+          routing_number?: string | null
+          scac?: string | null
+          service_types?: string[] | null
+          state?: string | null
           status?: string
+          swift_code?: string | null
+          tax_id?: string | null
+          telematics_provider?: string | null
+          tracking_method?: string | null
+          trailer_exchange_partners?: string | null
           updated_at?: string
           usdot_number?: string | null
+          w9_form_doc?: string | null
+          website?: string | null
+          yard_locations?: Json[] | null
+          zip_code?: string | null
         }
         Update: {
+          account_name?: string | null
+          account_number?: string | null
+          additional_contacts?: Json[] | null
+          address_line1?: string | null
+          address_line2?: string | null
+          authority_types?: string[] | null
+          authorized_for_hazmat?: boolean | null
+          b1_drivers_count?: number | null
+          bank_name?: string | null
+          bank_statement_doc?: string | null
+          billing_email?: string | null
+          cargo_insurance_doc?: string | null
+          cdl_drivers_count?: number | null
+          city?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          countries_of_operation?: string[] | null
+          country?: string | null
           created_at?: string
+          cross_border_routes?: string[] | null
+          ctpat_svi_number?: string | null
+          currency?: string | null
+          description?: string | null
+          dry_van_trailers_count?: number | null
+          engages_in_trailer_exchanges?: boolean | null
+          flatbed_trailers_count?: number | null
+          fmcsa_authority_active?: boolean | null
+          handles_inbond_ca_shipments?: boolean | null
           id?: string
+          insurance_expiry?: string | null
+          insurance_policy_number?: string | null
+          insurance_provider?: string | null
           invite_sent_at?: string | null
           invite_token?: string | null
+          is_ctpat_certified?: boolean | null
+          legal_business_name?: string | null
           mc_number?: string | null
           name?: string
+          offers_team_driver_services?: boolean | null
           org_id?: string
+          payments_via_intermediary?: boolean | null
+          payout_method?: string | null
+          power_units_count?: number | null
+          primary_lanes?: Json[] | null
+          primary_liability_doc?: string | null
           profile_completed_at?: string | null
+          provides_cross_border_services?: boolean | null
+          reefer_trailers_count?: number | null
+          registration_type?: string | null
           rfc_number?: string | null
+          routing_number?: string | null
+          scac?: string | null
+          service_types?: string[] | null
+          state?: string | null
           status?: string
+          swift_code?: string | null
+          tax_id?: string | null
+          telematics_provider?: string | null
+          tracking_method?: string | null
+          trailer_exchange_partners?: string | null
           updated_at?: string
           usdot_number?: string | null
+          w9_form_doc?: string | null
+          website?: string | null
+          yard_locations?: Json[] | null
+          zip_code?: string | null
         }
         Relationships: [
           {

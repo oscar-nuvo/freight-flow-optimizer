@@ -21,6 +21,7 @@ export interface Carrier {
   contact_name?: string;
   contact_phone?: string;
   contact_email?: string;
+  additional_contacts?: any[];
   
   // Address Information
   address_line1?: string;
@@ -30,12 +31,66 @@ export interface Carrier {
   zip_code?: string;
   country?: string;
   
-  // Additional Information
+  // Company Details
+  legal_business_name?: string;
   website?: string;
   description?: string;
+  countries_of_operation?: string[];
+  service_types?: string[];
+  
+  // Cross-border Services
+  provides_cross_border_services?: boolean;
+  cross_border_routes?: string[];
+  
+  // Trailer Exchanges
+  engages_in_trailer_exchanges?: boolean;
+  trailer_exchange_partners?: string;
+  
+  // Fleet Details
+  cdl_drivers_count?: number;
+  b1_drivers_count?: number;
+  offers_team_driver_services?: boolean;
+  power_units_count?: number;
+  dry_van_trailers_count?: number;
+  reefer_trailers_count?: number;
+  flatbed_trailers_count?: number;
+  authorized_for_hazmat?: boolean;
+  
+  // Compliance Details
+  registration_type?: string;
+  is_ctpat_certified?: boolean;
+  ctpat_svi_number?: string;
+  fmcsa_authority_active?: boolean;
+  authority_types?: string[];
+  handles_inbond_ca_shipments?: boolean;
+  
+  // Insurance Information
   insurance_provider?: string;
   insurance_policy_number?: string;
   insurance_expiry?: string;
+  
+  // Documents
+  bank_statement_doc?: string;
+  cargo_insurance_doc?: string;
+  primary_liability_doc?: string;
+  w9_form_doc?: string;
+  
+  // Billing Information
+  bank_name?: string;
+  account_name?: string;
+  account_number?: string;
+  routing_number?: string;
+  swift_code?: string;
+  payments_via_intermediary?: boolean;
+  billing_email?: string;
+  currency?: string;
+  payout_method?: string;
+  
+  // Commercial Preferences
+  yard_locations?: any[];
+  primary_lanes?: any[];
+  tracking_method?: string;
+  telematics_provider?: string;
 }
 
 export interface CarrierFormData {

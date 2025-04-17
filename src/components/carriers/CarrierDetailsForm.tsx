@@ -6,54 +6,40 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { Carrier, updateCarrier } from "@/services/carriersService";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  FormDescription,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  BuildingIcon,
-  TruckIcon,
-  ContactIcon,
-  FileTextIcon,
-  MapPinIcon,
-  MailIcon,
-  PhoneIcon,
-  GlobeIcon,
-  UserIcon,
-  Users,
-  FileText,
-  Truck,
-  Building,
-  User,
-  Globe,
-  MapPin,
-  Mail,
-  Phone
-} from "lucide-react";
+import { Truck, User, MapPin, FileText, Building, ReceiptText, Landmark, Truck as TruckIcon, FileCheck } from "lucide-react";
+
+// Import form components
+import { BasicInfoForm } from "./forms/BasicInfoForm";
+import { OperationalDetailsForm } from "./forms/OperationalDetailsForm";
+import { FleetDetailsForm } from "./forms/FleetDetailsForm";
+import { ComplianceForm } from "./forms/ComplianceForm";
+import { DocumentsForm } from "./forms/DocumentsForm";
+import { ContactInfoForm } from "./forms/ContactInfoForm";
+import { BillingInfoForm } from "./forms/BillingInfoForm";
+import { CommercialPreferencesForm } from "./forms/CommercialPreferencesForm";
 
 const carrierFormSchema = z.object({
   // Basic Info
   name: z.string().min(2, "Name must be at least 2 characters"),
+  legal_business_name: z.string().optional(),
   mc_number: z.string().optional(),
   usdot_number: z.string().optional(),
   rfc_number: z.string().optional(),
   tax_id: z.string().optional(),
   scac: z.string().optional(),
+  website: z.string().optional(),
+  description: z.string().optional(),
+  status: z.enum(["active", "pending", "inactive"]),
   
   // Contact Info
   contact_name: z.string().optional(),
   contact_phone: z.string().optional(),
   contact_email: z.string().email("Invalid email address").optional().or(z.literal('')),
+  additional_contacts: z.array(z.any()).optional(),
   
   // Address Info
   address_line1: z.string().optional(),
@@ -63,20 +49,62 @@ const carrierFormSchema = z.object({
   zip_code: z.string().optional(),
   country: z.string().optional(),
   
-  // Company Info
-  website: z.string().optional(),
-  description: z.string().optional(),
+  // Operational Details
+  countries_of_operation: z.array(z.string()).optional(),
+  service_types: z.array(z.string()).optional(),
+  provides_cross_border_services: z.boolean().optional(),
+  cross_border_routes: z.array(z.string()).optional(),
+  engages_in_trailer_exchanges: z.boolean().optional(),
+  trailer_exchange_partners: z.string().optional(),
   
-  // Additional Info
+  // Fleet Details
+  cdl_drivers_count: z.number().optional(),
+  b1_drivers_count: z.number().optional(),
+  offers_team_driver_services: z.boolean().optional(),
+  power_units_count: z.number().optional(),
+  dry_van_trailers_count: z.number().optional(),
+  reefer_trailers_count: z.number().optional(),
+  flatbed_trailers_count: z.number().optional(),
+  authorized_for_hazmat: z.boolean().optional(),
+  
+  // Compliance
+  registration_type: z.string().optional(),
+  is_ctpat_certified: z.boolean().optional(),
+  ctpat_svi_number: z.string().optional(),
+  fmcsa_authority_active: z.boolean().optional(),
+  authority_types: z.array(z.string()).optional(),
+  handles_inbond_ca_shipments: z.boolean().optional(),
+  
+  // Documents
+  bank_statement_doc: z.string().optional(),
+  cargo_insurance_doc: z.string().optional(),
+  primary_liability_doc: z.string().optional(),
+  w9_form_doc: z.string().optional(),
+  
+  // Insurance Details
   insurance_provider: z.string().optional(),
   insurance_policy_number: z.string().optional(),
   insurance_expiry: z.string().optional(),
   
-  // Status
-  status: z.enum(["active", "pending", "inactive"]),
+  // Billing Info
+  bank_name: z.string().optional(),
+  account_name: z.string().optional(),
+  account_number: z.string().optional(),
+  routing_number: z.string().optional(),
+  swift_code: z.string().optional(),
+  payments_via_intermediary: z.boolean().optional(),
+  billing_email: z.string().email("Invalid email address").optional().or(z.literal('')),
+  currency: z.string().optional(),
+  payout_method: z.string().optional(),
+  
+  // Commercial Preferences
+  yard_locations: z.array(z.any()).optional(),
+  primary_lanes: z.array(z.any()).optional(),
+  tracking_method: z.string().optional(),
+  telematics_provider: z.string().optional(),
 });
 
-type CarrierFormInput = z.infer<typeof carrierFormSchema>;
+export type CarrierFormValues = z.infer<typeof carrierFormSchema>;
 
 interface CarrierDetailsFormProps {
   carrier: Carrier;
@@ -87,34 +115,82 @@ export function CarrierDetailsForm({ carrier }: CarrierDetailsFormProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const form = useForm<CarrierFormInput>({
+  const form = useForm<CarrierFormValues>({
     resolver: zodResolver(carrierFormSchema),
     defaultValues: {
       name: carrier.name || "",
+      legal_business_name: carrier.legal_business_name || "",
       mc_number: carrier.mc_number || "",
       usdot_number: carrier.usdot_number || "",
       rfc_number: carrier.rfc_number || "",
       tax_id: carrier.tax_id || "",
       scac: carrier.scac || "",
+      website: carrier.website || "",
+      description: carrier.description || "",
+      status: carrier.status as "active" | "pending" | "inactive",
+      
       contact_name: carrier.contact_name || "",
       contact_phone: carrier.contact_phone || "",
       contact_email: carrier.contact_email || "",
+      additional_contacts: carrier.additional_contacts || [],
+      
       address_line1: carrier.address_line1 || "",
       address_line2: carrier.address_line2 || "",
       city: carrier.city || "",
       state: carrier.state || "",
       zip_code: carrier.zip_code || "",
       country: carrier.country || "",
-      website: carrier.website || "",
-      description: carrier.description || "",
+      
+      countries_of_operation: carrier.countries_of_operation || [],
+      service_types: carrier.service_types || [],
+      provides_cross_border_services: carrier.provides_cross_border_services || false,
+      cross_border_routes: carrier.cross_border_routes || [],
+      engages_in_trailer_exchanges: carrier.engages_in_trailer_exchanges || false,
+      trailer_exchange_partners: carrier.trailer_exchange_partners || "",
+      
+      cdl_drivers_count: carrier.cdl_drivers_count,
+      b1_drivers_count: carrier.b1_drivers_count,
+      offers_team_driver_services: carrier.offers_team_driver_services || false,
+      power_units_count: carrier.power_units_count,
+      dry_van_trailers_count: carrier.dry_van_trailers_count,
+      reefer_trailers_count: carrier.reefer_trailers_count,
+      flatbed_trailers_count: carrier.flatbed_trailers_count,
+      authorized_for_hazmat: carrier.authorized_for_hazmat || false,
+      
+      registration_type: carrier.registration_type || "",
+      is_ctpat_certified: carrier.is_ctpat_certified || false,
+      ctpat_svi_number: carrier.ctpat_svi_number || "",
+      fmcsa_authority_active: carrier.fmcsa_authority_active || false,
+      authority_types: carrier.authority_types || [],
+      handles_inbond_ca_shipments: carrier.handles_inbond_ca_shipments || false,
+      
+      bank_statement_doc: carrier.bank_statement_doc || "",
+      cargo_insurance_doc: carrier.cargo_insurance_doc || "",
+      primary_liability_doc: carrier.primary_liability_doc || "",
+      w9_form_doc: carrier.w9_form_doc || "",
+      
       insurance_provider: carrier.insurance_provider || "",
       insurance_policy_number: carrier.insurance_policy_number || "",
       insurance_expiry: carrier.insurance_expiry || "",
-      status: carrier.status as "active" | "pending" | "inactive",
+      
+      bank_name: carrier.bank_name || "",
+      account_name: carrier.account_name || "",
+      account_number: carrier.account_number || "",
+      routing_number: carrier.routing_number || "",
+      swift_code: carrier.swift_code || "",
+      payments_via_intermediary: carrier.payments_via_intermediary || false,
+      billing_email: carrier.billing_email || "",
+      currency: carrier.currency || "",
+      payout_method: carrier.payout_method || "",
+      
+      yard_locations: carrier.yard_locations || [],
+      primary_lanes: carrier.primary_lanes || [],
+      tracking_method: carrier.tracking_method || "",
+      telematics_provider: carrier.telematics_provider || "",
     },
   });
 
-  const onSubmit = async (data: CarrierFormInput) => {
+  const onSubmit = async (data: CarrierFormValues) => {
     setIsSubmitting(true);
     try {
       await updateCarrier(carrier.id, data);
@@ -152,370 +228,97 @@ export function CarrierDetailsForm({ carrier }: CarrierDetailsFormProps) {
         <CardTitle>Carrier Profile</CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="basic">
-          <TabsList className="grid grid-cols-4 mb-8">
+        <Tabs defaultValue="basic" className="space-y-6">
+          <TabsList className="grid grid-cols-4 lg:grid-cols-8 mb-8">
             <TabsTrigger value="basic">
+              <Building className="h-4 w-4 mr-2" />
+              <span className="hidden md:inline">Basic Info</span>
+            </TabsTrigger>
+            <TabsTrigger value="operational">
+              <TruckIcon className="h-4 w-4 mr-2" />
+              <span className="hidden md:inline">Operational</span>
+            </TabsTrigger>
+            <TabsTrigger value="fleet">
               <Truck className="h-4 w-4 mr-2" />
-              Basic Info
+              <span className="hidden md:inline">Fleet</span>
+            </TabsTrigger>
+            <TabsTrigger value="compliance">
+              <FileCheck className="h-4 w-4 mr-2" />
+              <span className="hidden md:inline">Compliance</span>
             </TabsTrigger>
             <TabsTrigger value="contact">
               <User className="h-4 w-4 mr-2" />
-              Contact
+              <span className="hidden md:inline">Contact</span>
             </TabsTrigger>
-            <TabsTrigger value="address">
-              <MapPin className="h-4 w-4 mr-2" />
-              Address
+            <TabsTrigger value="billing">
+              <Landmark className="h-4 w-4 mr-2" />
+              <span className="hidden md:inline">Billing</span>
             </TabsTrigger>
-            <TabsTrigger value="additional">
+            <TabsTrigger value="documents">
               <FileText className="h-4 w-4 mr-2" />
-              Additional
+              <span className="hidden md:inline">Documents</span>
+            </TabsTrigger>
+            <TabsTrigger value="preferences">
+              <ReceiptText className="h-4 w-4 mr-2" />
+              <span className="hidden md:inline">Preferences</span>
             </TabsTrigger>
           </TabsList>
           
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <TabsContent value="basic" className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Carrier Name*</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="status"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Status*</FormLabel>
-                        <FormControl>
-                          <select
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            {...field}
-                          >
-                            <option value="active">Active</option>
-                            <option value="pending">Pending</option>
-                            <option value="inactive">Inactive</option>
-                          </select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="mc_number"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>MC Number</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="usdot_number"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>USDOT Number</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="rfc_number"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>RFC Number</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="scac"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>SCAC</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="tax_id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tax ID</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="website"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Website</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="https://example.com" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          {...field}
-                          placeholder="Brief description of the carrier"
-                          rows={4}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <TabsContent value="basic">
+                <BasicInfoForm form={form} />
               </TabsContent>
               
-              <TabsContent value="contact" className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="contact_name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Contact Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="contact_phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Contact Phone</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="tel" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="contact_email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Contact Email</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="email" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+              <TabsContent value="operational">
+                <OperationalDetailsForm form={form} />
               </TabsContent>
               
-              <TabsContent value="address" className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="address_line1"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Address Line 1</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="address_line2"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Address Line 2</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="city"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>City</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="state"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>State/Province</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="zip_code"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Zip/Postal Code</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="country"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Country</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+              <TabsContent value="fleet">
+                <FleetDetailsForm form={form} />
               </TabsContent>
               
-              <TabsContent value="additional" className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="insurance_provider"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Insurance Provider</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="insurance_policy_number"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Insurance Policy Number</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="insurance_expiry"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Insurance Expiry Date</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="date" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <div className="mt-4 p-4 bg-muted rounded-md">
-                  <h3 className="font-medium mb-2">Profile Completion Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">Created:</p>
-                      <p>{formatDate(carrier.created_at)}</p>
-                    </div>
-                    {carrier.invite_sent_at && (
-                      <div>
-                        <p className="text-muted-foreground">Invite Sent:</p>
-                        <p>{formatDate(carrier.invite_sent_at)}</p>
-                      </div>
-                    )}
-                    {carrier.profile_completed_at && (
-                      <div>
-                        <p className="text-muted-foreground">Profile Completed:</p>
-                        <p>{formatDate(carrier.profile_completed_at)}</p>
-                      </div>
-                    )}
+              <TabsContent value="compliance">
+                <ComplianceForm form={form} />
+              </TabsContent>
+              
+              <TabsContent value="contact">
+                <ContactInfoForm form={form} />
+              </TabsContent>
+              
+              <TabsContent value="billing">
+                <BillingInfoForm form={form} />
+              </TabsContent>
+              
+              <TabsContent value="documents">
+                <DocumentsForm form={form} />
+              </TabsContent>
+              
+              <TabsContent value="preferences">
+                <CommercialPreferencesForm form={form} />
+              </TabsContent>
+              
+              <div className="p-4 bg-muted rounded-md mt-6">
+                <h3 className="font-medium mb-2">Profile Completion Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Created:</p>
+                    <p>{formatDate(carrier.created_at)}</p>
                   </div>
+                  {carrier.invite_sent_at && (
+                    <div>
+                      <p className="text-muted-foreground">Invite Sent:</p>
+                      <p>{formatDate(carrier.invite_sent_at)}</p>
+                    </div>
+                  )}
+                  {carrier.profile_completed_at && (
+                    <div>
+                      <p className="text-muted-foreground">Profile Completed:</p>
+                      <p>{formatDate(carrier.profile_completed_at)}</p>
+                    </div>
+                  )}
                 </div>
-              </TabsContent>
+              </div>
               
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button
