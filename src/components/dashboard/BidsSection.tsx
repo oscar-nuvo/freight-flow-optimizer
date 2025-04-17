@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,10 +26,16 @@ interface Bid {
   carriers?: number;
   start_date?: string;
   end_date?: string;
+  submission_date?: string;
   progress?: number;
   created_at: string;
   updated_at: string;
   org_id: string;
+  rate_duration?: string;
+  mode?: string;
+  equipment_type?: string;
+  instructions?: string;
+  contract_file?: string;
 }
 
 export function BidsSection() {
@@ -50,7 +55,6 @@ export function BidsSection() {
   const fetchBids = async () => {
     setLoading(true);
     try {
-      // Use type assertion to tell TypeScript this is valid
       const { data, error } = await supabase
         .from("bids")
         .select("*")
@@ -59,7 +63,6 @@ export function BidsSection() {
 
       if (error) throw error;
       
-      // Cast the data to the Bid type
       setBids(data as Bid[] || []);
     } catch (error: any) {
       console.error("Error fetching bids:", error);
@@ -74,17 +77,14 @@ export function BidsSection() {
   };
 
   const handleCreateBid = () => {
-    // Check if on free tier and already has a bid
     if (organization?.subscription_status === "free" && bids.length >= 1) {
       setShowUpgradeDialog(true);
     } else {
-      // Allow creating a bid
       navigate("/bids/new");
     }
   };
 
   const handleUpgrade = () => {
-    // Here you would navigate to the upgrade page or open a checkout flow
     toast({
       title: "Upgrade coming soon",
       description: "The upgrade functionality will be available soon.",
@@ -97,9 +97,14 @@ export function BidsSection() {
       case "active":
         return "default";
       case "completed":
+      case "closed":
         return "secondary";
       case "draft":
         return "outline";
+      case "published":
+        return "success";
+      case "paused":
+        return "destructive";
       default:
         return "default";
     }
@@ -212,8 +217,9 @@ export function BidsSection() {
                         <th className="py-3 px-2 text-left font-medium text-muted-foreground">Status</th>
                         <th className="py-3 px-2 text-left font-medium text-muted-foreground">Carriers</th>
                         <th className="py-3 px-2 text-left font-medium text-muted-foreground">Lanes</th>
+                        <th className="py-3 px-2 text-left font-medium text-muted-foreground">Submission Date</th>
                         <th className="py-3 px-2 text-left font-medium text-muted-foreground">Start Date</th>
-                        <th className="py-3 px-2 text-left font-medium text-muted-foreground">End Date</th>
+                        <th className="py-3 px-2 text-left font-medium text-muted-foreground">Equipment</th>
                         <th className="py-3 px-2 text-left font-medium text-muted-foreground">Progress</th>
                         <th className="py-3 px-2 text-left font-medium text-muted-foreground"></th>
                       </tr>
@@ -231,8 +237,15 @@ export function BidsSection() {
                           </td>
                           <td className="py-3 px-2">{bid.carriers || 0}</td>
                           <td className="py-3 px-2">{bid.lanes || 0}</td>
-                          <td className="py-3 px-2">{bid.start_date || "Not set"}</td>
-                          <td className="py-3 px-2">{bid.end_date || "Not set"}</td>
+                          <td className="py-3 px-2">{bid.submission_date ? new Date(bid.submission_date).toLocaleDateString() : "Not set"}</td>
+                          <td className="py-3 px-2">{bid.start_date ? new Date(bid.start_date).toLocaleDateString() : "Not set"}</td>
+                          <td className="py-3 px-2">
+                            {bid.equipment_type ? (
+                              bid.equipment_type === "dry_van" ? "53' Dry Van" :
+                              bid.equipment_type === "reefer" ? "Reefer" :
+                              bid.equipment_type === "flatbed" ? "Flatbed" : ""
+                            ) : "Not set"}
+                          </td>
                           <td className="py-3 px-2">
                             <div className="w-full bg-gray-200 rounded-full h-2.5">
                               <div 
@@ -328,7 +341,6 @@ export function BidsSection() {
         </TabsContent>
       </Tabs>
 
-      {/* Upgrade Dialog */}
       <Dialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

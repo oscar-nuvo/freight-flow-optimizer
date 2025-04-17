@@ -14,6 +14,7 @@ import Carriers from "./pages/Carriers";
 import CarrierDetails from "./pages/CarrierDetails";
 import Bids from "./pages/Bids";
 import NewBid from "./pages/NewBid";
+import BidDetails from "./pages/BidDetails";
 import RoutesList from "./pages/RoutesList";
 import Analysis from "./pages/Analysis";
 import NotFound from "./pages/NotFound";
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/carriers/:id" element={<ProtectedRoute><CarrierDetails /></ProtectedRoute>} />
             <Route path="/bids" element={<ProtectedRoute><Bids /></ProtectedRoute>} />
             <Route path="/bids/new" element={<ProtectedRoute><NewBid /></ProtectedRoute>} />
+            <Route path="/bids/:id" element={<ProtectedRoute><BidDetails /></ProtectedRoute>} />
             <Route path="/routes" element={<ProtectedRoute><RoutesList /></ProtectedRoute>} />
             <Route path="/analysis" element={<ProtectedRoute><Analysis /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
