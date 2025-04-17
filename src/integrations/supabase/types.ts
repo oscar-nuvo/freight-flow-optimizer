@@ -369,7 +369,6 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          is_primary: boolean
           org_id: string
           role: string
           user_id: string
@@ -377,7 +376,6 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
-          is_primary?: boolean
           org_id: string
           role?: string
           user_id: string
@@ -385,7 +383,6 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          is_primary?: boolean
           org_id?: string
           role?: string
           user_id?: string
@@ -401,7 +398,7 @@ export type Database = {
           {
             foreignKeyName: "org_memberships_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },

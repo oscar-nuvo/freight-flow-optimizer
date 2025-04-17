@@ -97,20 +97,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("Profile loaded:", profileData);
       
       try {
-        // Use a direct query with error handling to get primary organization
-        // Instead of using the old nested join that could cause recursion
+        // With our simplified approach, each user has at most one organization membership
+        // No need to check for is_primary anymore
         const { data: membershipData, error: membershipError } = await supabase
           .from("org_memberships")
           .select("org_id")
           .eq("user_id", userId)
-          .eq("is_primary", true)
           .maybeSingle();
         
         if (membershipError) {
           console.warn("Membership query error:", membershipError);
           // Continue without organization data
         } else if (membershipData?.org_id) {
-          // If we found a primary org membership, fetch the organization details
+          // If we found an org membership, fetch the organization details
           const { data: orgData, error: orgError } = await supabase
             .from("organizations")
             .select("*")
