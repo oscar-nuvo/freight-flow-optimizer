@@ -46,6 +46,7 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
                     className="flex-1"
                     placeholder="No file uploaded" 
                     readOnly 
+                    value={String(field.value || '')}
                   />
                 </FormControl>
                 <Button 
