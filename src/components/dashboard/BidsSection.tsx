@@ -50,6 +50,7 @@ export function BidsSection() {
   const fetchBids = async () => {
     setLoading(true);
     try {
+      // Use type assertion to tell TypeScript this is valid
       const { data, error } = await supabase
         .from("bids")
         .select("*")
@@ -57,7 +58,9 @@ export function BidsSection() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setBids(data || []);
+      
+      // Cast the data to the Bid type
+      setBids(data as Bid[] || []);
     } catch (error: any) {
       console.error("Error fetching bids:", error);
       toast({

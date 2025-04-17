@@ -124,7 +124,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         if (orgError) throw orgError;
         
-        setOrganization(orgData);
+        // Ensure subscription_status is included (use default if not present)
+        setOrganization({
+          ...orgData,
+          subscription_status: orgData.subscription_status || 'free'
+        });
         console.log("Organization loaded:", orgData);
       }
       

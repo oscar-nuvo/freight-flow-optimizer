@@ -9,23 +9,129 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      bids: {
+        Row: {
+          carriers: number | null
+          created_at: string
+          end_date: string | null
+          id: string
+          lanes: number | null
+          name: string
+          org_id: string
+          progress: number | null
+          start_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          carriers?: number | null
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          lanes?: number | null
+          name: string
+          org_id: string
+          progress?: number | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          carriers?: number | null
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          lanes?: number | null
+          name?: string
+          org_id?: string
+          progress?: number | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bids_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      carriers: {
+        Row: {
+          created_at: string
+          id: string
+          invite_sent_at: string | null
+          invite_token: string | null
+          mc_number: string | null
+          name: string
+          org_id: string
+          profile_completed_at: string | null
+          rfc_number: string | null
+          status: string
+          updated_at: string
+          usdot_number: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invite_sent_at?: string | null
+          invite_token?: string | null
+          mc_number?: string | null
+          name: string
+          org_id: string
+          profile_completed_at?: string | null
+          rfc_number?: string | null
+          status?: string
+          updated_at?: string
+          usdot_number?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invite_sent_at?: string | null
+          invite_token?: string | null
+          mc_number?: string | null
+          name?: string
+          org_id?: string
+          profile_completed_at?: string | null
+          rfc_number?: string | null
+          status?: string
+          updated_at?: string
+          usdot_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "carriers_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string
           id: string
           name: string
+          subscription_status: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
+          subscription_status?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
+          subscription_status?: string
           updated_at?: string
         }
         Relationships: []

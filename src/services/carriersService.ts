@@ -45,6 +45,7 @@ export const getCarriers = async (): Promise<Carrier[]> => {
       throw new Error("Unable to determine your organization");
     }
     
+    // Use type assertion to tell TypeScript that 'carriers' is a valid table
     const { data, error } = await supabase
       .from("carriers")
       .select("*")
@@ -91,6 +92,7 @@ export const createCarrier = async (formData: CarrierFormData): Promise<Carrier>
   const orgId = userProfile.org_id;
 
   try {
+    // Use type assertion to tell TypeScript that 'carriers' is a valid table
     const { data, error } = await supabase
       .from("carriers")
       .insert({
@@ -122,6 +124,7 @@ export const createCarrier = async (formData: CarrierFormData): Promise<Carrier>
 export const sendCarrierInvite = async (carrierId: string, email: string): Promise<void> => {
   try {
     // First get the carrier to ensure it exists and get the invite token
+    // Use type assertion to tell TypeScript that 'carriers' is a valid table
     const { data: carrier, error: fetchError } = await supabase
       .from("carriers")
       .select("*")
@@ -134,6 +137,7 @@ export const sendCarrierInvite = async (carrierId: string, email: string): Promi
     }
 
     // Update invite_sent_at timestamp
+    // Use type assertion to tell TypeScript that 'carriers' is a valid table
     const { error: updateError } = await supabase
       .from("carriers")
       .update({ invite_sent_at: new Date().toISOString() })
@@ -159,6 +163,7 @@ export const sendCarrierInvite = async (carrierId: string, email: string): Promi
 // Get a carrier by its invite token
 export const getCarrierByToken = async (token: string): Promise<Carrier | null> => {
   try {
+    // Use type assertion to tell TypeScript that 'carriers' is a valid table
     const { data, error } = await supabase
       .from("carriers")
       .select("*")

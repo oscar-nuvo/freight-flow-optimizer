@@ -12,6 +12,7 @@ import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Carriers from "./pages/Carriers";
 import Bids from "./pages/Bids";
+import NewBid from "./pages/NewBid"; // Import the new page
 import RoutesList from "./pages/RoutesList";
 import Analysis from "./pages/Analysis";
 import NotFound from "./pages/NotFound";
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/carriers" element={<ProtectedRoute><Carriers /></ProtectedRoute>} />
             <Route path="/bids" element={<ProtectedRoute><Bids /></ProtectedRoute>} />
+            <Route path="/bids/new" element={<ProtectedRoute><NewBid /></ProtectedRoute>} /> {/* Add the new route */}
             <Route path="/routes" element={<ProtectedRoute><RoutesList /></ProtectedRoute>} />
             <Route path="/analysis" element={<ProtectedRoute><Analysis /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
