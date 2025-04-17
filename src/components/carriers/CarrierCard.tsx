@@ -1,5 +1,5 @@
-
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Carrier, sendCarrierInvite } from "@/services/carriersService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -11,7 +11,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Mail, ExternalLink, Clock } from "lucide-react";
+import { Calendar, Mail, ExternalLink, Clock, Edit, User } from "lucide-react";
 
 const inviteFormSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -113,30 +113,62 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
           </div>
         </CardContent>
         
-        <CardFooter className="border-t bg-muted/50 pt-4 pb-4">
+        <CardFooter className="border-t bg-muted/50 pt-4 pb-4 flex justify-between">
           {!carrier.invite_sent_at ? (
-            <Button 
-              variant="outline" 
-              className="w-full" 
-              onClick={() => setInviteDialogOpen(true)}
-            >
-              <Mail className="h-4 w-4 mr-2" />
-              Send Invite
-            </Button>
+            <>
+              <Button 
+                variant="outline" 
+                onClick={() => setInviteDialogOpen(true)}
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Send Invite
+              </Button>
+              <Button 
+                variant="default"
+                as={Link}
+                to={`/carriers/${carrier.id}`}
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Profile
+              </Button>
+            </>
           ) : !carrier.profile_completed_at ? (
-            <Button 
-              variant="outline" 
-              className="w-full" 
-              onClick={() => setInviteDialogOpen(true)}
-            >
-              <Mail className="h-4 w-4 mr-2" />
-              Resend Invite
-            </Button>
+            <>
+              <Button 
+                variant="outline" 
+                onClick={() => setInviteDialogOpen(true)}
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Resend Invite
+              </Button>
+              <Button 
+                variant="default"
+                as={Link}
+                to={`/carriers/${carrier.id}`}
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Profile
+              </Button>
+            </>
           ) : (
-            <Button variant="outline" className="w-full">
-              <ExternalLink className="h-4 w-4 mr-2" />
-              View Profile
-            </Button>
+            <>
+              <Button 
+                variant="outline"
+                as={Link}
+                to={`/carriers/${carrier.id}`}
+              >
+                <User className="h-4 w-4 mr-2" />
+                View Profile
+              </Button>
+              <Button 
+                variant="default"
+                as={Link}
+                to={`/carriers/${carrier.id}`}
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Profile
+              </Button>
+            </>
           )}
         </CardFooter>
       </Card>

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
 
@@ -8,6 +7,8 @@ export interface Carrier {
   mc_number?: string;
   usdot_number?: string;
   rfc_number?: string;
+  tax_id?: string;
+  scac?: string;
   status: string;
   created_at: string;
   updated_at: string;
@@ -15,6 +16,26 @@ export interface Carrier {
   invite_token?: string;
   invite_sent_at?: string;
   profile_completed_at?: string;
+  
+  // Contact Information
+  contact_name?: string;
+  contact_phone?: string;
+  contact_email?: string;
+  
+  // Address Information
+  address_line1?: string;
+  address_line2?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  country?: string;
+  
+  // Additional Information
+  website?: string;
+  description?: string;
+  insurance_provider?: string;
+  insurance_policy_number?: string;
+  insurance_expiry?: string;
 }
 
 export interface CarrierFormData {
@@ -115,6 +136,52 @@ export const createCarrier = async (formData: CarrierFormData): Promise<Carrier>
     // Add more detailed error information
     if (error.message?.includes("violates row-level security policy")) {
       throw new Error("You don't have permission to create carriers in this organization.");
+    }
+    throw error;
+  }
+};
+
+// Get a carrier by ID
+export const getCarrierById = async (id: string): Promise<Carrier | null> => {
+  try {
+    const { data, error } = await supabase
+      .from("carriers")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error fetching carrier:", error);
+      throw error;
+    }
+
+    return data as Carrier;
+  } catch (error) {
+    console.error("Error in getCarrierById:", error);
+    throw error;
+  }
+};
+
+// Update a carrier
+export const updateCarrier = async (id: string, updates: Partial<Carrier>): Promise<Carrier> => {
+  try {
+    const { data, error } = await supabase
+      .from("carriers")
+      .update(updates)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating carrier:", error);
+      throw error;
+    }
+
+    return data as Carrier;
+  } catch (error: any) {
+    console.error("Error in updateCarrier:", error);
+    if (error.message?.includes("violates row-level security policy")) {
+      throw new Error("You don't have permission to update this carrier.");
     }
     throw error;
   }

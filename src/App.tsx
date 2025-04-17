@@ -11,8 +11,9 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Carriers from "./pages/Carriers";
+import CarrierDetails from "./pages/CarrierDetails";
 import Bids from "./pages/Bids";
-import NewBid from "./pages/NewBid"; // Import the new page
+import NewBid from "./pages/NewBid";
 import RoutesList from "./pages/RoutesList";
 import Analysis from "./pages/Analysis";
 import NotFound from "./pages/NotFound";
@@ -32,8 +33,9 @@ const App = () => (
             <Route path="/signup" element={<Signup />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/carriers" element={<ProtectedRoute><Carriers /></ProtectedRoute>} />
+            <Route path="/carriers/:id" element={<ProtectedRoute><CarrierDetails /></ProtectedRoute>} />
             <Route path="/bids" element={<ProtectedRoute><Bids /></ProtectedRoute>} />
-            <Route path="/bids/new" element={<ProtectedRoute><NewBid /></ProtectedRoute>} /> {/* Add the new route */}
+            <Route path="/bids/new" element={<ProtectedRoute><NewBid /></ProtectedRoute>} />
             <Route path="/routes" element={<ProtectedRoute><RoutesList /></ProtectedRoute>} />
             <Route path="/analysis" element={<ProtectedRoute><Analysis /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
