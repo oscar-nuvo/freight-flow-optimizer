@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -24,6 +23,7 @@ import { CommercialPreferencesForm } from "./forms/CommercialPreferencesForm";
 
 const carrierFormSchema = z.object({
   // Basic Info
+  id: z.string().optional(),
   name: z.string().min(2, "Name must be at least 2 characters"),
   legal_business_name: z.string().optional(),
   mc_number: z.string().optional(),
@@ -118,6 +118,7 @@ export function CarrierDetailsForm({ carrier }: CarrierDetailsFormProps) {
   const form = useForm<CarrierFormValues>({
     resolver: zodResolver(carrierFormSchema),
     defaultValues: {
+      id: carrier.id,
       name: carrier.name || "",
       legal_business_name: carrier.legal_business_name || "",
       mc_number: carrier.mc_number || "",
