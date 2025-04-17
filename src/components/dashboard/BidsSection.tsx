@@ -19,8 +19,22 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+interface Bid {
+  id: string;
+  name: string;
+  status: string;
+  lanes?: number;
+  carriers?: number;
+  start_date?: string;
+  end_date?: string;
+  progress?: number;
+  created_at: string;
+  updated_at: string;
+  org_id: string;
+}
+
 export function BidsSection() {
-  const [bids, setBids] = useState<any[]>([]);
+  const [bids, setBids] = useState<Bid[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const { user, organization } = useAuth();
@@ -39,7 +53,7 @@ export function BidsSection() {
       const { data, error } = await supabase
         .from("bids")
         .select("*")
-        .eq("org_id", organization.id)
+        .eq("org_id", organization?.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;

@@ -11,6 +11,7 @@ export interface Carrier {
   status: string;
   created_at: string;
   updated_at: string;
+  org_id: string;
   invite_token?: string;
   invite_sent_at?: string;
   profile_completed_at?: string;
@@ -26,9 +27,28 @@ export interface CarrierFormData {
 // Get carriers for the organization
 export const getCarriers = async (): Promise<Carrier[]> => {
   try {
+    // Get current user's profile to find their organization
+    const { data: profile, error: profileError } = await supabase.auth.getUser();
+    
+    if (profileError || !profile?.user?.id) {
+      throw new Error("Unable to determine current user");
+    }
+    
+    // Get the user's organization from their profile
+    const { data: userProfile, error: userProfileError } = await supabase
+      .from("profiles")
+      .select("org_id")
+      .eq("id", profile.user.id)
+      .single();
+    
+    if (userProfileError || !userProfile?.org_id) {
+      throw new Error("Unable to determine your organization");
+    }
+    
     const { data, error } = await supabase
       .from("carriers")
       .select("*")
+      .eq("org_id", userProfile.org_id)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -36,7 +56,7 @@ export const getCarriers = async (): Promise<Carrier[]> => {
       throw error;
     }
 
-    return data || [];
+    return data as Carrier[];
   } catch (error) {
     console.error("Error in getCarriers:", error);
     return []; // Return empty array instead of throwing to prevent UI errors
@@ -52,23 +72,23 @@ export const createCarrier = async (formData: CarrierFormData): Promise<Carrier>
     throw new Error("You must be logged in to create a carrier.");
   }
   
-  // Get user's organization - with our simplified model, a user only has one organization
-  const { data: membership, error: membershipError } = await supabase
-    .from("org_memberships")
+  // Get user's organization from their profile
+  const { data: userProfile, error: profileError } = await supabase
+    .from("profiles")
     .select("org_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
+    .eq("id", user.id)
+    .single();
   
-  if (membershipError) {
-    console.error("Error fetching user organization:", membershipError);
-    throw membershipError;
+  if (profileError) {
+    console.error("Error fetching user profile:", profileError);
+    throw profileError;
   }
   
-  if (!membership) {
+  if (!userProfile?.org_id) {
     throw new Error("You must be a member of an organization to create carriers.");
   }
   
-  const orgId = membership.org_id;
+  const orgId = userProfile.org_id;
 
   try {
     const { data, error } = await supabase
@@ -76,7 +96,6 @@ export const createCarrier = async (formData: CarrierFormData): Promise<Carrier>
       .insert({
         ...formData,
         org_id: orgId,
-        created_by: user.id,
         status: "pending",
         invite_token: uuidv4(), // Generate a unique token for the carrier invite
       })
@@ -88,7 +107,7 @@ export const createCarrier = async (formData: CarrierFormData): Promise<Carrier>
       throw error;
     }
 
-    return data;
+    return data as Carrier;
   } catch (error: any) {
     console.error("Error in createCarrier:", error);
     // Add more detailed error information
@@ -127,7 +146,7 @@ export const sendCarrierInvite = async (carrierId: string, email: string): Promi
     
     // In a real app, you would send an email with a link like:
     // https://yourdomain.com/carrier/profile?token=${carrier.invite_token}
-    console.log(`Invite would be sent to ${email} with token ${carrier.invite_token}`);
+    console.log(`Invite would be sent to ${email} with token ${(carrier as Carrier).invite_token}`);
   } catch (error: any) {
     console.error("Error in sendCarrierInvite:", error);
     if (error.message?.includes("violates row-level security policy")) {
@@ -151,7 +170,7 @@ export const getCarrierByToken = async (token: string): Promise<Carrier | null> 
       throw error;
     }
 
-    return data;
+    return data as Carrier;
   } catch (error) {
     console.error("Error in getCarrierByToken:", error);
     return null; // Return null instead of throwing to prevent UI errors
