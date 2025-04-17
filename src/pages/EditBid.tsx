@@ -26,36 +26,25 @@ const EditBid = () => {
   const fetchBid = async () => {
     try {
       console.log("Fetching bid with id:", id, "for org:", organization?.id);
+      
+      if (!organization?.id) {
+        throw new Error("Organization not found");
+      }
+
       const { data, error } = await supabase
         .from("bids")
         .select("*")
         .eq("id", id)
-        .eq("org_id", organization?.id)
+        .eq("org_id", organization.id)
         .single();
 
-      if (error) {
-        console.error("Error fetching bid:", error);
-        throw error;
-      }
+      if (error) throw error;
       
       if (!data) {
-        console.error("No bid found");
         throw new Error("Bid not found");
       }
 
       console.log("Bid data fetched:", data);
-
-      // Check if bid can be edited
-      if (!["draft", "published", "paused"].includes(data.status)) {
-        toast({
-          title: "Cannot Edit Bid",
-          description: "This bid cannot be edited in its current status.",
-          variant: "destructive"
-        });
-        navigate(`/bids/${id}`);
-        return;
-      }
-      
       setBid(data);
     } catch (error: any) {
       console.error("Error fetching bid:", error);

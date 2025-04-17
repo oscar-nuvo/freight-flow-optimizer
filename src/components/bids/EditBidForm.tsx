@@ -44,9 +44,9 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
     name: bid.name || "",
     submission_date: bid.submission_date || "",
     start_date: bid.start_date || "",
-    rate_duration: bid.rate_duration || "",
+    rate_duration: bid.rate_duration || "none",
     mode: bid.mode || "over_the_road",
-    equipment_type: bid.equipment_type || "",
+    equipment_type: bid.equipment_type || "none",
     instructions: bid.instructions || "",
   });
 
@@ -70,24 +70,21 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
         formData
       });
 
-      // Simple update without any complex queries
       const { error: updateError } = await supabase
         .from("bids")
         .update({
           name: formData.name,
-          start_date: formData.start_date || null,
           submission_date: formData.submission_date || null,
-          rate_duration: formData.rate_duration || null,
+          start_date: formData.start_date || null,
+          rate_duration: formData.rate_duration === "none" ? null : formData.rate_duration,
           mode: formData.mode,
-          equipment_type: formData.equipment_type || null,
+          equipment_type: formData.equipment_type === "none" ? null : formData.equipment_type,
           instructions: formData.instructions || null,
         })
-        .eq("id", bid.id);
+        .eq("id", bid.id)
+        .eq("org_id", organization.id);
 
-      if (updateError) {
-        console.error("Error updating bid:", updateError);
-        throw new Error(updateError.message);
-      }
+      if (updateError) throw updateError;
 
       console.log("Bid updated successfully");
       toast({
@@ -100,7 +97,7 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
       }
     } catch (error: any) {
       console.error("Error updating bid:", error);
-      setError(`Failed to update bid: ${error.message}`);
+      setError(error.message);
       toast({
         title: "Error",
         description: `Failed to update bid: ${error.message}`,
@@ -211,7 +208,7 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
             <Label htmlFor="instructions">Instructions for the RFP</Label>
             <Textarea
               id="instructions"
-              value={formData.instructions || ""}
+              value={formData.instructions}
               onChange={(e) => handleChange("instructions", e.target.value)}
               rows={4}
             />
