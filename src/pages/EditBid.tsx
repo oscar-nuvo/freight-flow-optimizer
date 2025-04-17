@@ -6,8 +6,9 @@ import { EditBidForm } from "@/components/bids/EditBidForm";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const EditBid = () => {
   const { id } = useParams<{ id: string }>();
@@ -93,6 +94,14 @@ const EditBid = () => {
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Edit Bid</h1>
         </div>
+        
+        <Alert variant="info" className="bg-blue-50 border-blue-200">
+          <Info className="h-4 w-4 text-blue-500" />
+          <AlertDescription className="text-blue-700">
+            Note: Some fields in this form are visual only and will not be saved to the database yet. Only the Bid Name and Start Date will be updated.
+          </AlertDescription>
+        </Alert>
+        
         <EditBidForm
           bid={bid}
           onSuccess={() => {

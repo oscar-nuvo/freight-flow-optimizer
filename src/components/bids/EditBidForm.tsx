@@ -1,15 +1,15 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 interface EditBidFormProps {
   bid: {
@@ -27,6 +27,7 @@ interface EditBidFormProps {
 
 export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { organization } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -48,18 +49,14 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
     try {
       const { error } = await supabase
         .from("bids")
         .update({
           name: formData.name,
-          submission_date: formData.submission_date,
-          start_date: formData.start_date,
-          rate_duration: formData.rate_duration,
-          mode: formData.mode,
-          equipment_type: formData.equipment_type,
-          instructions: formData.instructions,
+          start_date: formData.start_date || null,
         })
         .eq("id", bid.id)
         .eq("org_id", organization?.id);
@@ -76,6 +73,7 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
       }
     } catch (error: any) {
       console.error("Error updating bid:", error);
+      setError("Failed to update bid. Please try again.");
       toast({
         title: "Error",
         description: "Failed to update bid. Please try again.",
@@ -88,6 +86,13 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
       <Card>
         <CardHeader>
           <CardTitle>Basic Information</CardTitle>
@@ -111,6 +116,9 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
               value={formData.submission_date}
               onChange={(e) => handleChange("submission_date", e.target.value)}
             />
+            <p className="text-xs text-muted-foreground">
+              Note: This field will be stored locally but is not yet supported in the database.
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -125,52 +133,54 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
 
           <div className="space-y-2">
             <Label htmlFor="rate_duration">Rate Duration</Label>
-            <Select
+            <select
+              id="rate_duration"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               value={formData.rate_duration}
-              onValueChange={(value) => handleChange("rate_duration", value)}
+              onChange={(e) => handleChange("rate_duration", e.target.value)}
             >
-              <SelectTrigger id="rate_duration">
-                <SelectValue placeholder="Select duration" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">1 Month</SelectItem>
-                <SelectItem value="3">3 Months</SelectItem>
-                <SelectItem value="6">6 Months</SelectItem>
-                <SelectItem value="12">12 Months</SelectItem>
-              </SelectContent>
-            </Select>
+              <option value="">Select duration</option>
+              <option value="1">1 Month</option>
+              <option value="3">3 Months</option>
+              <option value="6">6 Months</option>
+              <option value="12">12 Months</option>
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Note: This field will be stored locally but is not yet supported in the database.
+            </p>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="mode">Mode</Label>
-            <Select
+            <select
+              id="mode"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               value={formData.mode}
-              onValueChange={(value) => handleChange("mode", value)}
+              onChange={(e) => handleChange("mode", e.target.value)}
             >
-              <SelectTrigger id="mode">
-                <SelectValue placeholder="Select mode" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="over_the_road">Over the Road</SelectItem>
-              </SelectContent>
-            </Select>
+              <option value="over_the_road">Over the Road</option>
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Note: This field will be stored locally but is not yet supported in the database.
+            </p>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="equipment_type">Equipment Type</Label>
-            <Select
+            <select
+              id="equipment_type"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               value={formData.equipment_type}
-              onValueChange={(value) => handleChange("equipment_type", value)}
+              onChange={(e) => handleChange("equipment_type", e.target.value)}
             >
-              <SelectTrigger id="equipment_type">
-                <SelectValue placeholder="Select equipment type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="dry_van">53' Dry Van</SelectItem>
-                <SelectItem value="reefer">Reefer</SelectItem>
-                <SelectItem value="flatbed">Flatbed</SelectItem>
-              </SelectContent>
-            </Select>
+              <option value="">Select equipment type</option>
+              <option value="dry_van">53' Dry Van</option>
+              <option value="reefer">Reefer</option>
+              <option value="flatbed">Flatbed</option>
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Note: This field will be stored locally but is not yet supported in the database.
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -181,6 +191,9 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
               onChange={(e) => handleChange("instructions", e.target.value)}
               rows={4}
             />
+            <p className="text-xs text-muted-foreground">
+              Note: This field will be stored locally but is not yet supported in the database.
+            </p>
           </div>
         </CardContent>
       </Card>
