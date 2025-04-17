@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -112,6 +113,7 @@ interface CarrierDetailsFormProps {
 
 export function CarrierDetailsForm({ carrier }: CarrierDetailsFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState("basic");
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -197,7 +199,7 @@ export function CarrierDetailsForm({ carrier }: CarrierDetailsFormProps) {
       await updateCarrier(carrier.id, data);
       toast({
         title: "Carrier updated",
-        description: "The carrier profile has been updated successfully.",
+        description: `${getSectionName(activeTab)} section has been saved successfully.`,
       });
       // Mark the profile as completed if it wasn't before
       if (!carrier.profile_completed_at) {
@@ -210,11 +212,26 @@ export function CarrierDetailsForm({ carrier }: CarrierDetailsFormProps) {
       console.error("Error updating carrier:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to update carrier",
+        description: error.message || `Failed to save ${getSectionName(activeTab)} section`,
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Helper function to get section name for toast messages
+  const getSectionName = (tabId: string): string => {
+    switch (tabId) {
+      case "basic": return "Basic Info";
+      case "operational": return "Operational Details";
+      case "fleet": return "Fleet Details";
+      case "compliance": return "Compliance";
+      case "contact": return "Contact Information";
+      case "billing": return "Billing Information";
+      case "documents": return "Documents";
+      case "preferences": return "Commercial Preferences";
+      default: return "Carrier Profile";
     }
   };
 
@@ -229,7 +246,11 @@ export function CarrierDetailsForm({ carrier }: CarrierDetailsFormProps) {
         <CardTitle>Carrier Profile</CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="basic" className="space-y-6">
+        <Tabs 
+          defaultValue="basic" 
+          className="space-y-6" 
+          onValueChange={(value) => setActiveTab(value)}
+        >
           <TabsList className="grid grid-cols-4 lg:grid-cols-8 mb-8">
             <TabsTrigger value="basic">
               <Building className="h-4 w-4 mr-2" />
@@ -330,7 +351,14 @@ export function CarrierDetailsForm({ carrier }: CarrierDetailsFormProps) {
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Saving..." : "Save Changes"}
+                  {isSubmitting ? (
+                    <>
+                      <span className="mr-2">Saving...</span>
+                      <div className="h-4 w-4 border-2 border-current border-t-transparent animate-spin rounded-full"></div>
+                    </>
+                  ) : (
+                    "Save Changes"
+                  )}
                 </Button>
               </div>
             </form>

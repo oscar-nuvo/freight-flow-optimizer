@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Upload, File, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface DocumentsFormProps {
   form: UseFormReturn<CarrierFormValues>;
@@ -16,6 +17,7 @@ interface DocumentsFormProps {
 export function DocumentsForm({ form }: DocumentsFormProps) {
   const { toast } = useToast();
   const [uploadingField, setUploadingField] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const carrierId = form.getValues().id;
 
   const documentFields = [
@@ -27,9 +29,25 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
 
   const handleFileUpload = async (fieldName: string, file: File) => {
     if (!carrierId) {
+      setUploadError("Carrier ID is required for uploading documents");
       toast({
         title: "Error",
         description: "Carrier ID is required for uploading documents",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Clear any previous errors
+    setUploadError(null);
+
+    // Check file size (5MB limit)
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+    if (file.size > MAX_FILE_SIZE) {
+      setUploadError("File exceeds the 5MB size limit");
+      toast({
+        title: "Upload failed",
+        description: "File exceeds the 5MB size limit",
         variant: "destructive",
       });
       return;
@@ -76,6 +94,7 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
       });
     } catch (error: any) {
       console.error("Error uploading document:", error);
+      setUploadError(error.message || "Failed to upload document. Please try again.");
       toast({
         title: "Upload failed",
         description: error.message || "Failed to upload document. Please try again.",
@@ -103,6 +122,12 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
       <FormDescription className="text-sm mb-4">
         Upload PDF documents only. Maximum file size: 5MB.
       </FormDescription>
+
+      {uploadError && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{uploadError}</AlertDescription>
+        </Alert>
+      )}
 
       {documentFields.map((doc) => (
         <FormField
