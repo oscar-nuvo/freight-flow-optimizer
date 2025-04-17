@@ -97,25 +97,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("Profile loaded:", profileData);
       
       try {
-        // Fetch primary organization membership using maybeSingle to handle case with no memberships
+        // Use a direct query with error handling to get primary organization
+        // Instead of using the old nested join that could cause recursion
         const { data: membershipData, error: membershipError } = await supabase
           .from("org_memberships")
-          .select("*, organizations(*)")
+          .select("org_id")
           .eq("user_id", userId)
           .eq("is_primary", true)
           .maybeSingle();
         
-        if (membershipError && membershipError.code !== "PGRST116") {
-          // PGRST116 is "No rows returned" error, which is fine if the user doesn't have a primary org yet
-          console.warn("Non-critical membership error:", membershipError);
-        }
-        
-        if (membershipData) {
-          setOrganization(membershipData.organizations);
-          console.log("Organization loaded:", membershipData.organizations);
+        if (membershipError) {
+          console.warn("Membership query error:", membershipError);
+          // Continue without organization data
+        } else if (membershipData?.org_id) {
+          // If we found a primary org membership, fetch the organization details
+          const { data: orgData, error: orgError } = await supabase
+            .from("organizations")
+            .select("*")
+            .eq("id", membershipData.org_id)
+            .single();
+          
+          if (orgError) {
+            console.warn("Organization fetch error:", orgError);
+          } else {
+            setOrganization(orgData);
+            console.log("Organization loaded:", orgData);
+          }
         }
       } catch (orgError) {
-        console.error("Error loading organization:", orgError);
+        console.error("Error in organization data flow:", orgError);
         // This is non-critical, so we'll continue without an organization
       }
       
