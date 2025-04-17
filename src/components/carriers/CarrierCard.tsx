@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Carrier, sendCarrierInvite } from "@/services/carriersService";
@@ -125,11 +126,13 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
               </Button>
               <Button 
                 variant="default"
-                as={Link}
-                to={`/carriers/${carrier.id}`}
+                onClick={() => {}}
+                asChild
               >
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Profile
+                <Link to={`/carriers/${carrier.id}`}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Profile
+                </Link>
               </Button>
             </>
           ) : !carrier.profile_completed_at ? (
@@ -143,30 +146,33 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
               </Button>
               <Button 
                 variant="default"
-                as={Link}
-                to={`/carriers/${carrier.id}`}
+                asChild
               >
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Profile
+                <Link to={`/carriers/${carrier.id}`}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Profile
+                </Link>
               </Button>
             </>
           ) : (
             <>
               <Button 
                 variant="outline"
-                as={Link}
-                to={`/carriers/${carrier.id}`}
+                asChild
               >
-                <User className="h-4 w-4 mr-2" />
-                View Profile
+                <Link to={`/carriers/${carrier.id}`}>
+                  <User className="h-4 w-4 mr-2" />
+                  View Profile
+                </Link>
               </Button>
               <Button 
                 variant="default"
-                as={Link}
-                to={`/carriers/${carrier.id}`}
+                asChild
               >
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Profile
+                <Link to={`/carriers/${carrier.id}`}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Profile
+                </Link>
               </Button>
             </>
           )}
