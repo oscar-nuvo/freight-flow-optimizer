@@ -102,7 +102,7 @@ export function BidsSection() {
       case "draft":
         return "outline";
       case "published":
-        return "success";
+        return "default";
       case "paused":
         return "destructive";
       default:

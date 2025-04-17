@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
@@ -70,7 +69,6 @@ const BidDetails = () => {
     }
   };
 
-  // Function to update bid status
   const updateBidStatus = async (status: string) => {
     if (!bid) return;
 
@@ -98,7 +96,6 @@ const BidDetails = () => {
     }
   };
 
-  // Status label and icon mapping
   const statusIcons = {
     draft: <FileText className="h-4 w-4 text-muted-foreground" />,
     published: <Check className="h-4 w-4 text-green-500" />,
@@ -116,7 +113,7 @@ const BidDetails = () => {
       case "draft":
         return "outline";
       case "published":
-        return "success";
+        return "default";
       case "paused":
         return "destructive";
       default:
@@ -124,13 +121,11 @@ const BidDetails = () => {
     }
   };
 
-  // Helper function to format dates
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Not set";
     return new Date(dateString).toLocaleDateString();
   };
 
-  // Helper function to map equipment type to readable string
   const getEquipmentTypeLabel = (type?: string) => {
     if (!type) return "Not specified";
     switch (type) {
@@ -145,7 +140,6 @@ const BidDetails = () => {
     }
   };
 
-  // Helper function to map rate duration to readable string
   const getRateDurationLabel = (duration?: string) => {
     if (!duration) return "Not specified";
     switch (duration) {
@@ -162,7 +156,6 @@ const BidDetails = () => {
     }
   };
 
-  // Helper function to map mode to readable string
   const getModeLabel = (mode?: string) => {
     if (!mode) return "Not specified";
     switch (mode) {
@@ -198,7 +191,6 @@ const BidDetails = () => {
     );
   }
 
-  // Determine which actions are available based on bid status
   const canPublish = bid.status === "draft";
   const canPause = bid.status === "published" || bid.status === "active";
   const canResume = bid.status === "paused";
@@ -388,7 +380,6 @@ const BidDetails = () => {
                     </div>
                   </div>
 
-                  {/* Status-specific messages */}
                   {bid.status === "draft" && (
                     <Alert>
                       <AlertDescription>
