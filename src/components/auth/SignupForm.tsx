@@ -75,19 +75,30 @@ export function SignupForm() {
         .select()
         .single();
 
-      if (orgError) throw orgError;
+      if (orgError) {
+        console.error("Organization creation error:", orgError);
+        // If organization creation fails, we should clean up the user to prevent orphaned accounts
+        await supabase.auth.admin.deleteUser(authData.user.id);
+        throw new Error(`Failed to create organization: ${orgError.message}`);
+      }
 
-      // 3. Link the user to the organization with admin role and primary flag
+      // 3. Link the user to the organization with admin role
+      // Note: Removed is_primary flag as it's no longer in the schema
       const { error: membershipError } = await supabase
         .from("org_memberships")
         .insert([{
           user_id: authData.user.id,
           org_id: orgData.id,
-          role: "admin",
-          is_primary: true,
+          role: "admin"
         }]);
 
-      if (membershipError) throw membershipError;
+      if (membershipError) {
+        console.error("Membership creation error:", membershipError);
+        // Clean up both the user and organization if membership creation fails
+        await supabase.from("organizations").delete().eq("id", orgData.id);
+        await supabase.auth.admin.deleteUser(authData.user.id);
+        throw new Error(`Failed to create membership: ${membershipError.message}`);
+      }
 
       toast({
         title: "Account created",
