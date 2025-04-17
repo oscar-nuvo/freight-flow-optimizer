@@ -70,54 +70,71 @@ export const createCarrier = async (formData: CarrierFormData): Promise<Carrier>
   
   const orgId = membership.org_id;
 
-  const { data, error } = await supabase
-    .from("carriers")
-    .insert({
-      ...formData,
-      org_id: orgId,
-      created_by: user.id,
-      status: "pending",
-      invite_token: uuidv4(), // Generate a unique token for the carrier invite
-    })
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from("carriers")
+      .insert({
+        ...formData,
+        org_id: orgId,
+        created_by: user.id,
+        status: "pending",
+        invite_token: uuidv4(), // Generate a unique token for the carrier invite
+      })
+      .select()
+      .single();
 
-  if (error) {
-    console.error("Error creating carrier:", error);
+    if (error) {
+      console.error("Error creating carrier:", error);
+      throw error;
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error("Error in createCarrier:", error);
+    // Add more detailed error information
+    if (error.message?.includes("violates row-level security policy")) {
+      throw new Error("You don't have permission to create carriers in this organization.");
+    }
     throw error;
   }
-
-  return data;
 };
 
 // Send an invite to a carrier to complete their profile
 export const sendCarrierInvite = async (carrierId: string, email: string): Promise<void> => {
-  // First get the carrier to ensure it exists and get the invite token
-  const { data: carrier, error: fetchError } = await supabase
-    .from("carriers")
-    .select("*")
-    .eq("id", carrierId)
-    .single();
+  try {
+    // First get the carrier to ensure it exists and get the invite token
+    const { data: carrier, error: fetchError } = await supabase
+      .from("carriers")
+      .select("*")
+      .eq("id", carrierId)
+      .single();
 
-  if (fetchError) {
-    console.error("Error fetching carrier:", fetchError);
-    throw fetchError;
+    if (fetchError) {
+      console.error("Error fetching carrier:", fetchError);
+      throw fetchError;
+    }
+
+    // Update invite_sent_at timestamp
+    const { error: updateError } = await supabase
+      .from("carriers")
+      .update({ invite_sent_at: new Date().toISOString() })
+      .eq("id", carrierId);
+
+    if (updateError) {
+      console.error("Error updating carrier invite status:", updateError);
+      throw updateError;
+    }
+    
+    // In a real app, you would send an email with a link like:
+    // https://yourdomain.com/carrier/profile?token=${carrier.invite_token}
+    console.log(`Invite would be sent to ${email} with token ${carrier.invite_token}`);
+  } catch (error: any) {
+    console.error("Error in sendCarrierInvite:", error);
+    if (error.message?.includes("violates row-level security policy")) {
+      throw new Error("You don't have permission to send invites to this carrier.");
+    }
+    throw error;
   }
-
-  // Update invite_sent_at timestamp
-  const { error: updateError } = await supabase
-    .from("carriers")
-    .update({ invite_sent_at: new Date().toISOString() })
-    .eq("id", carrierId);
-
-  if (updateError) {
-    console.error("Error updating carrier invite status:", updateError);
-    throw updateError;
-  }
-  
-  // In a real app, you would send an email with a link like:
-  // https://yourdomain.com/carrier/profile?token=${carrier.invite_token}
-  console.log(`Invite would be sent to ${email} with token ${carrier.invite_token}`);
 };
 
 // Get a carrier by its invite token
