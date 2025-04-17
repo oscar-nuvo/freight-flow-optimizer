@@ -151,7 +151,7 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
                 <SelectValue placeholder="Select duration" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Select duration</SelectItem>
+                <SelectItem value="none" disabled>Select duration</SelectItem>
                 <SelectItem value="1">1 Month</SelectItem>
                 <SelectItem value="3">3 Months</SelectItem>
                 <SelectItem value="6">6 Months</SelectItem>
@@ -185,7 +185,7 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
                 <SelectValue placeholder="Select equipment type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Select equipment type</SelectItem>
+                <SelectItem value="none" disabled>Select equipment type</SelectItem>
                 <SelectItem value="dry_van">53' Dry Van</SelectItem>
                 <SelectItem value="reefer">Reefer</SelectItem>
                 <SelectItem value="flatbed">Flatbed</SelectItem>
