@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/context/AuthContext";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -60,18 +61,35 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { profile, organization, signOut } = useAuth();
 
-  const handleLogout = () => {
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out",
-    });
-    navigate("/");
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out",
+      });
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to log out. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
+
+  // Get user display name
+  const userName = profile?.full_name || profile?.email || "User";
+  
+  // Get organization name
+  const orgName = organization?.name || "Personal Account";
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
@@ -171,8 +189,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <User className="h-5 w-5" />
               </div>
               <div className="ml-3">
-                <p className="font-medium">John Doe</p>
-                <p className="text-sm text-sidebar-foreground/80">Acme Inc.</p>
+                <p className="font-medium">{userName}</p>
+                <p className="text-sm text-sidebar-foreground/80">{orgName}</p>
               </div>
             </div>
             <Button 
