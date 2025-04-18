@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +34,17 @@ interface EditBidFormProps {
   onSuccess?: () => void;
 }
 
+// Helper function to extract file name from URL
+const getFileNameFromUrl = (url: string): string => {
+  try {
+    const urlObj = new URL(url);
+    const pathParts = urlObj.pathname.split("/");
+    return pathParts[pathParts.length - 1];
+  } catch (e) {
+    return "File uploaded";
+  }
+};
+
 export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,16 +68,6 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const getFileNameFromUrl = (url: string): string => {
-    try {
-      const urlObj = new URL(url);
-      const pathParts = urlObj.pathname.split("/");
-      return pathParts[pathParts.length - 1];
-    } catch (e) {
-      return "File uploaded";
-    }
   };
 
   const handleFileUpload = async (file: File) => {
