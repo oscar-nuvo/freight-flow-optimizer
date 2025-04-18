@@ -19,7 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronLeft, Upload, AlertTriangle } from "lucide-react";
+import { ChevronLeft, AlertTriangle } from "lucide-react";
 import { 
   Select, 
   SelectContent, 
@@ -33,7 +33,8 @@ import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { uploadFile } from "@/utils/fileUpload";
+import { BidDocumentUploadField } from "@/components/bids/forms/BidDocumentUploadField";
+import { useBidDocuments } from "@/hooks/useBidDocuments";
 
 const formSchema = z.object({
   name: z.string().min(2, "Bid name must have at least 2 characters"),
@@ -48,9 +49,6 @@ const formSchema = z.object({
 
 const NewBid = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [fileUploaded, setFileUploaded] = useState(false);
-  const [fileName, setFileName] = useState("");
   const { organization } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -66,53 +64,37 @@ const NewBid = () => {
     },
   });
 
-  const handleFileUpload = async (file: File) => {
+  const tempBidId = 'new';
+  const {
+    uploadingField,
+    uploadError,
+    uploadProgress,
+    handleFileUpload,
+    removeDocument
+  } = useBidDocuments(tempBidId, organization?.id);
+
+  const handleDocumentUpload = async (fieldName: string, file: File) => {
     if (!organization?.id) {
-      setUploadError("You must be part of an organization to upload files");
+      toast({
+        title: "Upload Error",
+        description: "Organization not found. Please ensure you're logged in.",
+        variant: "destructive",
+      });
       return;
     }
 
-    // Clear any previous errors
-    setUploadError(null);
-    
-    try {
-      console.log("Starting file upload for new bid:", file.name);
-      
-      const result = await uploadFile(
-        file,
-        "bid_documents",
-        `${organization.id}/bids/contracts/contract`,
-        {
-          maxSizeBytes: 10 * 1024 * 1024, // 10MB limit
-          allowedTypes: ['.pdf', '.doc', '.docx'],
-          onError: (message) => {
-            setUploadError(message);
-            toast({
-              title: "Upload failed",
-              description: message,
-              variant: "destructive",
-            });
-          }
-        }
-      );
+    const fileUrl = await handleFileUpload(fieldName, file, {
+      maxSizeBytes: 10 * 1024 * 1024,
+      allowedTypes: ['.pdf', '.doc', '.docx'],
+    });
 
-      if (result.success && result.url) {
-        form.setValue("contract_file", result.url, {
-          shouldDirty: true,
-          shouldValidate: true,
-        });
-
-        setFileUploaded(true);
-        setFileName(file.name);
-
-        toast({
-          title: "File uploaded",
-          description: `${file.name} has been uploaded successfully.`,
-        });
-      }
-    } catch (error: any) {
-      console.error("Error in file upload handler:", error);
+    if (fileUrl) {
+      form.setValue(fieldName as any, fileUrl);
     }
+  };
+
+  const handleRemoveDocument = async (fieldName: string) => {
+    form.setValue(fieldName as any, "");
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -127,7 +109,6 @@ const NewBid = () => {
 
     setIsSubmitting(true);
     try {
-      // Prepare bid data
       const bidData = {
         name: values.name,
         org_id: organization.id,
@@ -141,7 +122,6 @@ const NewBid = () => {
         contract_file: values.contract_file,
       };
 
-      // Insert bid into database
       const { data, error } = await supabase
         .from("bids")
         .insert(bidData)
@@ -409,61 +389,16 @@ const NewBid = () => {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="contract_file"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>RFP Contract</FormLabel>
-                      <div className="flex flex-col space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="relative"
-                            onClick={() => document.getElementById("contract-upload")?.click()}
-                          >
-                            <input
-                              id="contract-upload"
-                              type="file"
-                              className="absolute inset-0 opacity-0 cursor-pointer"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  handleFileUpload(file);
-                                }
-                              }}
-                              accept=".pdf,.doc,.docx"
-                            />
-                            <Upload className="h-4 w-4 mr-2" />
-                            {fileUploaded ? "Replace File" : "Upload Contract"}
-                          </Button>
-                          {fileUploaded && (
-                            <span className="text-sm text-muted-foreground">
-                              {fileName}
-                            </span>
-                          )}
-                          {field.value && (
-                            <a 
-                              href={field.value} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-sm text-blue-600 hover:underline ml-4"
-                            >
-                              View Document
-                            </a>
-                          )}
-                        </div>
-                        {uploadError && (
-                          <p className="text-sm text-destructive">{uploadError}</p>
-                        )}
-                        <FormDescription className="text-xs">
-                          Upload PDF, DOC, or DOCX files (max 10MB)
-                        </FormDescription>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                <BidDocumentUploadField
+                  form={form}
+                  fieldName="contract_file"
+                  label="RFP Contract"
+                  accept=".pdf,.doc,.docx"
+                  isUploading={uploadingField === "contract_file"}
+                  uploadProgress={uploadProgress}
+                  uploadError={uploadError}
+                  onUpload={handleDocumentUpload}
+                  onRemove={handleRemoveDocument}
                 />
               </CardContent>
             </Card>
