@@ -3,17 +3,15 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/comp
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { UseFormReturn } from "react-hook-form";
-import { CarrierFormValues } from "@/types/carrier";
-import { Button } from "@/components/ui/button";
+import { CarrierFormValues } from "../CarrierDetailsForm";
 
 interface FleetDetailsFormProps {
-  form: UseFormReturn<any>;
-  onSubmit: (e: React.FormEvent) => void;
+  form: UseFormReturn<CarrierFormValues>;
 }
 
-export function FleetDetailsForm({ form, onSubmit }: FleetDetailsFormProps) {
+export function FleetDetailsForm({ form }: FleetDetailsFormProps) {
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
+    <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
           control={form.control}
@@ -188,12 +186,6 @@ export function FleetDetailsForm({ form, onSubmit }: FleetDetailsFormProps) {
           </FormItem>
         )}
       />
-      
-      <div className="flex justify-end mt-6">
-        <Button type="submit">
-          Save Changes
-        </Button>
-      </div>
-    </form>
+    </div>
   );
 }

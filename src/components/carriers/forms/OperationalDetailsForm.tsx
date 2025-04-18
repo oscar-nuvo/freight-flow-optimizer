@@ -1,18 +1,17 @@
+
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { UseFormReturn } from "react-hook-form";
-import { CarrierFormValues } from "@/types/carrier";
-import { Button } from "@/components/ui/button";
+import { CarrierFormValues } from "../CarrierDetailsForm";
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 
 interface OperationalDetailsFormProps {
-  form: UseFormReturn<any>;
-  onSubmit: (e: React.FormEvent) => void;
+  form: UseFormReturn<CarrierFormValues>;
 }
 
-export function OperationalDetailsForm({ form, onSubmit }: OperationalDetailsFormProps) {
+export function OperationalDetailsForm({ form }: OperationalDetailsFormProps) {
   const watchCrossBorder = form.watch('provides_cross_border_services');
   const watchTrailerExchange = form.watch('engages_in_trailer_exchanges');
   
@@ -37,7 +36,7 @@ export function OperationalDetailsForm({ form, onSubmit }: OperationalDetailsFor
   ];
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
+    <div className="space-y-6">
       <div>
         <h3 className="text-lg font-medium mb-4">Countries of Operation</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -263,12 +262,6 @@ export function OperationalDetailsForm({ form, onSubmit }: OperationalDetailsFor
           </div>
         )}
       </div>
-      
-      <div className="flex justify-end mt-6">
-        <Button type="submit">
-          Save Changes
-        </Button>
-      </div>
-    </form>
+    </div>
   );
 }

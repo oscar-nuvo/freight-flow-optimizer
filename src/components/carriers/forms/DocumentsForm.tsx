@@ -1,201 +1,177 @@
 
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { updateCarrier } from "@/services/carriersService";
-import { useFileUpload } from "@/hooks/useFileUpload";
+import { UseFormReturn } from "react-hook-form";
+import { FormDescription } from "@/components/ui/form";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import type { Carrier } from "@/services/carriersService";
-import { 
-  AlertDialog, 
-  AlertDialogAction, 
-  AlertDialogCancel, 
-  AlertDialogContent, 
-  AlertDialogDescription, 
-  AlertDialogFooter, 
-  AlertDialogHeader, 
-  AlertDialogTitle 
-} from "@/components/ui/alert-dialog";
-import { DocumentUploader } from "./DocumentUploader";
+import { useFileUpload } from "@/hooks/useFileUpload";
+import { DocumentConfirmDialog } from "./DocumentConfirmDialog";
+import { DocumentUploadField } from "./DocumentUploadField";
+import { CarrierFormValues } from "../CarrierDetailsForm";
+import { AlertTriangle } from "lucide-react";
+import { updateCarrier } from "@/services/carriersService";
 
 interface DocumentsFormProps {
-  carrier: Carrier;
+  form: UseFormReturn<CarrierFormValues>;
 }
 
-export function DocumentsForm({ carrier }: DocumentsFormProps) {
+export function DocumentsForm({ form }: DocumentsFormProps) {
   const { toast } = useToast();
-  const [activeField, setActiveField] = useState<string | null>(null);
-  const [documents, setDocuments] = useState({
-    w9_form_doc: carrier.w9_form_doc || null,
-    cargo_insurance_doc: carrier.cargo_insurance_doc || null,
-    primary_liability_doc: carrier.primary_liability_doc || null,
-    bank_statement_doc: carrier.bank_statement_doc || null,
-  });
+  const [uploadingField, setUploadingField] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [showReplaceDialog, setShowReplaceDialog] = useState(false);
   const [pendingUpload, setPendingUpload] = useState<{ field: string; file: File } | null>(null);
-  const { uploadFile, loading: isUploading } = useFileUpload("carrier_documents");
-  const [uploadProgress, setUploadProgress] = useState(0);
-
-  const simulateProgress = () => {
-    setUploadProgress(0);
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 90) {
-          clearInterval(interval);
-          return prev;
-        }
-        return prev + 10;
-      });
-    }, 300);
-    
-    return () => clearInterval(interval);
-  };
+  const { uploadFile, loading: uploading } = useFileUpload("carrier_documents");
+  const carrierId = form.getValues().id;
 
   const documentFields = [
-    {
-      name: "w9_form_doc",
-      label: "W9 Form",
-      accept: ".pdf,.doc,.docx",
-    },
-    {
-      name: "cargo_insurance_doc",
-      label: "Cargo Insurance",
-      accept: ".pdf,.doc,.docx,.jpg,.jpeg,.png",
-    },
-    {
-      name: "primary_liability_doc",
-      label: "Primary Liability Insurance",
-      accept: ".pdf,.doc,.docx,.jpg,.jpeg,.png",
-    },
-    {
-      name: "bank_statement_doc",
-      label: "Bank Statement",
-      accept: ".pdf,.doc,.docx,.jpg,.jpeg,.png",
-    },
+    { name: "bank_statement_doc", label: "Bank Statement", accept: ".pdf,.doc,.docx" },
+    { name: "cargo_insurance_doc", label: "Cargo Insurance", accept: ".pdf,.doc,.docx" },
+    { name: "primary_liability_doc", label: "Primary Liability Insurance", accept: ".pdf,.doc,.docx" },
+    { name: "w9_form_doc", label: "W9 Form", accept: ".pdf,.doc,.docx" },
   ];
 
-  const handleUpload = async (fieldName: string, file: File) => {
-    if (documents[fieldName as keyof typeof documents]) {
+  const handleFileUpload = async (fieldName: string, file: File) => {
+    const existingFile = form.getValues()[fieldName as keyof CarrierFormValues];
+    if (existingFile) {
       setPendingUpload({ field: fieldName, file });
       setShowReplaceDialog(true);
       return;
     }
-    
-    await processUpload(fieldName, file);
+
+    await uploadDocument(fieldName, file);
   };
 
-  const processUpload = async (fieldName: string, file: File) => {
-    setActiveField(fieldName);
-    const stopProgress = simulateProgress();
+  const uploadDocument = async (fieldName: string, file: File) => {
+    if (!carrierId) {
+      setUploadError("Unable to upload: Carrier ID is missing. Please save the carrier first.");
+      toast({
+        title: "Upload Error",
+        description: "Carrier ID is required for uploading documents. Please save the carrier first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadError(null);
+    setUploadingField(fieldName);
     
     try {
-      const uploadPath = `carriers/${carrier.id}/${fieldName}/${file.name}`;
-      const fileUrl = await uploadFile(file, uploadPath);
-      
-      if (fileUrl) {
-        setUploadProgress(100);
-        
-        setDocuments(prev => ({
-          ...prev,
-          [fieldName]: fileUrl.url
-        }));
-        
-        await updateCarrier(carrier.id, {
-          [fieldName]: fileUrl.url
+      const result = await uploadFile(
+        file,
+        `${carrierId}/${fieldName.replace(/_doc$/, "")}`,
+        {
+          maxSizeBytes: 5 * 1024 * 1024,
+          allowedTypes: ['.pdf', '.doc', '.docx'],
+        }
+      );
+
+      if (result?.url) {
+        // Update the form field
+        form.setValue(fieldName as keyof CarrierFormValues, result.url, {
+          shouldDirty: true,
+          shouldValidate: true,
         });
-        
+
+        // Update the carrier record in the database
+        const updates = { [fieldName]: result.url };
+        await updateCarrier(carrierId, updates);
+
         toast({
-          title: "Success",
-          description: "Document uploaded successfully",
+          title: "Document uploaded",
+          description: `${documentFields.find(doc => doc.name === fieldName)?.label} has been uploaded successfully.`,
         });
       }
     } catch (error: any) {
-      console.error("Error uploading document:", error);
+      console.error("Error in document upload handler:", error);
+      setUploadError(error.message || "Failed to upload document");
       toast({
         title: "Upload failed",
         description: error.message || "Failed to upload document",
         variant: "destructive",
       });
     } finally {
-      stopProgress();
-      setTimeout(() => {
-        setActiveField(null);
-        setPendingUpload(null);
-        setShowReplaceDialog(false);
-        setUploadProgress(0);
-      }, 500);
+      setUploadingField(null);
     }
   };
 
-  const handleRemove = async (fieldName: string) => {
+  const handleConfirmReplace = async () => {
+    if (pendingUpload) {
+      await uploadDocument(pendingUpload.field, pendingUpload.file);
+    }
+    setShowReplaceDialog(false);
+    setPendingUpload(null);
+  };
+
+  const handleRemoveDocument = async (fieldName: string) => {
     try {
-      setDocuments(prev => ({
-        ...prev,
-        [fieldName]: null
-      }));
-      
-      await updateCarrier(carrier.id, {
-        [fieldName]: null
+      // Update the form field
+      form.setValue(fieldName as keyof CarrierFormValues, "", {
+        shouldDirty: true,
+        shouldValidate: true,
       });
-      
+
+      // Update the carrier record in the database
+      const updates = { [fieldName]: null };
+      await updateCarrier(carrierId, updates);
+
       toast({
-        title: "Success",
-        description: "Document removed successfully",
+        title: "Document removed",
+        description: `${documentFields.find(doc => doc.name === fieldName)?.label} has been removed.`,
       });
     } catch (error: any) {
       console.error("Error removing document:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to remove document",
+        description: "Failed to remove document. Please try again.",
         variant: "destructive",
       });
     }
   };
 
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="grid grid-cols-1 gap-4">
-          {documentFields.map((field) => (
-            <DocumentUploader
-              key={field.name}
-              fieldName={field.name}
-              label={field.label}
-              accept={field.accept}
-              value={documents[field.name as keyof typeof documents]}
-              isUploading={isUploading && activeField === field.name}
-              onUpload={handleUpload}
-              onRemove={handleRemove}
-              uploadProgress={activeField === field.name ? uploadProgress : 0}
-            />
-          ))}
-        </div>
-      </CardContent>
+    <div className="space-y-6">
+      <FormDescription className="text-sm mb-4">
+        Upload PDF documents only. Maximum file size: 5MB.
+      </FormDescription>
 
-      <AlertDialog open={showReplaceDialog} onOpenChange={setShowReplaceDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Replace Document?</AlertDialogTitle>
-            <AlertDialogDescription>
-              A document is already uploaded. Do you want to replace it with the new one?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setPendingUpload(null);
-              setShowReplaceDialog(false);
-            }}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-              if (pendingUpload) {
-                processUpload(pendingUpload.field, pendingUpload.file);
-              }
-            }}>
-              Replace
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </Card>
+      {uploadError && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>{uploadError}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="grid gap-6">
+        {documentFields.map((doc) => (
+          <DocumentUploadField
+            key={doc.name}
+            form={form}
+            fieldName={doc.name}
+            label={doc.label}
+            accept={doc.accept}
+            isUploading={uploadingField === doc.name}
+            onUpload={handleFileUpload}
+            onRemove={handleRemoveDocument}
+          />
+        ))}
+      </div>
+
+      <DocumentConfirmDialog
+        isOpen={showReplaceDialog}
+        onClose={() => {
+          setShowReplaceDialog(false);
+          setPendingUpload(null);
+        }}
+        onConfirm={handleConfirmReplace}
+        title="Replace Document"
+        description="Are you sure you want to replace the existing document? This action cannot be undone."
+        actionLabel="Replace"
+      />
+
+      <FormDescription className="text-sm text-muted-foreground italic">
+        Note: All documents are securely stored and can only be accessed by authorized users.
+      </FormDescription>
+    </div>
   );
 }
