@@ -1,10 +1,11 @@
+
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Form } from "@/components/ui/form";
+import { Form, FormProvider } from "@/components/ui/form";
 import { DocumentUploadField } from "./DocumentUploadField";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { Carrier, updateCarrier } from "@/services/carriersService";
@@ -145,6 +146,7 @@ export function DocumentsForm({ carrier }: DocumentsFormProps) {
     }
   };
 
+  // We need to provide the form context properly
   return (
     <Form {...form}>
       <form className="space-y-6">
