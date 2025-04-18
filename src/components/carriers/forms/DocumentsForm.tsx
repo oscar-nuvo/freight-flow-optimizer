@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { DocumentConfirmDialog } from "./DocumentConfirmDialog";
 import { DocumentUploadField } from "./DocumentUploadField";
-import { CarrierFormValues } from "../CarrierDetailsForm";
+import { CarrierFormValues } from "@/types/carrier";
 import { AlertTriangle } from "lucide-react";
 import { updateCarrier } from "@/services/carriersService";
 

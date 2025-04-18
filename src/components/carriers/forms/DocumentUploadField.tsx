@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Upload, File, Loader2, Trash2 } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
-import { CarrierFormValues } from "../CarrierDetailsForm";
+import { CarrierFormValues } from "@/types/carrier";
 import { getFileNameFromUrl } from "@/utils/fileUpload";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
