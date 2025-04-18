@@ -20,6 +20,9 @@ import {
 } from "@/components/ui/select";
 import { useBidDocuments } from "@/hooks/useBidDocuments";
 import { BidDocumentUploadField } from "./forms/BidDocumentUploadField";
+import { useForm } from "react-hook-form";
+import { BidFormValues } from "./forms/BidDocumentUploadField";
+import { Form, FormField, FormItem, FormLabel } from "@/components/ui/form";
 
 interface EditBidFormProps {
   bid: {
@@ -46,25 +49,24 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
   const {
     uploadingField,
     uploadError,
+    uploadProgress,
     handleFileUpload,
     updateBidDocument,
     removeDocument
   } = useBidDocuments(bid.id, organization?.id);
 
-  const [formData, setFormData] = useState({
-    name: bid.name || "",
-    submission_date: bid.submission_date || "",
-    start_date: bid.start_date || "",
-    rate_duration: bid.rate_duration || "none",
-    mode: bid.mode || "over_the_road",
-    equipment_type: bid.equipment_type || "none",
-    instructions: bid.instructions || "",
-    contract_file: bid.contract_file || "",
+  const form = useForm<BidFormValues>({
+    defaultValues: {
+      name: bid.name || "",
+      submission_date: bid.submission_date ? new Date(bid.submission_date) : undefined,
+      start_date: bid.start_date ? new Date(bid.start_date) : undefined,
+      rate_duration: bid.rate_duration || "none",
+      mode: bid.mode || "over_the_road",
+      equipment_type: bid.equipment_type || "none",
+      instructions: bid.instructions || "",
+      contract_file: bid.contract_file || "",
+    }
   });
-
-  const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
 
   const handleDocumentUpload = async (fieldName: string, file: File) => {
     if (!organization?.id) {
@@ -83,10 +85,7 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
 
     if (fileUrl) {
       // Update form state
-      setFormData(prev => ({
-        ...prev,
-        [fieldName]: fileUrl
-      }));
+      form.setValue(fieldName as any, fileUrl);
       
       // Update the database
       await updateBidDocument(bid.id, { [fieldName]: fileUrl });
@@ -97,15 +96,11 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
     const success = await removeDocument(bid.id, fieldName);
     
     if (success) {
-      setFormData(prev => ({
-        ...prev,
-        [fieldName]: ""
-      }));
+      form.setValue(fieldName as any, "");
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (values: BidFormValues) => {
     setLoading(true);
     setError(null);
 
@@ -117,18 +112,18 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
       console.log("Updating bid with data:", {
         id: bid.id,
         org_id: organization.id,
-        formData
+        values
       });
 
       const updates = {
-        name: formData.name,
-        submission_date: formData.submission_date || null,
-        start_date: formData.start_date || null,
-        rate_duration: formData.rate_duration === "none" ? null : formData.rate_duration,
-        mode: formData.mode,
-        equipment_type: formData.equipment_type === "none" ? null : formData.equipment_type,
-        instructions: formData.instructions || null,
-        contract_file: formData.contract_file || null,
+        name: values.name,
+        submission_date: values.submission_date ? new Date(values.submission_date).toISOString() : null,
+        start_date: values.start_date ? new Date(values.start_date).toISOString() : null,
+        rate_duration: values.rate_duration === "none" ? null : values.rate_duration,
+        mode: values.mode,
+        equipment_type: values.equipment_type === "none" ? null : values.equipment_type,
+        instructions: values.instructions || null,
+        contract_file: values.contract_file || null,
         updated_at: new Date().toISOString()
       };
 
@@ -163,139 +158,169 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Basic Information</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Bid Name</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => handleChange("name", e.target.value)}
-              required
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Basic Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormLabel>Bid Name</FormLabel>
+                  <Input {...field} required />
+                </FormItem>
+              )}
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="submission_date">Last Date to Submit Bids</Label>
-            <Input
-              id="submission_date"
-              type="date"
-              value={formData.submission_date}
-              onChange={(e) => handleChange("submission_date", e.target.value)}
+            
+            <FormField
+              control={form.control}
+              name="submission_date"
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormLabel>Last Date to Submit Bids</FormLabel>
+                  <Input 
+                    type="date" 
+                    value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
+                    onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : undefined)}
+                  />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="start_date">Target Start of Operations</Label>
-            <Input
-              id="start_date"
-              type="date"
-              value={formData.start_date}
-              onChange={(e) => handleChange("start_date", e.target.value)}
+            <FormField
+              control={form.control}
+              name="start_date"
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormLabel>Target Start of Operations</FormLabel>
+                  <Input 
+                    type="date" 
+                    value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
+                    onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : undefined)}
+                  />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="rate_duration">Rate Duration</Label>
-            <Select
-              value={formData.rate_duration}
-              onValueChange={(value) => handleChange("rate_duration", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select duration" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Select duration</SelectItem>
-                <SelectItem value="1">1 Month</SelectItem>
-                <SelectItem value="3">3 Months</SelectItem>
-                <SelectItem value="6">6 Months</SelectItem>
-                <SelectItem value="12">12 Months</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="mode">Mode</Label>
-            <Select
-              value={formData.mode}
-              onValueChange={(value) => handleChange("mode", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select mode" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="over_the_road">Over the Road</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="equipment_type">Equipment Type</Label>
-            <Select
-              value={formData.equipment_type}
-              onValueChange={(value) => handleChange("equipment_type", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select equipment type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Select equipment type</SelectItem>
-                <SelectItem value="dry_van">53' Dry Van</SelectItem>
-                <SelectItem value="reefer">Reefer</SelectItem>
-                <SelectItem value="flatbed">Flatbed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="instructions">Instructions for the RFP</Label>
-            <Textarea
-              id="instructions"
-              value={formData.instructions}
-              onChange={(e) => handleChange("instructions", e.target.value)}
-              rows={4}
+            <FormField
+              control={form.control}
+              name="rate_duration"
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormLabel>Rate Duration</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select duration" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Select duration</SelectItem>
+                      <SelectItem value="1">1 Month</SelectItem>
+                      <SelectItem value="3">3 Months</SelectItem>
+                      <SelectItem value="6">6 Months</SelectItem>
+                      <SelectItem value="12">12 Months</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )}
             />
-          </div>
 
-          <BidDocumentUploadField
-            form={{ control: { register: () => {}, }, getValues: () => formData } as any}
-            fieldName="contract_file"
-            label="RFP Contract"
-            accept=".pdf,.doc,.docx"
-            isUploading={uploadingField === "contract_file"}
-            onUpload={handleDocumentUpload}
-            onRemove={handleRemoveDocument}
-          />
-          
-          {uploadError && (
-            <p className="text-sm text-destructive">{uploadError}</p>
-          )}
-        </CardContent>
-      </Card>
+            <FormField
+              control={form.control}
+              name="mode"
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormLabel>Mode</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select mode" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="over_the_road">Over the Road</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )}
+            />
 
-      <div className="flex justify-end gap-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => navigate(`/bids/${bid.id}`)}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" disabled={loading}>
-          {loading ? "Saving..." : "Save Changes"}
-        </Button>
-      </div>
-    </form>
+            <FormField
+              control={form.control}
+              name="equipment_type"
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormLabel>Equipment Type</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select equipment type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Select equipment type</SelectItem>
+                      <SelectItem value="dry_van">53' Dry Van</SelectItem>
+                      <SelectItem value="reefer">Reefer</SelectItem>
+                      <SelectItem value="flatbed">Flatbed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="instructions"
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormLabel>Instructions for the RFP</FormLabel>
+                  <Textarea {...field} rows={4} />
+                </FormItem>
+              )}
+            />
+
+            <BidDocumentUploadField
+              form={form}
+              fieldName="contract_file"
+              label="RFP Contract"
+              accept=".pdf,.doc,.docx"
+              isUploading={uploadingField === "contract_file"}
+              uploadProgress={uploadProgress}
+              uploadError={uploadError}
+              onUpload={handleDocumentUpload}
+              onRemove={handleRemoveDocument}
+            />
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-end gap-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate(`/bids/${bid.id}`)}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 };

@@ -13,8 +13,8 @@ import { AlertCircle, CheckCircle2 } from "lucide-react";
 export interface BidFormValues {
   id?: string;
   name: string;
-  submission_date?: string | Date;
-  start_date?: string | Date;
+  submission_date?: Date | string;
+  start_date?: Date | string;
   rate_duration?: string;
   mode?: string;
   equipment_type?: string;
@@ -45,7 +45,7 @@ export function BidDocumentUploadField({
   onUpload,
   onRemove
 }: BidDocumentUploadFieldProps) {
-  const value = form.getValues(fieldName as keyof BidFormValues);
+  const value = form.watch(fieldName as keyof BidFormValues);
   const hasFile = Boolean(value);
 
   return (
