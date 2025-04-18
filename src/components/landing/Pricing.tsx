@@ -7,51 +7,55 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 const pricingPlans = [
   {
     name: "Starter",
-    price: "$49",
-    description: "Perfect for small businesses looking to optimize their transportation procurement.",
+    price: "$0",
+    description: "Perfect for small businesses looking to try our transportation procurement platform.",
     features: [
-      "Up to 10 bids",
-      "Up to 5 team members",
-      "Up to 25 carriers",
-      "Up to 100 lanes",
+      "1 transportation bid",
+      "Up to 5 lanes per bid",
+      "Up to 10 carrier invitations",
       "Basic analytics",
+      "Standard bid templates",
       "Email support",
     ],
-    cta: "Get started",
-    highlighted: false
+    cta: "Get started free",
+    highlighted: false,
+    link: "/signup"
   },
   {
     name: "Professional",
     price: "$149",
-    description: "Ideal for mid-sized companies with multiple procurement managers.",
+    description: "Ideal for logistics professionals who need unlimited bids and advanced features.",
     features: [
-      "Up to 20 team members",
-      "Up to 100 carriers",
+      "Unlimited bids",
       "Unlimited lanes",
-      "Advanced analytics",
-      "Priority email support",
+      "Unlimited carrier invitations",
+      "Advanced analytics & reporting",
       "Custom bid templates",
-      "Integration with ERP systems"
+      "Priority email support",
+      "Bulk lane import/export",
+      "Bid comparison tools"
     ],
-    cta: "Try Professional",
-    highlighted: true
+    cta: "Upgrade to Premium",
+    highlighted: true,
+    link: "/signup"
   },
   {
     name: "Enterprise",
     price: "Custom",
-    description: "For large companies with complex transportation networks.",
+    description: "For large companies with complex transportation networks and custom needs.",
     features: [
-      "Unlimited team members",
-      "Unlimited carriers",
-      "Unlimited lanes",
-      "Premium analytics & reporting",
-      "24/7 dedicated support",
-      "Custom integrations",
+      "Everything in Premium",
       "Dedicated account manager",
-      "On-site training"
+      "Custom integrations",
+      "On-site training",
+      "Advanced security features",
+      "SLA guarantees",
+      "Multi-user management",
+      "Custom reporting"
     ],
     cta: "Contact sales",
-    highlighted: false
+    highlighted: false,
+    link: "/contact"
   }
 ];
 
@@ -63,9 +67,12 @@ export function Pricing() {
           <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">
             Simple, Transparent Pricing
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-4">
             Choose the plan that suits your business needs. No hidden fees.
           </p>
+          <Link to="/pricing" className="text-forest hover:text-forest-600 underline">
+            View detailed feature comparison
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -98,7 +105,7 @@ export function Pricing() {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Link to="/signup" className="w-full">
+                <Link to={plan.link} className="w-full">
                   <Button 
                     className={`w-full ${plan.highlighted ? 'bg-forest hover:bg-forest-600 text-white' : ''}`}
                     variant={plan.highlighted ? 'default' : 'outline'}
