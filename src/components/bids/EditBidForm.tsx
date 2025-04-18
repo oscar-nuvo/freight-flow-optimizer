@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { uploadFile, getFileNameFromUrl } from "@/utils/fileUpload";
 
 interface EditBidFormProps {
   bid: {
@@ -32,17 +33,6 @@ interface EditBidFormProps {
   };
   onSuccess?: () => void;
 }
-
-// Helper function to extract file name from URL
-const getFileNameFromUrl = (url: string): string => {
-  try {
-    const urlObj = new URL(url);
-    const pathParts = urlObj.pathname.split("/");
-    return pathParts[pathParts.length - 1];
-  } catch (e) {
-    return "File uploaded";
-  }
-};
 
 export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
   const [loading, setLoading] = useState(false);
@@ -82,93 +72,44 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
 
     // Clear any previous errors
     setUploadError(null);
-
-    // Check file size (10MB limit)
-    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-    if (file.size > MAX_FILE_SIZE) {
-      const errorMsg = `File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds the 10MB limit`;
-      setUploadError(errorMsg);
-      toast({
-        title: "File too large",
-        description: errorMsg,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate file type
-    const allowedTypes = ['.pdf', '.doc', '.docx'];
-    const fileExtension = `.${file.name.split('.').pop()?.toLowerCase()}`;
-    if (!allowedTypes.includes(fileExtension)) {
-      const errorMsg = `Invalid file type. Please upload a ${allowedTypes.join(', ')} file`;
-      setUploadError(errorMsg);
-      toast({
-        title: "Invalid file type",
-        description: errorMsg,
-        variant: "destructive",
-      });
-      return;
-    }
-
+    
     try {
-      console.log("Starting file upload:", file.name);
+      console.log("Starting file upload for bid document:", file.name);
+      
+      const result = await uploadFile(
+        file,
+        "bid_documents",
+        `${organization.id}/bids/contracts/contract`,
+        {
+          maxSizeBytes: 10 * 1024 * 1024, // 10MB limit
+          allowedTypes: ['.pdf', '.doc', '.docx'],
+          onError: (message) => {
+            setUploadError(message);
+            toast({
+              title: "Upload failed",
+              description: message,
+              variant: "destructive",
+            });
+          }
+        }
+      );
 
-      // Define file path: org_id/bids/contracts/filename_timestamp.ext
-      const fileExt = file.name.split(".").pop();
-      const fileName = `contract_${Date.now()}.${fileExt}`;
-      const filePath = `${organization.id}/bids/contracts/${fileName}`;
+      if (result.success && result.url) {
+        setFormData(prev => ({
+          ...prev,
+          contract_file: result.url
+        }));
 
-      console.log(`Uploading to path: ${filePath}`);
+        setFileUploaded(true);
+        setFileName(file.name);
 
-      // Upload file to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("bid_documents")
-        .upload(filePath, file, {
-          cacheControl: "3600",
-          upsert: true
+        toast({
+          title: "File uploaded",
+          description: `${file.name} has been uploaded successfully.`,
         });
-
-      if (uploadError) {
-        console.error("Upload error details:", uploadError);
-        throw new Error(uploadError.message || "Upload failed");
       }
-
-      console.log("File uploaded successfully:", uploadData);
-
-      // Get the public URL for the file
-      const { data: urlData } = supabase.storage
-        .from("bid_documents")
-        .getPublicUrl(filePath);
-
-      if (!urlData?.publicUrl) {
-        throw new Error("Could not generate public URL for uploaded file");
-      }
-
-      console.log("Public URL generated:", urlData.publicUrl);
-
-      setFormData(prev => ({
-        ...prev,
-        contract_file: urlData.publicUrl
-      }));
-
-      setFileUploaded(true);
-      setFileName(file.name);
-
-      console.log("Form updated with new file URL:", urlData.publicUrl);
-
-      toast({
-        title: "File uploaded",
-        description: `${file.name} has been uploaded successfully.`,
-      });
     } catch (error: any) {
-      console.error("Error uploading file:", error);
-      const errorMessage = error.message || "Failed to upload file. Please try again.";
-      setUploadError(errorMessage);
-      toast({
-        title: "Upload failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      console.error("Error in file upload handler:", error);
     }
   };
 

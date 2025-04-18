@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -6,9 +5,9 @@ import { UseFormReturn } from "react-hook-form";
 import { CarrierFormValues } from "../CarrierDetailsForm";
 import { Button } from "@/components/ui/button";
 import { Upload, File, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { uploadFile, getFileNameFromUrl } from "@/utils/fileUpload";
 
 interface DocumentsFormProps {
   form: UseFormReturn<CarrierFormValues>;
@@ -40,106 +39,45 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
 
     // Clear any previous errors
     setUploadError(null);
-
-    // Check file size (5MB limit)
-    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-    if (file.size > MAX_FILE_SIZE) {
-      const errorMsg = `File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds the 5MB limit`;
-      setUploadError(errorMsg);
-      toast({
-        title: "File too large",
-        description: errorMsg,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate file type
-    const allowedTypes = ['.pdf', '.doc', '.docx'];
-    const fileExtension = `.${file.name.split('.').pop()?.toLowerCase()}`;
-    if (!allowedTypes.includes(fileExtension)) {
-      const errorMsg = `Invalid file type. Please upload a ${allowedTypes.join(', ')} file`;
-      setUploadError(errorMsg);
-      toast({
-        title: "Invalid file type",
-        description: errorMsg,
-        variant: "destructive",
-      });
-      return;
-    }
-
+    setUploadingField(fieldName);
+    
     try {
-      setUploadingField(fieldName);
       console.log(`Starting upload for ${fieldName}:`, file.name);
+      
+      const result = await uploadFile(
+        file,
+        "carrier_documents",
+        `${carrierId}/${fieldName.replace(/_doc$/, "")}`,
+        {
+          maxSizeBytes: 5 * 1024 * 1024, // 5MB limit
+          allowedTypes: ['.pdf', '.doc', '.docx'],
+          onError: (message) => {
+            setUploadError(message);
+            toast({
+              title: "Upload failed",
+              description: message,
+              variant: "destructive",
+            });
+          }
+        }
+      );
 
-      // Define file path: carrier_id/document_type_timestamp.ext
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${fieldName.replace(/_doc$/, "")}_${Date.now()}.${fileExt}`;
-      const filePath = `${carrierId}/${fileName}`;
-
-      console.log(`Uploading to path: ${filePath}`);
-
-      // Upload file to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("carrier_documents")
-        .upload(filePath, file, {
-          cacheControl: "3600",
-          upsert: true
+      if (result.success && result.url) {
+        // Update the form field with the file URL
+        form.setValue(fieldName as keyof CarrierFormValues, result.url, {
+          shouldDirty: true,
+          shouldValidate: true,
         });
 
-      if (uploadError) {
-        console.error("Upload error details:", uploadError);
-        throw new Error(uploadError.message || "Upload failed");
+        toast({
+          title: "Document uploaded",
+          description: `${documentFields.find(doc => doc.name === fieldName)?.label} has been uploaded successfully.`,
+        });
       }
-
-      console.log("File uploaded successfully:", uploadData);
-
-      // Get the public URL for the file
-      const { data: urlData } = supabase.storage
-        .from("carrier_documents")
-        .getPublicUrl(filePath);
-
-      if (!urlData?.publicUrl) {
-        throw new Error("Could not generate public URL for uploaded file");
-      }
-
-      console.log("Public URL generated:", urlData.publicUrl);
-
-      // Update the form field with the file URL
-      form.setValue(fieldName as keyof CarrierFormValues, urlData.publicUrl, {
-        shouldDirty: true,
-        shouldValidate: true,
-      });
-
-      console.log("Form updated with new file URL:", urlData.publicUrl);
-
-      toast({
-        title: "Document uploaded",
-        description: `${documentFields.find(doc => doc.name === fieldName)?.label} has been uploaded successfully.`,
-      });
     } catch (error: any) {
-      console.error("Error uploading document:", error);
-      const errorMessage = error.message || "Failed to upload document. Please try again.";
-      setUploadError(errorMessage);
-      toast({
-        title: "Upload failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      console.error("Error in document upload handler:", error);
     } finally {
       setUploadingField(null);
-    }
-  };
-
-  // Helper function to render a file name from a URL
-  const getFileNameFromUrl = (url: string | null | undefined): string => {
-    if (!url) return "No file uploaded";
-    try {
-      const urlObj = new URL(url);
-      const pathParts = urlObj.pathname.split("/");
-      return pathParts[pathParts.length - 1];
-    } catch (e) {
-      return "File uploaded";
     }
   };
 
