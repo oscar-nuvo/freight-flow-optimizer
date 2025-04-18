@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getCarrierByToken, updateCarrier } from "@/services/carriersService";
@@ -11,8 +10,8 @@ import { DocumentsForm } from "@/components/carriers/forms/DocumentsForm";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Progress } from "@/components/ui/progress";
 
-// Document form schema (minimal since most handling is in DocumentsForm)
 const documentFormSchema = z.object({
   bank_statement_doc: z.string().optional(),
   cargo_insurance_doc: z.string().optional(),
@@ -29,11 +28,10 @@ const CarrierOnboarding = () => {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [showDocumentUpload, setShowDocumentUpload] = useState(false);
+  const [currentStep, setCurrentStep] = useState<'profile' | 'documents'>('profile');
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Initialize form for documents
   const documentForm = useForm<DocumentFormValues>({
     resolver: zodResolver(documentFormSchema),
     defaultValues: {
@@ -44,7 +42,6 @@ const CarrierOnboarding = () => {
     }
   });
 
-  // Fetch carrier data based on token
   useEffect(() => {
     const loadCarrier = async () => {
       if (!token) {
@@ -76,24 +73,20 @@ const CarrierOnboarding = () => {
     loadCarrier();
   }, [token]);
 
-  // Handle form submission for basic profile data
   const handleSubmitProfile = async (formData) => {
     if (!carrier || !carrier.id) return;
     
     try {
       setIsSubmitting(true);
       
-      // Update carrier with form data but don't mark profile as completed yet
       await updateCarrier(carrier.id, formData);
       
-      // Update carrier data with the new values
       setCarrier(prev => ({
         ...prev,
         ...formData
       }));
       
-      // Show document upload step
-      setShowDocumentUpload(true);
+      setCurrentStep('documents');
       
       toast({
         title: "Profile Information Saved",
@@ -111,14 +104,12 @@ const CarrierOnboarding = () => {
     }
   };
 
-  // Handle completion of document upload
   const handleCompleteDocuments = async () => {
     if (!carrier || !carrier.id) return;
     
     try {
       setIsSubmitting(true);
       
-      // Mark profile as completed
       await updateCarrier(carrier.id, {
         profile_completed_at: new Date().toISOString()
       });
@@ -140,10 +131,14 @@ const CarrierOnboarding = () => {
     }
   };
 
+  const getProgress = () => {
+    if (isCompleted) return 100;
+    return currentStep === 'profile' ? 50 : 75;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-5xl">
-        {/* Header */}
         <div className="mb-8 text-center">
           <div className="flex justify-center mb-4">
             <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center">
@@ -152,33 +147,24 @@ const CarrierOnboarding = () => {
           </div>
           <h1 className="text-3xl font-bold">Carrier Profile Setup</h1>
           <p className="text-muted-foreground mt-2">
-            {showDocumentUpload 
-              ? "Upload required documents to complete your profile" 
-              : "Complete your profile information to join our carrier network"
+            {currentStep === 'profile' 
+              ? "Complete your profile information to join our carrier network"
+              : "Upload required documents to complete your profile"
             }
           </p>
         </div>
 
-        {/* Progress Indicator */}
         {!error && !isCompleted && (
           <div className="mb-8">
-            <div className="flex items-center justify-center">
-              <div className={`flex items-center justify-center w-8 h-8 rounded-full ${!showDocumentUpload ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
-                1
-              </div>
-              <div className={`h-1 w-16 ${showDocumentUpload ? 'bg-primary' : 'bg-muted'}`}></div>
-              <div className={`flex items-center justify-center w-8 h-8 rounded-full ${showDocumentUpload ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
-                2
-              </div>
-            </div>
-            <div className="flex justify-between mt-2 text-sm text-muted-foreground px-4">
+            <Progress value={getProgress()} className="h-2" />
+            <div className="flex justify-between mt-2 text-sm text-muted-foreground">
               <span>Profile Information</span>
               <span>Document Upload</span>
+              <span>Complete</span>
             </div>
           </div>
         )}
 
-        {/* Content */}
         {isLoading ? (
           <Card>
             <CardContent className="flex items-center justify-center py-12">
@@ -219,7 +205,7 @@ const CarrierOnboarding = () => {
               </div>
             </CardContent>
           </Card>
-        ) : showDocumentUpload ? (
+        ) : currentStep === 'documents' ? (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -235,7 +221,7 @@ const CarrierOnboarding = () => {
                   <Button 
                     type="button" 
                     variant="outline"
-                    onClick={() => setShowDocumentUpload(false)}
+                    onClick={() => setCurrentStep('profile')}
                   >
                     Back to Profile Form
                   </Button>
