@@ -9,7 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Upload } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -28,6 +28,7 @@ interface EditBidFormProps {
     mode?: string;
     equipment_type?: string;
     instructions?: string;
+    contract_file?: string;
   };
   onSuccess?: () => void;
 }
@@ -35,6 +36,9 @@ interface EditBidFormProps {
 export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [fileUploaded, setFileUploaded] = useState(Boolean(bid.contract_file));
+  const [fileName, setFileName] = useState(bid.contract_file ? getFileNameFromUrl(bid.contract_file) : "");
   const { organization } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -47,10 +51,82 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
     mode: bid.mode || "over_the_road",
     equipment_type: bid.equipment_type || "none",
     instructions: bid.instructions || "",
+    contract_file: bid.contract_file || "",
   });
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const getFileNameFromUrl = (url: string): string => {
+    try {
+      const urlObj = new URL(url);
+      const pathParts = urlObj.pathname.split("/");
+      return pathParts[pathParts.length - 1];
+    } catch (e) {
+      return "File uploaded";
+    }
+  };
+
+  const handleFileUpload = async (file: File) => {
+    if (!organization?.id) {
+      setUploadError("Organization not found");
+      return;
+    }
+
+    // Clear any previous errors
+    setUploadError(null);
+
+    // Check file size (10MB limit)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_FILE_SIZE) {
+      setUploadError("File exceeds the 10MB size limit");
+      return;
+    }
+
+    try {
+      // Define file path: org_id/bids/contracts/filename_timestamp.ext
+      const fileExt = file.name.split(".").pop();
+      const fileName = `contract_${Date.now()}.${fileExt}`;
+      const filePath = `${organization.id}/bids/contracts/${fileName}`;
+
+      // Upload file to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("bid_documents")
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: true
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get the public URL for the file
+      const { data: urlData } = supabase.storage
+        .from("bid_documents")
+        .getPublicUrl(filePath);
+
+      if (!urlData?.publicUrl) {
+        throw new Error("Could not get public URL for uploaded file");
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        contract_file: urlData.publicUrl
+      }));
+
+      setFileUploaded(true);
+      setFileName(file.name);
+
+      toast({
+        title: "File uploaded",
+        description: `${file.name} has been uploaded successfully.`,
+      });
+    } catch (error: any) {
+      console.error("Error uploading file:", error);
+      setUploadError(error.message || "Failed to upload file. Please try again.");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -77,6 +153,7 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
         mode: formData.mode,
         equipment_type: formData.equipment_type === "none" ? null : formData.equipment_type,
         instructions: formData.instructions || null,
+        contract_file: formData.contract_file || null,
         updated_at: new Date().toISOString()
       };
 
@@ -212,6 +289,56 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
               onChange={(e) => handleChange("instructions", e.target.value)}
               rows={4}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="contract_file">RFP Contract</Label>
+            <div className="flex flex-col space-y-2">
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="relative"
+                  onClick={() => document.getElementById("contract-upload")?.click()}
+                >
+                  <input
+                    id="contract-upload"
+                    type="file"
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        handleFileUpload(file);
+                      }
+                    }}
+                    accept=".pdf,.doc,.docx"
+                  />
+                  <Upload className="h-4 w-4 mr-2" />
+                  {fileUploaded ? "Replace File" : "Upload Contract"}
+                </Button>
+                {fileUploaded && (
+                  <span className="text-sm text-muted-foreground">
+                    {fileName}
+                  </span>
+                )}
+                {formData.contract_file && (
+                  <a 
+                    href={formData.contract_file} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-600 hover:underline ml-4"
+                  >
+                    View Document
+                  </a>
+                )}
+              </div>
+              {uploadError && (
+                <p className="text-sm text-destructive">{uploadError}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Upload PDF, DOC, or DOCX files (max 10MB)
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
