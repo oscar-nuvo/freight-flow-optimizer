@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { FormDescription } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -7,18 +7,19 @@ import { useToast } from "@/hooks/use-toast";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { DocumentConfirmDialog } from "./DocumentConfirmDialog";
 import { DocumentUploadField } from "./DocumentUploadField";
-import { CarrierFormValues } from "../CarrierDetailsForm";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Info } from "lucide-react";
 import { updateCarrier } from "@/services/carriersService";
 
+// Using the correct type from CarrierOnboardingForm
 interface DocumentsFormProps {
-  form: UseFormReturn<CarrierFormValues>;
+  form: UseFormReturn<any>;
 }
 
 export function DocumentsForm({ form }: DocumentsFormProps) {
   const { toast } = useToast();
   const [uploadingField, setUploadingField] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<Record<string, string>>({});
   const [showReplaceDialog, setShowReplaceDialog] = useState(false);
   const [pendingUpload, setPendingUpload] = useState<{ field: string; file: File } | null>(null);
   const { uploadFile, loading: uploading } = useFileUpload("carrier_documents");
@@ -30,9 +31,27 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
     { name: "primary_liability_doc", label: "Primary Liability Insurance", accept: ".pdf,.doc,.docx" },
     { name: "w9_form_doc", label: "W9 Form", accept: ".pdf,.doc,.docx" },
   ];
+  
+  // Check initial document status
+  useEffect(() => {
+    const values = form.getValues();
+    console.log("Initial document values:", values);
+    
+    // Check which documents already exist
+    documentFields.forEach(doc => {
+      const docValue = values[doc.name];
+      if (docValue) {
+        setUploadStatus(prev => ({
+          ...prev,
+          [doc.name]: "Existing document found"
+        }));
+        console.log(`${doc.label} already exists:`, docValue);
+      }
+    });
+  }, []);
 
   const handleFileUpload = async (fieldName: string, file: File) => {
-    const existingFile = form.getValues()[fieldName as keyof CarrierFormValues];
+    const existingFile = form.getValues()[fieldName];
     if (existingFile) {
       setPendingUpload({ field: fieldName, file });
       setShowReplaceDialog(true);
@@ -44,7 +63,13 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
 
   const uploadDocument = async (fieldName: string, file: File) => {
     if (!carrierId) {
-      setUploadError("Unable to upload: Carrier ID is missing. Please save the carrier first.");
+      const errorMsg = "Unable to upload: Carrier ID is missing. Please save the carrier first.";
+      setUploadError(errorMsg);
+      setUploadStatus(prev => ({
+        ...prev,
+        [fieldName]: "Error: Carrier ID missing"
+      }));
+      
       toast({
         title: "Upload Error",
         description: "Carrier ID is required for uploading documents. Please save the carrier first.",
@@ -55,8 +80,14 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
 
     setUploadError(null);
     setUploadingField(fieldName);
+    setUploadStatus(prev => ({
+      ...prev,
+      [fieldName]: "Uploading..."
+    }));
     
     try {
+      console.log(`Uploading ${fieldName}:`, file.name);
+      
       const result = await uploadFile(
         file,
         `${carrierId}/${fieldName.replace(/_doc$/, "")}`,
@@ -67,11 +98,18 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
       );
 
       if (result?.url) {
+        console.log(`${fieldName} uploaded successfully:`, result.url);
+        
         // Update the form field
-        form.setValue(fieldName as keyof CarrierFormValues, result.url, {
+        form.setValue(fieldName, result.url, {
           shouldDirty: true,
           shouldValidate: true,
         });
+
+        setUploadStatus(prev => ({
+          ...prev,
+          [fieldName]: "Upload successful"
+        }));
 
         // Update the carrier record in the database
         const updates = { [fieldName]: result.url };
@@ -82,12 +120,18 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
           description: `${documentFields.find(doc => doc.name === fieldName)?.label} has been uploaded successfully.`,
         });
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error in document upload handler:", error);
-      setUploadError(error.message || "Failed to upload document");
+      const errorMsg = error.message || "Failed to upload document";
+      setUploadError(errorMsg);
+      setUploadStatus(prev => ({
+        ...prev,
+        [fieldName]: `Error: ${errorMsg}`
+      }));
+      
       toast({
         title: "Upload failed",
-        description: error.message || "Failed to upload document",
+        description: errorMsg,
         variant: "destructive",
       });
     } finally {
@@ -105,11 +149,18 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
 
   const handleRemoveDocument = async (fieldName: string) => {
     try {
+      console.log(`Removing ${fieldName}`);
+      
       // Update the form field
-      form.setValue(fieldName as keyof CarrierFormValues, "", {
+      form.setValue(fieldName, "", {
         shouldDirty: true,
         shouldValidate: true,
       });
+
+      setUploadStatus(prev => ({
+        ...prev,
+        [fieldName]: "Document removed"
+      }));
 
       // Update the carrier record in the database
       const updates = { [fieldName]: null };
@@ -119,14 +170,22 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
         title: "Document removed",
         description: `${documentFields.find(doc => doc.name === fieldName)?.label} has been removed.`,
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error removing document:", error);
       toast({
         title: "Error",
-        description: "Failed to remove document. Please try again.",
+        description: `Failed to remove document: ${error.message || "Please try again"}`,
         variant: "destructive",
       });
     }
+  };
+
+  // Debug function to show document status
+  const getDocumentStatusSummary = () => {
+    const values = form.getValues();
+    return documentFields.map(doc => 
+      `${doc.label}: ${values[doc.name] ? "✅" : "❌"}`
+    ).join(", ");
   };
 
   return (
@@ -134,6 +193,16 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
       <FormDescription className="text-sm mb-4">
         Upload PDF documents only. Maximum file size: 5MB.
       </FormDescription>
+
+      {process.env.NODE_ENV === 'development' && (
+        <Alert className="mb-4">
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            <p>Document Status: {getDocumentStatusSummary()}</p>
+            <p>Carrier ID: {carrierId || "Not available"}</p>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {uploadError && (
         <Alert variant="destructive" className="mb-4">
@@ -153,6 +222,7 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
             isUploading={uploadingField === doc.name}
             onUpload={handleFileUpload}
             onRemove={handleRemoveDocument}
+            status={uploadStatus[doc.name]}
           />
         ))}
       </div>
