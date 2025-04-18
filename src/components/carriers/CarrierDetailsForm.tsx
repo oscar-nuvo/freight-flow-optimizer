@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -10,7 +9,10 @@ import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Truck, User, MapPin, FileText, Building, ReceiptText, Landmark, Truck as TruckIcon, FileCheck } from "lucide-react";
+import { 
+  Truck, User, MapPin, FileText, Building, 
+  ReceiptText, Landmark, Truck as TruckIcon, FileCheck, Settings2 
+} from "lucide-react";
 
 // Import form components
 import { BasicInfoForm } from "./forms/BasicInfoForm";
@@ -21,6 +23,7 @@ import { DocumentsForm } from "./forms/DocumentsForm";
 import { ContactInfoForm } from "./forms/ContactInfoForm";
 import { BillingInfoForm } from "./forms/BillingInfoForm";
 import { CommercialPreferencesForm } from "./forms/CommercialPreferencesForm";
+import { PreferencesForm } from "./forms/PreferencesForm";
 
 const carrierFormSchema = z.object({
   // Basic Info
@@ -281,7 +284,7 @@ export function CarrierDetailsForm({ carrier }: CarrierDetailsFormProps) {
               <span className="hidden md:inline">Documents</span>
             </TabsTrigger>
             <TabsTrigger value="preferences">
-              <ReceiptText className="h-4 w-4 mr-2" />
+              <Settings2 className="h-4 w-4 mr-2" />
               <span className="hidden md:inline">Preferences</span>
             </TabsTrigger>
           </TabsList>
@@ -317,7 +320,7 @@ export function CarrierDetailsForm({ carrier }: CarrierDetailsFormProps) {
               </TabsContent>
               
               <TabsContent value="preferences">
-                <CommercialPreferencesForm form={form} />
+                <PreferencesForm form={form} />
               </TabsContent>
               
               <div className="p-4 bg-muted rounded-md mt-6">
