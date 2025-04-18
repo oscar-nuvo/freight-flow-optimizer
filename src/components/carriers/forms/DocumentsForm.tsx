@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { FormDescription } from "@/components/ui/form";
@@ -21,7 +22,9 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
   const [showReplaceDialog, setShowReplaceDialog] = useState(false);
   const [pendingUpload, setPendingUpload] = useState<{ field: string; file: File } | null>(null);
   const { uploadFile } = useFileUpload("carrier_documents");
-  const carrierId = form.getValues().id;
+  
+  // Make sure form is valid before trying to access values
+  const carrierId = form?.getValues()?.id;
 
   const documentFields = [
     { name: "bank_statement_doc", label: "Bank Statement", accept: ".pdf,.doc,.docx" },
@@ -30,29 +33,47 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
     { name: "w9_form_doc", label: "W9 Form", accept: ".pdf,.doc,.docx" },
   ];
   
-  // Check initial document status
+  // Check initial document status with proper null checks
   useEffect(() => {
-    const values = form.getValues();
-    console.log("Initial document values:", values);
+    if (!form) return;
     
-    // Check which documents already exist
-    documentFields.forEach(doc => {
-      const docValue = values[doc.name];
-      if (docValue) {
-        setUploadStatus(prev => ({
-          ...prev,
-          [doc.name]: "Existing document found"
-        }));
-        console.log(`${doc.label} already exists:`, docValue);
-      }
-    });
-  }, []);
+    try {
+      const values = form.getValues();
+      console.log("Initial document values:", values);
+      
+      // Check which documents already exist
+      documentFields.forEach(doc => {
+        const docValue = values?.[doc.name];
+        if (docValue) {
+          setUploadStatus(prev => ({
+            ...prev,
+            [doc.name]: "Existing document found"
+          }));
+          console.log(`${doc.label} already exists:`, docValue);
+        }
+      });
+    } catch (error) {
+      console.error("Error checking document status:", error);
+    }
+  }, [form]);
 
   const handleFileUpload = async (fieldName: string, file: File) => {
-    const existingFile = form.getValues()[fieldName];
-    if (existingFile) {
-      setPendingUpload({ field: fieldName, file });
-      setShowReplaceDialog(true);
+    if (!form) {
+      console.error("Form not initialized");
+      setUploadError("Form not properly initialized");
+      return;
+    }
+    
+    try {
+      const existingFile = form.getValues()?.[fieldName];
+      if (existingFile) {
+        setPendingUpload({ field: fieldName, file });
+        setShowReplaceDialog(true);
+        return;
+      }
+    } catch (error) {
+      console.error("Error accessing form values:", error);
+      setUploadError("Error accessing form values");
       return;
     }
 
@@ -62,6 +83,7 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
   const uploadDocument = async (fieldName: string, file: File) => {
     if (!carrierId) {
       const errorMsg = "Unable to upload: Carrier ID is missing. Please save the carrier first.";
+      console.error(errorMsg);
       setUploadError(errorMsg);
       setUploadStatus(prev => ({
         ...prev,
@@ -98,11 +120,17 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
       if (result?.url) {
         console.log(`${fieldName} uploaded successfully:`, result.url);
         
-        // Update the form field
-        form.setValue(fieldName, result.url, {
-          shouldDirty: true,
-          shouldValidate: true,
-        });
+        // Update the form field with null checks
+        if (form) {
+          try {
+            form.setValue(fieldName, result.url, {
+              shouldDirty: true,
+              shouldValidate: true,
+            });
+          } catch (err) {
+            console.error("Error setting form value:", err);
+          }
+        }
 
         setUploadStatus(prev => ({
           ...prev,
@@ -110,13 +138,22 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
         }));
 
         // Update the carrier record in the database
-        const updates = { [fieldName]: result.url };
-        await updateCarrier(carrierId, updates);
-
-        toast({
-          title: "Document uploaded",
-          description: `${documentFields.find(doc => doc.name === fieldName)?.label} has been uploaded successfully.`,
-        });
+        try {
+          const updates = { [fieldName]: result.url };
+          await updateCarrier(carrierId, updates);
+          
+          toast({
+            title: "Document uploaded",
+            description: `${documentFields.find(doc => doc.name === fieldName)?.label} has been uploaded successfully.`,
+          });
+        } catch (error) {
+          console.error("Error updating carrier record:", error);
+          toast({
+            title: "Warning",
+            description: "Document uploaded but database record may not be updated.",
+            variant: "warning",
+          });
+        }
       }
     } catch (error) {
       console.error("Error in document upload handler:", error);
@@ -146,14 +183,29 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
   };
 
   const handleRemoveDocument = async (fieldName: string) => {
+    if (!form || !carrierId) {
+      console.error("Form or carrier ID not available");
+      toast({
+        title: "Error",
+        description: "Unable to remove document. Form not properly initialized.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       console.log(`Removing ${fieldName}`);
       
-      // Update the form field
-      form.setValue(fieldName, "", {
-        shouldDirty: true,
-        shouldValidate: true,
-      });
+      // Update the form field with proper error handling
+      try {
+        form.setValue(fieldName, "", {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
+      } catch (err) {
+        console.error("Error setting form value:", err);
+        throw new Error("Failed to update form");
+      }
 
       setUploadStatus(prev => ({
         ...prev,
@@ -178,12 +230,16 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
     }
   };
 
-  const getDocumentStatusSummary = () => {
-    const values = form.getValues();
-    return documentFields.map(doc => 
-      `${doc.label}: ${values[doc.name] ? "✅" : "❌"}`
-    ).join(", ");
-  };
+  // Safety check if form isn't available
+  if (!form) {
+    console.error("DocumentsForm rendered without a valid form context");
+    return (
+      <Alert variant="destructive">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>Form not properly initialized. Please reload the page.</AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <div className="space-y-6">

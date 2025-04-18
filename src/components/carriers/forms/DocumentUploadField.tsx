@@ -3,7 +3,7 @@ import { useState } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { FormItem, FormLabel } from "@/components/ui/form";
-import { Paperclip, X, Check, Loader2 } from "lucide-react";
+import { Paperclip, X, Check, Loader2, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 interface DocumentUploadFieldProps {
@@ -14,7 +14,7 @@ interface DocumentUploadFieldProps {
   isUploading: boolean;
   onUpload: (fieldName: string, file: File) => void;
   onRemove: (fieldName: string) => void;
-  status?: string; // Added status prop as optional
+  status?: string; // Optional status prop
 }
 
 export function DocumentUploadField({
@@ -28,7 +28,16 @@ export function DocumentUploadField({
   status
 }: DocumentUploadFieldProps) {
   const [dragActive, setDragActive] = useState(false);
-  const fileUrl = form.watch(fieldName);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Safely access form values with error handling
+  let fileUrl = "";
+  try {
+    fileUrl = form?.watch?.(fieldName) || "";
+  } catch (err) {
+    console.error(`Error watching field ${fieldName}:`, err);
+    setError("Error accessing form data");
+  }
   
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -52,12 +61,31 @@ export function DocumentUploadField({
   };
   
   const handleFileChange = (file: File) => {
+    setError(null);
     onUpload(fieldName, file);
   };
   
   const handleRemoveFile = () => {
+    setError(null);
     onRemove(fieldName);
   };
+  
+  // If there's an error with the form, show an error state
+  if (error) {
+    return (
+      <FormItem>
+        <FormLabel>{label}</FormLabel>
+        <Card className="border border-red-200 bg-red-50">
+          <CardContent className="p-4 flex justify-between items-center">
+            <div className="flex items-center">
+              <AlertTriangle className="h-5 w-5 text-red-600 mr-2" />
+              <p className="text-sm font-medium text-red-600">{error}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </FormItem>
+    );
+  }
   
   return (
     <FormItem>

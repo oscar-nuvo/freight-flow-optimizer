@@ -2,8 +2,17 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { useEffect } from "react";
 
 const Login = () => {
+  // Add logging to help debug the login flow
+  useEffect(() => {
+    console.log("Login page mounted");
+    return () => {
+      console.log("Login page unmounted");
+    };
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
