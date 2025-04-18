@@ -23,7 +23,24 @@ export function DocumentsForm({ carrier }: DocumentsFormProps) {
   });
   const [showReplaceDialog, setShowReplaceDialog] = useState(false);
   const [pendingUpload, setPendingUpload] = useState<{ field: string; file: File } | null>(null);
-  const { uploadFile, loading: isUploading } = useFileUpload("carrier_documents");
+  const { uploadFile, loading: isUploading, error: uploadError } = useFileUpload("carrier_documents");
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  // Simulate upload progress
+  const simulateProgress = () => {
+    setUploadProgress(0);
+    const interval = setInterval(() => {
+      setUploadProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(interval);
+          return prev;
+        }
+        return prev + 10;
+      });
+    }, 300);
+    
+    return () => clearInterval(interval);
+  };
 
   const documentFields = [
     {
@@ -61,11 +78,17 @@ export function DocumentsForm({ carrier }: DocumentsFormProps) {
 
   const processUpload = async (fieldName: string, file: File) => {
     setActiveField(fieldName);
+    // Start progress simulation
+    const stopProgress = simulateProgress();
+    
     try {
       const uploadPath = `carriers/${carrier.id}/${fieldName}/${file.name}`;
       const fileUrl = await uploadFile(file, uploadPath);
       
       if (fileUrl) {
+        // Complete progress
+        setUploadProgress(100);
+        
         // Update local state
         setDocuments(prev => ({
           ...prev,
@@ -90,9 +113,15 @@ export function DocumentsForm({ carrier }: DocumentsFormProps) {
         variant: "destructive",
       });
     } finally {
-      setActiveField(null);
-      setPendingUpload(null);
-      setShowReplaceDialog(false);
+      // Stop progress simulation
+      stopProgress();
+      // Reset after a short delay to show 100% completion
+      setTimeout(() => {
+        setActiveField(null);
+        setPendingUpload(null);
+        setShowReplaceDialog(false);
+        setUploadProgress(0);
+      }, 500);
     }
   };
 
@@ -137,7 +166,7 @@ export function DocumentsForm({ carrier }: DocumentsFormProps) {
               isUploading={isUploading && activeField === field.name}
               onUpload={handleUpload}
               onRemove={handleRemove}
-              uploadProgress={66}
+              uploadProgress={uploadProgress}
             />
           ))}
         </div>
