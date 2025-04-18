@@ -77,7 +77,7 @@ export function BidsSection() {
   };
 
   const handleCreateBid = () => {
-    if (organization?.subscription_status === "free" && bids.length >= 1) {
+    if (organization?.subscription_status === "free" && bids.length >= 10) {
       setShowUpgradeDialog(true);
     } else {
       navigate("/bids/new");
@@ -138,17 +138,17 @@ export function BidsSection() {
             <AlertTriangle className="h-5 w-5 text-amber-500" />
             <div>
               <p className="text-sm font-medium text-amber-800">
-                Free tier: You can create 1 bid.
+                Free tier: You can create up to 10 bids.
               </p>
               <p className="text-xs text-amber-700">
                 {bids.length === 0 
                   ? "You haven't created any bids yet." 
-                  : bids.length === 1 
-                    ? "You have created your free bid. Upgrade to create more." 
-                    : `You have created ${bids.length} bids.`}
+                  : bids.length >= 10 
+                    ? "You have reached your free tier limit. Upgrade to create more bids." 
+                    : `You have created ${bids.length} of 10 allowed bids.`}
               </p>
             </div>
-            {bids.length >= 1 && (
+            {bids.length >= 10 && (
               <Button 
                 size="sm" 
                 className="ml-auto bg-amber-500 hover:bg-amber-600 text-white"
@@ -346,7 +346,7 @@ export function BidsSection() {
           <DialogHeader>
             <DialogTitle>Upgrade to create more bids</DialogTitle>
             <DialogDescription>
-              You've reached the limit of 1 bid on the free tier. Upgrade now to create unlimited bids and access additional features.
+              You've reached the limit of 10 bids on the free tier. Upgrade now to create unlimited bids and access additional features.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">

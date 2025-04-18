@@ -10,6 +10,7 @@ const pricingPlans = [
     price: "$49",
     description: "Perfect for small businesses looking to optimize their transportation procurement.",
     features: [
+      "Up to 10 bids",
       "Up to 5 team members",
       "Up to 25 carriers",
       "Up to 100 lanes",
