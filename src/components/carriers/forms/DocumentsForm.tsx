@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -7,8 +8,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Form } from "@/components/ui/form";
 import { DocumentUploadField } from "./DocumentUploadField";
 import { useFileUpload } from "@/hooks/useFileUpload";
-import { DocumentConfirmDialog } from "./DocumentConfirmDialog";
-import { CarrierFormValues } from "@/types/carrier";
 import { Carrier, updateCarrier } from "@/services/carriersService";
 
 interface DocumentsFormProps {
@@ -68,7 +67,7 @@ export function DocumentsForm({ carrier }: DocumentsFormProps) {
     setActiveField(fieldName);
     
     // If there's already a document for this field, show confirmation
-    if (form.getValues()[fieldName as keyof typeof form.getValues()]) {
+    if (form.getValues()[fieldName as keyof z.infer<typeof documentsSchema>]) {
       setPendingUpload({ field: fieldName, file });
       setShowReplaceDialog(true);
     } else {
@@ -94,14 +93,17 @@ export function DocumentsForm({ carrier }: DocumentsFormProps) {
   const processUpload = async (fieldName: string, file: File) => {
     try {
       const uploadPath = `carriers/${carrier.id}/${fieldName}/${file.name}`;
-      const fileUrl = await uploadFile(uploadPath, file);
+      const fileUrl = await uploadFile({
+        maxSizeBytes: 10 * 1024 * 1024,
+        allowedTypes: ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'],
+      }, file, uploadPath);
       
       if (fileUrl) {
         // Update form value
-        form.setValue(fieldName as any, fileUrl);
+        form.setValue(fieldName as any, fileUrl.url);
         
         // Save to database
-        const update = { [fieldName]: fileUrl };
+        const update = { [fieldName]: fileUrl.url };
         await updateCarrier(carrier.id, update);
         
         toast({
@@ -163,11 +165,24 @@ export function DocumentsForm({ carrier }: DocumentsFormProps) {
         </div>
       </div>
       
-      <DocumentConfirmDialog
-        open={showReplaceDialog}
-        onConfirm={confirmReplace}
-        onCancel={cancelReplace}
-      />
+      {showReplaceDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-4">Replace Document?</h3>
+            <p className="mb-6">
+              A document is already uploaded. Do you want to replace it with the new one?
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={cancelReplace}>
+                Cancel
+              </Button>
+              <Button onClick={confirmReplace}>
+                Replace
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </Form>
   );
 }
