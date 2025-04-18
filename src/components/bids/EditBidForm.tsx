@@ -17,7 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { uploadFile, getFileNameFromUrl } from "@/utils/fileUpload";
+import { getFileNameFromUrl } from "@/utils/fileUpload";
+import { useFileUpload } from "@/hooks/useFileUpload";
 
 interface EditBidFormProps {
   bid: {
@@ -59,6 +60,8 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const { uploadFile, loading: uploading } = useFileUpload("bid_documents");
+
   const handleFileUpload = async (file: File) => {
     if (!organization?.id) {
       setUploadError("Organization not found. Please ensure you're logged in.");
@@ -70,46 +73,24 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
       return;
     }
 
-    // Clear any previous errors
     setUploadError(null);
     
-    try {
-      console.log("Starting file upload for bid document:", file.name);
-      
-      const result = await uploadFile(
-        file,
-        "bid_documents",
-        `${organization.id}/bids/contracts/contract`,
-        {
-          maxSizeBytes: 10 * 1024 * 1024, // 10MB limit
-          allowedTypes: ['.pdf', '.doc', '.docx'],
-          onError: (message) => {
-            setUploadError(message);
-            toast({
-              title: "Upload failed",
-              description: message,
-              variant: "destructive",
-            });
-          }
-        }
-      );
-
-      if (result.success && result.url) {
-        setFormData(prev => ({
-          ...prev,
-          contract_file: result.url
-        }));
-
-        setFileUploaded(true);
-        setFileName(file.name);
-
-        toast({
-          title: "File uploaded",
-          description: `${file.name} has been uploaded successfully.`,
-        });
+    const result = await uploadFile(
+      file,
+      `${organization.id}/bids/${bid.id}/contract`,
+      {
+        maxSizeBytes: 10 * 1024 * 1024,
+        allowedTypes: [".pdf", ".doc", ".docx"],
       }
-    } catch (error: any) {
-      console.error("Error in file upload handler:", error);
+    );
+
+    if (result?.url) {
+      setFormData(prev => ({
+        ...prev,
+        contract_file: result.url
+      }));
+      setFileUploaded(true);
+      setFileName(file.name);
     }
   };
 
