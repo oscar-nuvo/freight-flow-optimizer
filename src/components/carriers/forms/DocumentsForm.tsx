@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -146,15 +145,13 @@ export function DocumentsForm({ carrier }: DocumentsFormProps) {
     }
   };
 
-  // We need to provide the form context properly
   return (
-    <Form {...form}>
+    <FormProvider {...form}>
       <form className="space-y-6">
         <div className="grid grid-cols-1 gap-4">
           {documentFields.map((field) => (
             <DocumentUploadField
               key={field.name}
-              form={form}
               fieldName={field.name}
               label={field.label}
               accept={field.accept}
@@ -184,6 +181,6 @@ export function DocumentsForm({ carrier }: DocumentsFormProps) {
           </div>
         </div>
       )}
-    </Form>
+    </FormProvider>
   );
 }
