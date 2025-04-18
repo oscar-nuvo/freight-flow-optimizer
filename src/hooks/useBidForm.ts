@@ -12,6 +12,7 @@ export const useBidForm = (orgId?: string) => {
   const {
     uploadingField,
     uploadError,
+    uploadProgress,
     handleFileUpload,
   } = useBidDocuments(undefined, orgId);
 
@@ -90,6 +91,7 @@ export const useBidForm = (orgId?: string) => {
     isSubmitting,
     uploadingField,
     uploadError,
+    uploadProgress,
     handleDocumentUpload,
     submitBid
   };

@@ -12,6 +12,7 @@ interface DocumentUploadOptions {
 export const useBidDocuments = (bidId?: string, orgId?: string) => {
   const [uploadingField, setUploadingField] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
   const { toast } = useToast();
   const { uploadFile, loading: uploading } = useFileUpload("bid_documents");
 
@@ -38,10 +39,22 @@ export const useBidDocuments = (bidId?: string, orgId?: string) => {
 
     setUploadError(null);
     setUploadingField(fieldName);
+    setUploadProgress(0);
     
     try {
       console.log(`Uploading ${fieldName} for bid: ${bidId}`);
       
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return prev;
+          }
+          return prev + 10;
+        });
+      }, 300);
+
       const result = await uploadFile(
         file,
         `${orgId}/bids/${bidId}/${fieldName}`,
@@ -51,20 +64,32 @@ export const useBidDocuments = (bidId?: string, orgId?: string) => {
         }
       );
 
+      clearInterval(progressInterval);
+
       if (!result?.url) {
+        setUploadProgress(0);
         throw new Error("Failed to get URL after upload");
       }
 
+      setUploadProgress(100);
       console.log(`Upload successful, URL: ${result.url}`);
+      
       toast({
         title: "Document uploaded",
         description: `${file.name} has been uploaded successfully.`,
       });
 
+      // Reset progress after a brief delay to show completion
+      setTimeout(() => {
+        setUploadProgress(0);
+        setUploadingField(null);
+      }, 1000);
+
       return result.url;
     } catch (error: any) {
       console.error("Error in document upload handler:", error);
       setUploadError(error.message || "Failed to upload document");
+      setUploadProgress(0);
       toast({
         title: "Upload failed",
         description: error.message || "Failed to upload document",
@@ -136,6 +161,7 @@ export const useBidDocuments = (bidId?: string, orgId?: string) => {
     uploadingField,
     uploadError,
     uploading,
+    uploadProgress,
     handleFileUpload,
     updateBidDocument,
     removeDocument
