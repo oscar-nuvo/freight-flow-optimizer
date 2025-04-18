@@ -17,4 +17,7 @@ export type CarrierFormValues = z.infer<typeof basicInfoSchema> &
   z.infer<typeof complianceSchema> &
   z.infer<typeof contactSchema> &
   z.infer<typeof billingSchema> &
-  z.infer<typeof preferencesSchema>;
+  z.infer<typeof preferencesSchema> & {
+    id: string; // Add the id property to ensure compatibility with DocumentsForm
+  };
+

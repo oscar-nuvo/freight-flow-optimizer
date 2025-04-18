@@ -22,6 +22,8 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
   const [showReplaceDialog, setShowReplaceDialog] = useState(false);
   const [pendingUpload, setPendingUpload] = useState<{ field: string; file: File } | null>(null);
   const { uploadFile, loading: uploading } = useFileUpload("carrier_documents");
+  
+  // Get the carrier ID from the form values - ensure it's a string
   const carrierId = form.getValues().id;
 
   const documentFields = [
