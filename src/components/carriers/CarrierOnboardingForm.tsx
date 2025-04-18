@@ -16,12 +16,12 @@ import { FleetDetailsForm } from "./forms/FleetDetailsForm";
 import { OperationalDetailsForm } from "./forms/OperationalDetailsForm";
 import { BillingInfoForm } from "./forms/BillingInfoForm";
 
-// Define validation schema for carrier form
+// Define validation schema for carrier form with proper type for status
 const carrierFormSchema = z.object({
   // Basic Info
   name: z.string().min(1, "Carrier name is required"),
   legal_business_name: z.string().optional(),
-  status: z.string().min(1, "Status is required"),
+  status: z.enum(["pending", "active", "inactive"]),
   tax_id: z.string().optional(),
   website: z.string().optional(),
   description: z.string().optional(),
@@ -76,7 +76,7 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
   const defaultValues: Partial<CarrierFormValues> = {
     name: carrier?.name || "",
     legal_business_name: carrier?.legal_business_name || "",
-    status: carrier?.status || "pending",
+    status: (carrier?.status as "pending" | "active" | "inactive") || "pending",
     tax_id: carrier?.tax_id || "",
     website: carrier?.website || "",
     description: carrier?.description || "",
