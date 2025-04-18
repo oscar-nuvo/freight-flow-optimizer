@@ -12,6 +12,7 @@ export type Database = {
       bids: {
         Row: {
           carriers: number | null
+          contract_file: string | null
           created_at: string
           end_date: string | null
           equipment_type: string | null
@@ -30,6 +31,7 @@ export type Database = {
         }
         Insert: {
           carriers?: number | null
+          contract_file?: string | null
           created_at?: string
           end_date?: string | null
           equipment_type?: string | null
@@ -48,6 +50,7 @@ export type Database = {
         }
         Update: {
           carriers?: number | null
+          contract_file?: string | null
           created_at?: string
           end_date?: string | null
           equipment_type?: string | null

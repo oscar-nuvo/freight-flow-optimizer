@@ -141,6 +141,8 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
         updated_at: new Date().toISOString()
       };
 
+      console.log("Sending updates to Supabase:", updates);
+
       const { error: updateError } = await supabase
         .from("bids")
         .update(updates)
