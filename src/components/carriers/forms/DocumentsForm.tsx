@@ -1,17 +1,14 @@
 
 import { useState } from "react";
-import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
-import { CarrierFormValues } from "../CarrierDetailsForm";
-import { Button } from "@/components/ui/button";
-import { Upload, File, Loader2, Trash2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { FormDescription } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { getFileNameFromUrl } from "@/utils/fileUpload";
+import { useToast } from "@/hooks/use-toast";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { DocumentConfirmDialog } from "./DocumentConfirmDialog";
-import { Progress } from "@/components/ui/progress";
+import { DocumentUploadField } from "./DocumentUploadField";
+import { CarrierFormValues } from "../CarrierDetailsForm";
+import { AlertTriangle } from "lucide-react";
 
 interface DocumentsFormProps {
   form: UseFormReturn<CarrierFormValues>;
@@ -34,7 +31,6 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
   ];
 
   const handleFileUpload = async (fieldName: string, file: File) => {
-    // Check if there's already a file
     const existingFile = form.getValues()[fieldName as keyof CarrierFormValues];
     if (existingFile) {
       setPendingUpload({ field: fieldName, file });
@@ -60,13 +56,11 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
     setUploadingField(fieldName);
     
     try {
-      console.log(`Starting upload for ${fieldName}:`, file.name);
-      
       const result = await uploadFile(
         file,
         `${carrierId}/${fieldName.replace(/_doc$/, "")}`,
         {
-          maxSizeBytes: 5 * 1024 * 1024, // 5MB limit
+          maxSizeBytes: 5 * 1024 * 1024,
           allowedTypes: ['.pdf', '.doc', '.docx'],
         }
       );
@@ -103,9 +97,15 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
     setPendingUpload(null);
   };
 
-  const handleCancelReplace = () => {
-    setShowReplaceDialog(false);
-    setPendingUpload(null);
+  const handleRemoveDocument = (fieldName: string) => {
+    form.setValue(fieldName as keyof CarrierFormValues, "", {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    toast({
+      title: "Document removed",
+      description: `${documentFields.find(doc => doc.name === fieldName)?.label} has been removed.`,
+    });
   };
 
   return (
@@ -116,103 +116,32 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
 
       {uploadError && (
         <Alert variant="destructive" className="mb-4">
+          <AlertTriangle className="h-4 w-4" />
           <AlertDescription>{uploadError}</AlertDescription>
         </Alert>
       )}
 
-      {documentFields.map((doc) => (
-        <FormField
-          key={doc.name}
-          control={form.control}
-          name={doc.name as keyof CarrierFormValues}
-          render={({ field }) => (
-            <FormItem className="flex flex-col space-y-2">
-              <FormLabel>{doc.label}</FormLabel>
-              <div className="flex items-center gap-2">
-                <FormControl>
-                  <Input 
-                    type="text" 
-                    className="flex-1"
-                    placeholder="No file uploaded" 
-                    readOnly 
-                    value={field.value ? getFileNameFromUrl(String(field.value)) : ""}
-                  />
-                </FormControl>
-                <div className="flex gap-2">
-                  <div className="relative">
-                    <input
-                      type="file"
-                      id={`file-upload-${doc.name}`}
-                      className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-                      accept={doc.accept}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          handleFileUpload(doc.name, file);
-                        }
-                      }}
-                      disabled={uploadingField !== null}
-                    />
-                    <Button 
-                      type="button" 
-                      variant="outline"
-                      disabled={uploadingField !== null}
-                    >
-                      {uploadingField === doc.name ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Uploading...
-                        </>
-                      ) : field.value ? (
-                        <>
-                          <File className="h-4 w-4 mr-2" />
-                          Replace
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="h-4 w-4 mr-2" />
-                          Upload
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                  {field.value && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => {
-                        form.setValue(doc.name as keyof CarrierFormValues, "", {
-                          shouldDirty: true,
-                          shouldValidate: true,
-                        });
-                        toast({
-                          title: "Document removed",
-                          description: `${doc.label} has been removed.`,
-                        });
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-              <FormMessage />
-              {field.value && (
-                <div className="text-xs text-blue-600 hover:underline">
-                  <a href={String(field.value)} target="_blank" rel="noopener noreferrer">
-                    View Document
-                  </a>
-                </div>
-              )}
-            </FormItem>
-          )}
-        />
-      ))}
+      <div className="grid gap-6">
+        {documentFields.map((doc) => (
+          <DocumentUploadField
+            key={doc.name}
+            form={form}
+            fieldName={doc.name}
+            label={doc.label}
+            accept={doc.accept}
+            isUploading={uploadingField === doc.name}
+            onUpload={handleFileUpload}
+            onRemove={handleRemoveDocument}
+          />
+        ))}
+      </div>
 
       <DocumentConfirmDialog
         isOpen={showReplaceDialog}
-        onClose={handleCancelReplace}
+        onClose={() => {
+          setShowReplaceDialog(false);
+          setPendingUpload(null);
+        }}
         onConfirm={handleConfirmReplace}
         title="Replace Document"
         description="Are you sure you want to replace the existing document? This action cannot be undone."
