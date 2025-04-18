@@ -1,4 +1,3 @@
-
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -78,7 +77,27 @@ const NewBid = () => {
     // Check file size (10MB limit)
     const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
     if (file.size > MAX_FILE_SIZE) {
-      setUploadError("File exceeds the 10MB size limit");
+      const errorMsg = `File exceeds the 10MB size limit`;
+      setUploadError(errorMsg);
+      toast({
+        title: "File too large",
+        description: errorMsg,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = ['.pdf', '.doc', '.docx'];
+    const fileExtension = `.${file.name.split('.').pop()?.toLowerCase()}`;
+    if (!allowedTypes.includes(fileExtension)) {
+      const errorMsg = `Invalid file type. Please upload a ${allowedTypes.join(', ')} file`;
+      setUploadError(errorMsg);
+      toast({
+        title: "Invalid file type",
+        description: errorMsg,
+        variant: "destructive",
+      });
       return;
     }
 
@@ -87,6 +106,8 @@ const NewBid = () => {
       const fileExt = file.name.split(".").pop();
       const fileName = `contract_${Date.now()}.${fileExt}`;
       const filePath = `${organization.id}/bids/contracts/${fileName}`;
+
+      console.log(`Starting upload to path: ${filePath}`);
 
       // Upload file to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -97,8 +118,11 @@ const NewBid = () => {
         });
 
       if (uploadError) {
-        throw uploadError;
+        console.error("Supabase upload error:", uploadError);
+        throw new Error(uploadError.message || "Upload failed");
       }
+
+      console.log("File uploaded successfully:", uploadData);
 
       // Get the public URL for the file
       const { data: urlData } = supabase.storage
@@ -108,6 +132,8 @@ const NewBid = () => {
       if (!urlData?.publicUrl) {
         throw new Error("Could not get public URL for uploaded file");
       }
+
+      console.log("File public URL:", urlData.publicUrl);
 
       form.setValue("contract_file", urlData.publicUrl, {
         shouldDirty: true,
@@ -123,7 +149,13 @@ const NewBid = () => {
       });
     } catch (error: any) {
       console.error("Error uploading file:", error);
-      setUploadError(error.message || "Failed to upload file. Please try again.");
+      const errorMessage = error.message || "Failed to upload file. Please try again.";
+      setUploadError(errorMessage);
+      toast({
+        title: "Upload failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
     }
   };
 

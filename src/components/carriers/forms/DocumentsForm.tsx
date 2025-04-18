@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { CarrierFormValues } from "../CarrierDetailsForm";
 import { Button } from "@/components/ui/button";
-import { Upload, File, Loader2, AlertTriangle } from "lucide-react";
+import { Upload, File, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -77,6 +77,8 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
       const fileName = `${fieldName.replace(/_doc$/, "")}_${Date.now()}.${fileExt}`;
       const filePath = `${carrierId}/${fileName}`;
 
+      console.log(`Uploading to path: ${filePath}`);
+
       // Upload file to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("carrier_documents")
@@ -87,7 +89,7 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
 
       if (uploadError) {
         console.error("Upload error details:", uploadError);
-        throw new Error(uploadError.message);
+        throw new Error(uploadError.message || "Upload failed");
       }
 
       console.log("File uploaded successfully:", uploadData);
@@ -100,6 +102,8 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
       if (!urlData?.publicUrl) {
         throw new Error("Could not generate public URL for uploaded file");
       }
+
+      console.log("Public URL generated:", urlData.publicUrl);
 
       // Update the form field with the file URL
       form.setValue(fieldName as keyof CarrierFormValues, urlData.publicUrl, {

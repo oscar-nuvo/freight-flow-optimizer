@@ -118,6 +118,8 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
       const fileName = `contract_${Date.now()}.${fileExt}`;
       const filePath = `${organization.id}/bids/contracts/${fileName}`;
 
+      console.log(`Uploading to path: ${filePath}`);
+
       // Upload file to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("bid_documents")
@@ -128,7 +130,7 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
 
       if (uploadError) {
         console.error("Upload error details:", uploadError);
-        throw new Error(uploadError.message);
+        throw new Error(uploadError.message || "Upload failed");
       }
 
       console.log("File uploaded successfully:", uploadData);
@@ -141,6 +143,8 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
       if (!urlData?.publicUrl) {
         throw new Error("Could not generate public URL for uploaded file");
       }
+
+      console.log("Public URL generated:", urlData.publicUrl);
 
       setFormData(prev => ({
         ...prev,
