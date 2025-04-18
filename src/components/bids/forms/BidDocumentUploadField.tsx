@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { useRef } from "react";
 
 export interface BidFormValues {
   id?: string;
@@ -47,6 +48,23 @@ export function BidDocumentUploadField({
 }: BidDocumentUploadFieldProps) {
   const value = form.watch(fieldName as keyof BidFormValues);
   const hasFile = Boolean(value);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleButtonClick = () => {
+    // Programmatically click the hidden file input
+    if (fileInputRef.current && !isUploading) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onUpload(fieldName, file);
+      // Clear the input value so the same file can be selected again if needed
+      e.target.value = '';
+    }
+  };
 
   return (
     <FormField
@@ -72,44 +90,29 @@ export function BidDocumentUploadField({
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="relative">
-                        <input
-                          type="file"
-                          id={`file-upload-${fieldName}`}
-                          className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-                          accept={accept}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              onUpload(fieldName, file);
-                            }
-                          }}
-                          disabled={isUploading}
-                        />
-                        <Button 
-                          type="button" 
-                          variant="outline"
-                          disabled={isUploading}
-                          className="relative"
-                        >
-                          {isUploading ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Uploading...
-                            </>
-                          ) : hasFile ? (
-                            <>
-                              <File className="h-4 w-4 mr-2" />
-                              Replace
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="h-4 w-4 mr-2" />
-                              Upload
-                            </>
-                          )}
-                        </Button>
-                      </div>
+                      <Button 
+                        type="button" 
+                        variant="outline"
+                        disabled={isUploading}
+                        onClick={handleButtonClick}
+                      >
+                        {isUploading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Uploading...
+                          </>
+                        ) : hasFile ? (
+                          <>
+                            <File className="h-4 w-4 mr-2" />
+                            Replace
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4 mr-2" />
+                            Upload
+                          </>
+                        )}
+                      </Button>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Upload {label.toLowerCase()}</p>
@@ -117,6 +120,16 @@ export function BidDocumentUploadField({
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
+
+                {/* Hidden file input, controlled by button click */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept={accept}
+                  onChange={handleFileChange}
+                  disabled={isUploading}
+                />
 
                 {hasFile && (
                   <Tooltip>

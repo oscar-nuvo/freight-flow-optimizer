@@ -27,6 +27,8 @@ export const useFileUpload = (bucketName: string) => {
     setError(null);
 
     try {
+      console.log(`Starting upload to ${bucketName}/${path} for file:`, file.name);
+      
       // Validate file size
       if (file.size > maxSizeBytes) {
         throw new Error(
@@ -44,6 +46,8 @@ export const useFileUpload = (bucketName: string) => {
 
       // Upload file
       const fileName = `${path}_${Date.now()}${fileExt}`;
+      console.log(`Uploading to path: ${fileName}`);
+      
       const { data, error: uploadError } = await supabase.storage
         .from(bucketName)
         .upload(fileName, file, {
@@ -52,19 +56,25 @@ export const useFileUpload = (bucketName: string) => {
         });
 
       if (uploadError) {
+        console.error("Supabase storage upload error:", uploadError);
         throw uploadError;
       }
+
+      console.log("Upload successful, data:", data);
 
       // Get public URL
       const { data: urlData } = supabase.storage
         .from(bucketName)
         .getPublicUrl(fileName);
 
+      console.log("Generated public URL:", urlData?.publicUrl);
+
       return {
         path: data?.path,
         url: urlData?.publicUrl,
       };
     } catch (err: any) {
+      console.error("Error in uploadFile:", err);
       const errorMessage = err.message || "Error uploading file";
       setError(errorMessage);
       toast({
