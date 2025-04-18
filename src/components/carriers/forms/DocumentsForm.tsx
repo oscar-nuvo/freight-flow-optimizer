@@ -147,7 +147,7 @@ export function DocumentsForm({ carrier }: DocumentsFormProps) {
 
   return (
     <Form {...form}>
-      <div className="space-y-6">
+      <form className="space-y-6">
         <div className="grid grid-cols-1 gap-4">
           {documentFields.map((field) => (
             <DocumentUploadField
@@ -162,7 +162,7 @@ export function DocumentsForm({ carrier }: DocumentsFormProps) {
             />
           ))}
         </div>
-      </div>
+      </form>
       
       {showReplaceDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
