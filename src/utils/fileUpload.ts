@@ -26,6 +26,13 @@ export const uploadFile = async (
       onError
     } = options;
 
+    // Check if file exists
+    if (!file) {
+      const errorMsg = "No file selected";
+      if (onError) onError(errorMsg);
+      return { success: false, error: errorMsg };
+    }
+
     // Check file size
     if (file.size > maxSizeBytes) {
       const errorMsg = `File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds the ${(maxSizeBytes / 1024 / 1024).toFixed(0)}MB limit`;
@@ -95,7 +102,20 @@ export const getFileNameFromUrl = (url: string | null | undefined): string => {
   try {
     const urlObj = new URL(url);
     const pathParts = urlObj.pathname.split("/");
-    return pathParts[pathParts.length - 1];
+    let fileName = pathParts[pathParts.length - 1];
+    
+    // Remove timestamp if present
+    fileName = fileName.replace(/^.*_\d+\./, '');
+    
+    // Add file extension back if removed
+    if (!fileName.includes('.')) {
+      const extension = pathParts[pathParts.length - 1].split('.').pop();
+      if (extension) {
+        fileName = `${fileName}.${extension}`;
+      }
+    }
+    
+    return fileName || "File uploaded";
   } catch (e) {
     return "File uploaded";
   }
