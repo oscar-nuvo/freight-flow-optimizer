@@ -14,6 +14,7 @@ interface DocumentUploadFieldProps {
   isUploading: boolean;
   onUpload: (fieldName: string, file: File) => void;
   onRemove: (fieldName: string) => void;
+  status?: string; // Added status prop as optional
 }
 
 export function DocumentUploadField({
@@ -23,7 +24,8 @@ export function DocumentUploadField({
   accept,
   isUploading,
   onUpload,
-  onRemove
+  onRemove,
+  status
 }: DocumentUploadFieldProps) {
   const [dragActive, setDragActive] = useState(false);
   const fileUrl = form.watch(fieldName);
@@ -71,6 +73,9 @@ export function DocumentUploadField({
                 <p className="text-xs text-muted-foreground truncate max-w-xs">
                   {fileUrl.split('/').pop()}
                 </p>
+                {status && (
+                  <p className="text-xs text-green-600">{status}</p>
+                )}
               </div>
             </div>
             <Button
@@ -107,6 +112,9 @@ export function DocumentUploadField({
               <p className="text-xs text-muted-foreground mb-4">
                 Supported formats: {accept.replace(/\./g, "").toUpperCase()}
               </p>
+              {status && (
+                <p className="text-xs text-muted-foreground mb-2">{status}</p>
+              )}
               <div>
                 <Button
                   type="button"
