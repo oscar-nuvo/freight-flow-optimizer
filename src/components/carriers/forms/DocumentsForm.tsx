@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { updateCarrier } from "@/services/carriersService";
-import { DocumentUploadField } from "./DocumentUploadField";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { useToast } from "@/hooks/use-toast";
 import type { Carrier } from "@/services/carriersService";
@@ -16,6 +15,7 @@ import {
   AlertDialogHeader, 
   AlertDialogTitle 
 } from "@/components/ui/alert-dialog";
+import { DocumentUploader } from "./DocumentUploader";
 
 interface DocumentsFormProps {
   carrier: Carrier;
@@ -32,10 +32,9 @@ export function DocumentsForm({ carrier }: DocumentsFormProps) {
   });
   const [showReplaceDialog, setShowReplaceDialog] = useState(false);
   const [pendingUpload, setPendingUpload] = useState<{ field: string; file: File } | null>(null);
-  const { uploadFile, loading: isUploading, error: uploadError } = useFileUpload("carrier_documents");
+  const { uploadFile, loading: isUploading } = useFileUpload("carrier_documents");
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  // Simulate upload progress
   const simulateProgress = () => {
     setUploadProgress(0);
     const interval = setInterval(() => {
@@ -75,7 +74,6 @@ export function DocumentsForm({ carrier }: DocumentsFormProps) {
   ];
 
   const handleUpload = async (fieldName: string, file: File) => {
-    // If there's already a document, show confirmation dialog
     if (documents[fieldName as keyof typeof documents]) {
       setPendingUpload({ field: fieldName, file });
       setShowReplaceDialog(true);
@@ -87,7 +85,6 @@ export function DocumentsForm({ carrier }: DocumentsFormProps) {
 
   const processUpload = async (fieldName: string, file: File) => {
     setActiveField(fieldName);
-    // Start progress simulation
     const stopProgress = simulateProgress();
     
     try {
@@ -95,16 +92,13 @@ export function DocumentsForm({ carrier }: DocumentsFormProps) {
       const fileUrl = await uploadFile(file, uploadPath);
       
       if (fileUrl) {
-        // Complete progress
         setUploadProgress(100);
         
-        // Update local state
         setDocuments(prev => ({
           ...prev,
           [fieldName]: fileUrl.url
         }));
         
-        // Update database
         await updateCarrier(carrier.id, {
           [fieldName]: fileUrl.url
         });
@@ -122,9 +116,7 @@ export function DocumentsForm({ carrier }: DocumentsFormProps) {
         variant: "destructive",
       });
     } finally {
-      // Stop progress simulation
       stopProgress();
-      // Reset after a short delay to show 100% completion
       setTimeout(() => {
         setActiveField(null);
         setPendingUpload(null);
@@ -136,13 +128,11 @@ export function DocumentsForm({ carrier }: DocumentsFormProps) {
 
   const handleRemove = async (fieldName: string) => {
     try {
-      // Update local state
       setDocuments(prev => ({
         ...prev,
         [fieldName]: null
       }));
       
-      // Update database
       await updateCarrier(carrier.id, {
         [fieldName]: null
       });
@@ -166,7 +156,7 @@ export function DocumentsForm({ carrier }: DocumentsFormProps) {
       <CardContent className="pt-6">
         <div className="grid grid-cols-1 gap-4">
           {documentFields.map((field) => (
-            <DocumentUploadField
+            <DocumentUploader
               key={field.name}
               fieldName={field.name}
               label={field.label}
@@ -175,7 +165,7 @@ export function DocumentsForm({ carrier }: DocumentsFormProps) {
               isUploading={isUploading && activeField === field.name}
               onUpload={handleUpload}
               onRemove={handleRemove}
-              uploadProgress={uploadProgress}
+              uploadProgress={activeField === field.name ? uploadProgress : 0}
             />
           ))}
         </div>
