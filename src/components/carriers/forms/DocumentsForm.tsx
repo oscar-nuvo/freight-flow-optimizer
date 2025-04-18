@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { FormDescription } from "@/components/ui/form";
@@ -10,7 +9,6 @@ import { DocumentUploadField } from "./DocumentUploadField";
 import { AlertTriangle, Info } from "lucide-react";
 import { updateCarrier } from "@/services/carriersService";
 
-// Using the correct type from CarrierOnboardingForm
 interface DocumentsFormProps {
   form: UseFormReturn<any>;
 }
@@ -22,7 +20,7 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
   const [uploadStatus, setUploadStatus] = useState<Record<string, string>>({});
   const [showReplaceDialog, setShowReplaceDialog] = useState(false);
   const [pendingUpload, setPendingUpload] = useState<{ field: string; file: File } | null>(null);
-  const { uploadFile, loading: uploading } = useFileUpload("carrier_documents");
+  const { uploadFile } = useFileUpload("carrier_documents");
   const carrierId = form.getValues().id;
 
   const documentFields = [
@@ -180,7 +178,6 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
     }
   };
 
-  // Debug function to show document status
   const getDocumentStatusSummary = () => {
     const values = form.getValues();
     return documentFields.map(doc => 
@@ -198,7 +195,8 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
         <Alert className="mb-4">
           <Info className="h-4 w-4" />
           <AlertDescription>
-            <p>Document Status: {getDocumentStatusSummary()}</p>
+            <p>Document Status: {Object.entries(uploadStatus).map(([field, status]) => 
+              `${field}: ${status}`).join(", ")}</p>
             <p>Carrier ID: {carrierId || "Not available"}</p>
           </AlertDescription>
         </Alert>

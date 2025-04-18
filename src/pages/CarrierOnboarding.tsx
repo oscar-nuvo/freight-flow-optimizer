@@ -47,22 +47,32 @@ const CarrierOnboarding = () => {
 
   // Function to check if carrier has documents
   const hasRequiredDocuments = (carrierData) => {
-    if (!carrierData) return false;
+    console.log("Checking documents for carrier:", carrierData?.id);
     
-    console.log("Checking documents:", {
+    if (!carrierData) {
+      console.log("No carrier data available");
+      return false;
+    }
+    
+    const documents = {
       bank_statement: carrierData.bank_statement_doc,
       cargo_insurance: carrierData.cargo_insurance_doc,
       primary_liability: carrierData.primary_liability_doc,
       w9_form: carrierData.w9_form_doc
-    });
+    };
     
-    // Return true if any document is uploaded
-    return !!(
-      carrierData.bank_statement_doc || 
-      carrierData.cargo_insurance_doc || 
-      carrierData.primary_liability_doc || 
-      carrierData.w9_form_doc
+    console.log("Current document status:", documents);
+    
+    // Return true if ANY document is uploaded
+    const hasDocuments = !!(
+      documents.bank_statement || 
+      documents.cargo_insurance || 
+      documents.primary_liability || 
+      documents.w9_form
     );
+    
+    console.log("Has required documents:", hasDocuments);
+    return hasDocuments;
   };
 
   useEffect(() => {
@@ -81,6 +91,7 @@ const CarrierOnboarding = () => {
         if (!carrierData) {
           setError("Invalid or expired invitation link");
         } else if (carrierData.profile_completed_at) {
+          console.log("Profile already completed at:", carrierData.profile_completed_at);
           setError("This profile has already been completed");
           setIsCompleted(true);
         } else {
@@ -96,18 +107,26 @@ const CarrierOnboarding = () => {
             });
           }
 
-          // Check if documents already exist and skip to success if they do
+          // Check if documents exist and update UI accordingly
           if (hasRequiredDocuments(carrierData)) {
-            console.log("Documents already exist, skipping to success screen");
+            console.log("Documents found, moving to success screen");
             setDebugInfo("Documents found in database, moving to success screen");
-            // Move directly to success if carrier already has documents
             handleCompleteDocuments();
+          } else if (carrierData.name) {
+            // If basic info exists but no documents, move to documents step
+            console.log("Basic info exists, moving to documents step");
+            setCurrentStep('documents');
           }
         }
       } catch (err) {
         console.error("Error loading carrier:", err);
         setError(`Failed to load carrier profile: ${err.message || "Unknown error"}`);
         setDebugInfo(`Error details: ${JSON.stringify(err)}`);
+        toast({
+          title: "Error",
+          description: `Failed to load carrier profile: ${err.message || "Please try again"}`,
+          variant: "destructive",
+        });
       } finally {
         setIsLoading(false);
       }
@@ -134,10 +153,10 @@ const CarrierOnboarding = () => {
         ...formData
       }));
       
-      // Check if documents already exist
+      // Check if documents exist
       if (hasRequiredDocuments(carrier)) {
-        console.log("Documents already exist, completing profile");
-        setDebugInfo("Documents already exist, completing profile");
+        console.log("Documents exist, completing profile");
+        setDebugInfo("Documents exist, completing profile");
         await handleCompleteDocuments();
       } else {
         // Move to documents step if no documents
