@@ -20,6 +20,7 @@ import Analysis from "./pages/Analysis";
 import NotFound from "./pages/NotFound";
 import EditBid from "./pages/EditBid";
 import Pricing from "./pages/Pricing";
+import CarrierOnboarding from "./pages/CarrierOnboarding";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/routes" element={<ProtectedRoute><RoutesList /></ProtectedRoute>} />
             <Route path="/analysis" element={<ProtectedRoute><Analysis /></ProtectedRoute>} />
             <Route path="/bids/:id/edit" element={<ProtectedRoute><EditBid /></ProtectedRoute>} />
+            <Route path="/carrier-onboarding/:token" element={<CarrierOnboarding />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
