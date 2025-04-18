@@ -213,7 +213,7 @@ const NewBid = () => {
           <Alert className="bg-amber-50 border-amber-200">
             <AlertTriangle className="h-5 w-5 text-amber-500" />
             <AlertDescription className="text-amber-800">
-              Free tier users can create 1 bid. Upgrade to create unlimited bids.
+              Upgrade to Premium and unlock unlimited bid creation with advanced features!
             </AlertDescription>
           </Alert>
         )}
