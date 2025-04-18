@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -7,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Upload, File, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { uploadFile, getFileNameFromUrl } from "@/utils/fileUpload";
+import { getFileNameFromUrl } from "@/utils/fileUpload";
+import { useFileUpload } from "@/hooks/useFileUpload";
 
 interface DocumentsFormProps {
   form: UseFormReturn<CarrierFormValues>;
@@ -17,6 +19,7 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
   const { toast } = useToast();
   const [uploadingField, setUploadingField] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const { uploadFile, loading: uploading } = useFileUpload("carrier_documents");
   const carrierId = form.getValues().id;
 
   const documentFields = [
@@ -37,7 +40,6 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
       return;
     }
 
-    // Clear any previous errors
     setUploadError(null);
     setUploadingField(fieldName);
     
@@ -46,24 +48,14 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
       
       const result = await uploadFile(
         file,
-        "carrier_documents",
         `${carrierId}/${fieldName.replace(/_doc$/, "")}`,
         {
           maxSizeBytes: 5 * 1024 * 1024, // 5MB limit
           allowedTypes: ['.pdf', '.doc', '.docx'],
-          onError: (message) => {
-            setUploadError(message);
-            toast({
-              title: "Upload failed",
-              description: message,
-              variant: "destructive",
-            });
-          }
         }
       );
 
-      if (result.success && result.url) {
-        // Update the form field with the file URL
+      if (result?.url) {
         form.setValue(fieldName as keyof CarrierFormValues, result.url, {
           shouldDirty: true,
           shouldValidate: true,
@@ -76,6 +68,12 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
       }
     } catch (error: any) {
       console.error("Error in document upload handler:", error);
+      setUploadError(error.message || "Failed to upload document");
+      toast({
+        title: "Upload failed",
+        description: error.message || "Failed to upload document",
+        variant: "destructive",
+      });
     } finally {
       setUploadingField(null);
     }
