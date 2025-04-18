@@ -1,3 +1,4 @@
+
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -35,7 +36,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { BidDocumentUploadField } from "@/components/bids/forms/BidDocumentUploadField";
 import { useBidDocuments } from "@/hooks/useBidDocuments";
+import { BidFormValues } from "@/components/bids/forms/BidDocumentUploadField";
 
+// Update the schema to ensure name is required
 const formSchema = z.object({
   name: z.string().min(2, "Bid name must have at least 2 characters"),
   submission_date: z.date().optional(),
@@ -47,13 +50,16 @@ const formSchema = z.object({
   contract_file: z.string().optional(),
 });
 
+// Define the form type to match BidFormValues
+type NewBidFormValues = z.infer<typeof formSchema>;
+
 const NewBid = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { organization } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<NewBidFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
@@ -97,7 +103,7 @@ const NewBid = () => {
     form.setValue(fieldName as any, "");
   };
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: NewBidFormValues) => {
     if (!organization?.id) {
       toast({
         title: "Error",
@@ -390,7 +396,7 @@ const NewBid = () => {
                 />
 
                 <BidDocumentUploadField
-                  form={form}
+                  form={form as any} // Add explicit type casting to satisfy TypeScript
                   fieldName="contract_file"
                   label="RFP Contract"
                   accept=".pdf,.doc,.docx"
