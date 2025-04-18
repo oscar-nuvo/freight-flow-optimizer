@@ -9,12 +9,13 @@ import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, CircleAlert, Truck, User, MapPin, Building, CreditCard } from "lucide-react";
+import { CheckCircle, CircleAlert, Truck, User, MapPin, Building, CreditCard, FileCheck, Settings2 } from "lucide-react";
 import { Carrier } from "@/services/carriersService";
 import { ComplianceForm } from "./forms/ComplianceForm";
 import { FleetDetailsForm } from "./forms/FleetDetailsForm";
 import { OperationalDetailsForm } from "./forms/OperationalDetailsForm";
 import { BillingInfoForm } from "./forms/BillingInfoForm";
+import { PreferencesForm } from "./forms/PreferencesForm";
 
 // Define validation schema for carrier form with proper type for status
 const carrierFormSchema = z.object({
@@ -36,14 +37,56 @@ const carrierFormSchema = z.object({
   city: z.string().optional(),
   state: z.string().optional(),
   zip_code: z.string().optional(),
+  additional_contacts: z.array(z.any()).optional(),
 
-  // All other fields from other forms made optional
+  // Compliance
+  registration_type: z.string().optional(),
   mc_number: z.string().optional(),
   usdot_number: z.string().optional(),
   scac: z.string().optional(),
-  cdl_drivers_count: z.number().optional(),
-  power_units_count: z.number().optional(),
+  is_ctpat_certified: z.boolean().optional(),
+  ctpat_svi_number: z.string().optional(),
+  fmcsa_authority_active: z.boolean().optional(),
+  authority_types: z.array(z.string()).optional(),
+  handles_inbond_ca_shipments: z.boolean().optional(),
   rfc_number: z.string().optional(),
+
+  // Fleet
+  cdl_drivers_count: z.number().optional(),
+  b1_drivers_count: z.number().optional(),
+  offers_team_driver_services: z.boolean().optional(),
+  power_units_count: z.number().optional(),
+  dry_van_trailers_count: z.number().optional(),
+  reefer_trailers_count: z.number().optional(),
+  flatbed_trailers_count: z.number().optional(),
+  authorized_for_hazmat: z.boolean().optional(),
+
+  // Operational
+  countries_of_operation: z.array(z.string()).optional(),
+  service_types: z.array(z.string()).optional(),
+  provides_cross_border_services: z.boolean().optional(),
+  cross_border_routes: z.array(z.string()).optional(),
+  engages_in_trailer_exchanges: z.boolean().optional(),
+  trailer_exchange_partners: z.string().optional(),
+
+  // Billing
+  bank_name: z.string().optional(),
+  account_name: z.string().optional(),
+  account_number: z.string().optional(),
+  routing_number: z.string().optional(),
+  swift_code: z.string().optional(),
+  payments_via_intermediary: z.boolean().optional(),
+  billing_email: z.string().email("Invalid email address").optional().or(z.literal('')),
+  currency: z.string().optional(),
+  payout_method: z.string().optional(),
+
+  // Preferences
+  tracking_method: z.string().optional(),
+  telematics_provider: z.string().optional(),
+
+  // Commercial Preferences
+  yard_locations: z.array(z.any()).optional(),
+  primary_lanes: z.array(z.any()).optional(),
 });
 
 export type CarrierFormValues = z.infer<typeof carrierFormSchema>;
@@ -63,6 +106,7 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
     fleet: boolean;
     operations: boolean;
     billing: boolean;
+    preferences: boolean;
   }>({
     basic: false,
     contact: false,
@@ -70,6 +114,7 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
     fleet: false,
     operations: false,
     billing: false,
+    preferences: false,
   });
 
   // Default values from carrier data
@@ -89,12 +134,56 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
     city: carrier?.city || "",
     state: carrier?.state || "",
     zip_code: carrier?.zip_code || "",
+    additional_contacts: carrier?.additional_contacts || [],
+    
+    // Compliance fields
+    registration_type: carrier?.registration_type || "",
     mc_number: carrier?.mc_number || "",
     usdot_number: carrier?.usdot_number || "",
     scac: carrier?.scac || "",
+    is_ctpat_certified: carrier?.is_ctpat_certified || false,
+    ctpat_svi_number: carrier?.ctpat_svi_number || "",
+    fmcsa_authority_active: carrier?.fmcsa_authority_active || false,
+    authority_types: carrier?.authority_types || [],
+    handles_inbond_ca_shipments: carrier?.handles_inbond_ca_shipments || false,
     rfc_number: carrier?.rfc_number || "",
+    
+    // Fleet fields
     cdl_drivers_count: carrier?.cdl_drivers_count || undefined,
+    b1_drivers_count: carrier?.b1_drivers_count || undefined,
+    offers_team_driver_services: carrier?.offers_team_driver_services || false,
     power_units_count: carrier?.power_units_count || undefined,
+    dry_van_trailers_count: carrier?.dry_van_trailers_count || undefined,
+    reefer_trailers_count: carrier?.reefer_trailers_count || undefined,
+    flatbed_trailers_count: carrier?.flatbed_trailers_count || undefined,
+    authorized_for_hazmat: carrier?.authorized_for_hazmat || false,
+    
+    // Operational fields
+    countries_of_operation: carrier?.countries_of_operation || [],
+    service_types: carrier?.service_types || [],
+    provides_cross_border_services: carrier?.provides_cross_border_services || false,
+    cross_border_routes: carrier?.cross_border_routes || [],
+    engages_in_trailer_exchanges: carrier?.engages_in_trailer_exchanges || false,
+    trailer_exchange_partners: carrier?.trailer_exchange_partners || "",
+    
+    // Billing fields
+    bank_name: carrier?.bank_name || "",
+    account_name: carrier?.account_name || "",
+    account_number: carrier?.account_number || "",
+    routing_number: carrier?.routing_number || "",
+    swift_code: carrier?.swift_code || "",
+    payments_via_intermediary: carrier?.payments_via_intermediary || false,
+    billing_email: carrier?.billing_email || "",
+    currency: carrier?.currency || "",
+    payout_method: carrier?.payout_method || "",
+    
+    // Preference fields
+    tracking_method: carrier?.tracking_method || "",
+    telematics_provider: carrier?.telematics_provider || "",
+    
+    // Commercial preference fields
+    yard_locations: carrier?.yard_locations || [],
+    primary_lanes: carrier?.primary_lanes || [],
   };
 
   // Initialize form with react-hook-form
@@ -135,9 +224,9 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
             <Tabs value={activeTab} onValueChange={handleTabChange}>
-              <TabsList className="grid grid-cols-3 sm:grid-cols-6 mb-8">
+              <TabsList className="grid grid-cols-3 sm:grid-cols-7 mb-8">
                 <TabsTrigger value="basic" className="flex flex-col items-center gap-1 py-2">
-                  <Truck className="h-4 w-4" />
+                  <Building className="h-4 w-4" />
                   <span className="text-xs">Basic</span>
                   {formState.basic && <CheckCircle className="h-3 w-3 text-green-500 absolute top-1 right-1" />}
                 </TabsTrigger>
@@ -147,7 +236,7 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
                   {formState.contact && <CheckCircle className="h-3 w-3 text-green-500 absolute top-1 right-1" />}
                 </TabsTrigger>
                 <TabsTrigger value="compliance" className="flex flex-col items-center gap-1 py-2">
-                  <CircleAlert className="h-4 w-4" />
+                  <FileCheck className="h-4 w-4" />
                   <span className="text-xs">Compliance</span>
                   {formState.compliance && <CheckCircle className="h-3 w-3 text-green-500 absolute top-1 right-1" />}
                 </TabsTrigger>
@@ -165,6 +254,11 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
                   <CreditCard className="h-4 w-4" />
                   <span className="text-xs">Billing</span>
                   {formState.billing && <CheckCircle className="h-3 w-3 text-green-500 absolute top-1 right-1" />}
+                </TabsTrigger>
+                <TabsTrigger value="preferences" className="flex flex-col items-center gap-1 py-2">
+                  <Settings2 className="h-4 w-4" />
+                  <span className="text-xs">Preferences</span>
+                  {formState.preferences && <CheckCircle className="h-3 w-3 text-green-500 absolute top-1 right-1" />}
                 </TabsTrigger>
               </TabsList>
               
@@ -285,9 +379,31 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
                     Back
                   </Button>
                   <Button 
+                    type="button" 
+                    onClick={() => {
+                      markSectionCompleted("billing");
+                      handleTabChange("preferences");
+                    }}
+                  >
+                    Next: Preferences
+                  </Button>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="preferences" className="space-y-4">
+                <PreferencesForm form={form} />
+                <div className="flex justify-between mt-6">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => handleTabChange("billing")}
+                  >
+                    Back
+                  </Button>
+                  <Button 
                     type="submit"
                     disabled={isSubmitting}
-                    onClick={() => markSectionCompleted("billing")}
+                    onClick={() => markSectionCompleted("preferences")}
                   >
                     {isSubmitting ? (
                       <>

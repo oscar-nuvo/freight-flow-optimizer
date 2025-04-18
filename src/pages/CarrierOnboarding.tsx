@@ -5,8 +5,22 @@ import { getCarrierByToken, updateCarrier } from "@/services/carriersService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Truck, AlertCircle, Check } from "lucide-react";
+import { Truck, AlertCircle, Check, Upload, FileText } from "lucide-react";
 import { CarrierOnboardingForm } from "@/components/carriers/CarrierOnboardingForm";
+import { DocumentsForm } from "@/components/carriers/forms/DocumentsForm";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+// Document form schema (minimal since most handling is in DocumentsForm)
+const documentFormSchema = z.object({
+  bank_statement_doc: z.string().optional(),
+  cargo_insurance_doc: z.string().optional(),
+  primary_liability_doc: z.string().optional(),
+  w9_form_doc: z.string().optional(),
+});
+
+type DocumentFormValues = z.infer<typeof documentFormSchema>;
 
 const CarrierOnboarding = () => {
   const { token } = useParams<{ token: string }>();
@@ -15,8 +29,20 @@ const CarrierOnboarding = () => {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [showDocumentUpload, setShowDocumentUpload] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Initialize form for documents
+  const documentForm = useForm<DocumentFormValues>({
+    resolver: zodResolver(documentFormSchema),
+    defaultValues: {
+      bank_statement_doc: "",
+      cargo_insurance_doc: "",
+      primary_liability_doc: "",
+      w9_form_doc: "",
+    }
+  });
 
   // Fetch carrier data based on token
   useEffect(() => {
@@ -50,31 +76,63 @@ const CarrierOnboarding = () => {
     loadCarrier();
   }, [token]);
 
-  // Handle form submission
+  // Handle form submission for basic profile data
   const handleSubmitProfile = async (formData) => {
     if (!carrier || !carrier.id) return;
     
     try {
       setIsSubmitting(true);
       
-      // Update carrier with form data and mark profile as completed
-      const updatedData = {
-        ...formData,
-        profile_completed_at: new Date().toISOString(),
-      };
+      // Update carrier with form data but don't mark profile as completed yet
+      await updateCarrier(carrier.id, formData);
       
-      await updateCarrier(carrier.id, updatedData);
+      // Update carrier data with the new values
+      setCarrier(prev => ({
+        ...prev,
+        ...formData
+      }));
       
-      setIsCompleted(true);
+      // Show document upload step
+      setShowDocumentUpload(true);
+      
       toast({
-        title: "Profile Completed",
-        description: "Your carrier profile has been successfully updated.",
+        title: "Profile Information Saved",
+        description: "Please proceed to upload required documents.",
       });
     } catch (error) {
       console.error("Error updating profile:", error);
       toast({
         title: "Error",
         description: "Failed to update your profile. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle completion of document upload
+  const handleCompleteDocuments = async () => {
+    if (!carrier || !carrier.id) return;
+    
+    try {
+      setIsSubmitting(true);
+      
+      // Mark profile as completed
+      await updateCarrier(carrier.id, {
+        profile_completed_at: new Date().toISOString()
+      });
+      
+      setIsCompleted(true);
+      toast({
+        title: "Profile Completed",
+        description: "Your carrier profile and documents have been successfully uploaded.",
+      });
+    } catch (error) {
+      console.error("Error completing profile:", error);
+      toast({
+        title: "Error",
+        description: "Failed to complete your profile. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -94,9 +152,31 @@ const CarrierOnboarding = () => {
           </div>
           <h1 className="text-3xl font-bold">Carrier Profile Setup</h1>
           <p className="text-muted-foreground mt-2">
-            Complete your profile information to join our carrier network
+            {showDocumentUpload 
+              ? "Upload required documents to complete your profile" 
+              : "Complete your profile information to join our carrier network"
+            }
           </p>
         </div>
+
+        {/* Progress Indicator */}
+        {!error && !isCompleted && (
+          <div className="mb-8">
+            <div className="flex items-center justify-center">
+              <div className={`flex items-center justify-center w-8 h-8 rounded-full ${!showDocumentUpload ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
+                1
+              </div>
+              <div className={`h-1 w-16 ${showDocumentUpload ? 'bg-primary' : 'bg-muted'}`}></div>
+              <div className={`flex items-center justify-center w-8 h-8 rounded-full ${showDocumentUpload ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
+                2
+              </div>
+            </div>
+            <div className="flex justify-between mt-2 text-sm text-muted-foreground px-4">
+              <span>Profile Information</span>
+              <span>Document Upload</span>
+            </div>
+          </div>
+        )}
 
         {/* Content */}
         {isLoading ? (
@@ -136,6 +216,43 @@ const CarrierOnboarding = () => {
                   Thank you for completing your carrier profile. You can now close this page.
                 </p>
                 <Button onClick={() => navigate("/")}>Return to Home</Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : showDocumentUpload ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Document Upload
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <DocumentsForm form={documentForm} />
+                
+                <div className="flex justify-between mt-8 pt-4 border-t">
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    onClick={() => setShowDocumentUpload(false)}
+                  >
+                    Back to Profile Form
+                  </Button>
+                  <Button 
+                    onClick={handleCompleteDocuments}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <span className="animate-spin mr-2">⟳</span> 
+                        Completing...
+                      </>
+                    ) : (
+                      "Complete Profile"
+                    )}
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
