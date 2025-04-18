@@ -12,6 +12,7 @@ import { ComplianceForm } from "./forms/ComplianceForm";
 import { ContactInfoForm } from "./forms/ContactInfoForm";
 import { BillingInfoForm } from "./forms/BillingInfoForm";
 import { CommercialPreferencesForm } from "./forms/CommercialPreferencesForm";
+import { DocumentsForm } from "./forms/DocumentsForm";
 import { 
   basicInfoSchema,
   operationalSchema,
@@ -113,6 +114,10 @@ export function CarrierDetailsForm({ carrier }: CarrierDetailsFormProps) {
           
           <TabsContent value="billing">
             <BillingInfoForm form={billingForm.form} onSubmit={billingForm.onSubmit} />
+          </TabsContent>
+          
+          <TabsContent value="documents">
+            <DocumentsForm carrier={carrier} />
           </TabsContent>
           
           <TabsContent value="preferences">

@@ -4,13 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Upload, File, Loader2, Trash2 } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
-import { CarrierFormValues } from "@/types/carrier";
 import { getFileNameFromUrl } from "@/utils/fileUpload";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 
 interface DocumentUploadFieldProps {
-  form: UseFormReturn<CarrierFormValues>;
+  form: UseFormReturn<any>;
   fieldName: string;
   label: string;
   accept: string;
@@ -33,7 +32,7 @@ export function DocumentUploadField({
   return (
     <FormField
       control={form.control}
-      name={fieldName as keyof CarrierFormValues}
+      name={fieldName}
       render={({ field }) => (
         <FormItem className="flex flex-col space-y-2">
           <FormLabel>{label}</FormLabel>
