@@ -2,7 +2,7 @@
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
-import { CarrierFormValues } from "../CarrierDetailsForm";
+import { CarrierFormValues } from "@/types/carrier";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Trash2 } from "lucide-react";
@@ -10,7 +10,8 @@ import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface CommercialPreferencesFormProps {
-  form: UseFormReturn<CarrierFormValues>;
+  form: UseFormReturn<any>;
+  onSubmit: (e: React.FormEvent) => void;
 }
 
 interface YardLocation {
@@ -25,7 +26,7 @@ interface Lane {
   weekly_volume: number;
 }
 
-export function CommercialPreferencesForm({ form }: CommercialPreferencesFormProps) {
+export function CommercialPreferencesForm({ form, onSubmit }: CommercialPreferencesFormProps) {
   const [newYardLocation, setNewYardLocation] = useState<YardLocation>({
     city: "",
     state: "",
@@ -90,7 +91,7 @@ export function CommercialPreferencesForm({ form }: CommercialPreferencesFormPro
   };
 
   return (
-    <div className="space-y-8">
+    <form onSubmit={onSubmit} className="space-y-8">
       <div>
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-medium">Yard Locations</h3>
@@ -350,6 +351,12 @@ export function CommercialPreferencesForm({ form }: CommercialPreferencesFormPro
           )}
         </div>
       </div>
-    </div>
+      
+      <div className="flex justify-end mt-6">
+        <Button type="submit">
+          Save Changes
+        </Button>
+      </div>
+    </form>
   );
 }

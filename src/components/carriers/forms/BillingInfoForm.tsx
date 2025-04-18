@@ -1,18 +1,19 @@
-
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { UseFormReturn } from "react-hook-form";
-import { CarrierFormValues } from "../CarrierDetailsForm";
+import { CarrierFormValues } from "@/types/carrier";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface BillingInfoFormProps {
-  form: UseFormReturn<CarrierFormValues>;
+  form: UseFormReturn<any>;
+  onSubmit: (e: React.FormEvent) => void;
 }
 
-export function BillingInfoForm({ form }: BillingInfoFormProps) {
+export function BillingInfoForm({ form, onSubmit }: BillingInfoFormProps) {
   return (
-    <div className="space-y-6">
+    <form onSubmit={onSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
           control={form.control}
@@ -274,6 +275,12 @@ export function BillingInfoForm({ form }: BillingInfoFormProps) {
           )}
         />
       </div>
-    </div>
+      
+      <div className="flex justify-end mt-6">
+        <Button type="submit">
+          Save Changes
+        </Button>
+      </div>
+    </form>
   );
 }

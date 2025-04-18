@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +12,16 @@ import { ComplianceForm } from "./forms/ComplianceForm";
 import { ContactInfoForm } from "./forms/ContactInfoForm";
 import { BillingInfoForm } from "./forms/BillingInfoForm";
 import { CommercialPreferencesForm } from "./forms/CommercialPreferencesForm";
+import { 
+  basicInfoSchema,
+  operationalSchema,
+  fleetSchema,
+  complianceSchema,
+  contactSchema,
+  billingSchema,
+  preferencesSchema
+} from "./schemas/carrierSectionSchemas";
+import { useCarrierSectionForm } from "@/hooks/useCarrierSectionForm";
 
 interface CarrierDetailsFormProps {
   carrier: Carrier;
@@ -19,6 +30,15 @@ interface CarrierDetailsFormProps {
 export function CarrierDetailsForm({ carrier }: CarrierDetailsFormProps) {
   const [activeTab, setActiveTab] = useState("basic");
   const navigate = useNavigate();
+
+  // Create form hooks for each section
+  const basicInfoForm = useCarrierSectionForm(basicInfoSchema, carrier, "Basic Info");
+  const operationalForm = useCarrierSectionForm(operationalSchema, carrier, "Operational");
+  const fleetForm = useCarrierSectionForm(fleetSchema, carrier, "Fleet");
+  const complianceForm = useCarrierSectionForm(complianceSchema, carrier, "Compliance");
+  const contactForm = useCarrierSectionForm(contactSchema, carrier, "Contact");
+  const billingForm = useCarrierSectionForm(billingSchema, carrier, "Billing");
+  const preferencesForm = useCarrierSectionForm(preferencesSchema, carrier, "Preferences");
 
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return "N/A";
@@ -76,27 +96,27 @@ export function CarrierDetailsForm({ carrier }: CarrierDetailsFormProps) {
           </TabsContent>
           
           <TabsContent value="operational">
-            <OperationalDetailsForm carrier={carrier} />
+            <OperationalDetailsForm form={operationalForm.form} onSubmit={operationalForm.onSubmit} />
           </TabsContent>
           
           <TabsContent value="fleet">
-            <FleetDetailsForm carrier={carrier} />
+            <FleetDetailsForm form={fleetForm.form} onSubmit={fleetForm.onSubmit} />
           </TabsContent>
           
           <TabsContent value="compliance">
-            <ComplianceForm carrier={carrier} />
+            <ComplianceForm form={complianceForm.form} onSubmit={complianceForm.onSubmit} />
           </TabsContent>
           
           <TabsContent value="contact">
-            <ContactInfoForm carrier={carrier} />
+            <ContactInfoForm form={contactForm.form} onSubmit={contactForm.onSubmit} />
           </TabsContent>
           
           <TabsContent value="billing">
-            <BillingInfoForm carrier={carrier} />
+            <BillingInfoForm form={billingForm.form} onSubmit={billingForm.onSubmit} />
           </TabsContent>
           
           <TabsContent value="preferences">
-            <CommercialPreferencesForm carrier={carrier} />
+            <CommercialPreferencesForm form={preferencesForm.form} onSubmit={preferencesForm.onSubmit} />
           </TabsContent>
           
           <div className="p-4 bg-muted rounded-md mt-6">

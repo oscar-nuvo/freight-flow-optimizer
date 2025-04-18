@@ -1,16 +1,17 @@
-
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { UseFormReturn } from "react-hook-form";
-import { CarrierFormValues } from "../CarrierDetailsForm";
+import { CarrierFormValues } from "@/types/carrier";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ComplianceFormProps {
-  form: UseFormReturn<CarrierFormValues>;
+  form: UseFormReturn<any>;
+  onSubmit: (e: React.FormEvent) => void;
 }
 
-export function ComplianceForm({ form }: ComplianceFormProps) {
+export function ComplianceForm({ form, onSubmit }: ComplianceFormProps) {
   const watchCrossBorder = form.watch('provides_cross_border_services');
   const watchCtpat = form.watch('is_ctpat_certified');
   const watchFmcsa = form.watch('fmcsa_authority_active');
@@ -23,7 +24,7 @@ export function ComplianceForm({ form }: ComplianceFormProps) {
   ];
   
   return (
-    <div className="space-y-6">
+    <form onSubmit={onSubmit} className="space-y-6">
       {watchCrossBorder && (
         <FormField
           control={form.control}
@@ -236,6 +237,12 @@ export function ComplianceForm({ form }: ComplianceFormProps) {
           </FormItem>
         )}
       />
-    </div>
+      
+      <div className="flex justify-end mt-6">
+        <Button type="submit">
+          Save Changes
+        </Button>
+      </div>
+    </form>
   );
 }

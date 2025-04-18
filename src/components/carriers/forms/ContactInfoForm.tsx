@@ -1,8 +1,7 @@
-
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
-import { CarrierFormValues } from "../CarrierDetailsForm";
+import { CarrierFormValues } from "@/types/carrier";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2 } from "lucide-react";
@@ -10,7 +9,8 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 
 interface ContactInfoFormProps {
-  form: UseFormReturn<CarrierFormValues>;
+  form: UseFormReturn<any>;
+  onSubmit: (e: React.FormEvent) => void;
 }
 
 interface AdditionalContact {
@@ -21,7 +21,7 @@ interface AdditionalContact {
   receives_rate_inquiries: boolean;
 }
 
-export function ContactInfoForm({ form }: ContactInfoFormProps) {
+export function ContactInfoForm({ form, onSubmit }: ContactInfoFormProps) {
   const [newContact, setNewContact] = useState<AdditionalContact>({
     name: "",
     phone: "",
@@ -58,7 +58,7 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <form onSubmit={onSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
           control={form.control}
@@ -234,6 +234,12 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
           </Card>
         )}
       </div>
-    </div>
+      
+      <div className="flex justify-end mt-6">
+        <Button type="submit">
+          Save Changes
+        </Button>
+      </div>
+    </form>
   );
 }
