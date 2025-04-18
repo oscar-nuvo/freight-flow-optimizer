@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { CarrierFormValues } from "../CarrierDetailsForm";
 import { Button } from "@/components/ui/button";
-import { Upload, File, Loader2 } from "lucide-react";
+import { Upload, File, Loader2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -29,10 +29,10 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
 
   const handleFileUpload = async (fieldName: string, file: File) => {
     if (!carrierId) {
-      setUploadError("Carrier ID is required for uploading documents");
+      setUploadError("Unable to upload: Carrier ID is missing. Please save the carrier first.");
       toast({
-        title: "Error",
-        description: "Carrier ID is required for uploading documents",
+        title: "Upload Error",
+        description: "Carrier ID is required for uploading documents. Please save the carrier first.",
         variant: "destructive",
       });
       return;
@@ -44,10 +44,25 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
     // Check file size (5MB limit)
     const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
     if (file.size > MAX_FILE_SIZE) {
-      setUploadError("File exceeds the 5MB size limit");
+      const errorMsg = `File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds the 5MB limit`;
+      setUploadError(errorMsg);
       toast({
-        title: "Upload failed",
-        description: "File exceeds the 5MB size limit",
+        title: "File too large",
+        description: errorMsg,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = ['.pdf', '.doc', '.docx'];
+    const fileExtension = `.${file.name.split('.').pop()?.toLowerCase()}`;
+    if (!allowedTypes.includes(fileExtension)) {
+      const errorMsg = `Invalid file type. Please upload a ${allowedTypes.join(', ')} file`;
+      setUploadError(errorMsg);
+      toast({
+        title: "Invalid file type",
+        description: errorMsg,
         variant: "destructive",
       });
       return;
@@ -55,6 +70,7 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
 
     try {
       setUploadingField(fieldName);
+      console.log(`Starting upload for ${fieldName}:`, file.name);
 
       // Define file path: carrier_id/document_type_timestamp.ext
       const fileExt = file.name.split(".").pop();
@@ -70,8 +86,11 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
         });
 
       if (uploadError) {
-        throw uploadError;
+        console.error("Upload error details:", uploadError);
+        throw new Error(uploadError.message);
       }
+
+      console.log("File uploaded successfully:", uploadData);
 
       // Get the public URL for the file
       const { data: urlData } = supabase.storage
@@ -79,7 +98,7 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
         .getPublicUrl(filePath);
 
       if (!urlData?.publicUrl) {
-        throw new Error("Could not get public URL for uploaded file");
+        throw new Error("Could not generate public URL for uploaded file");
       }
 
       // Update the form field with the file URL
@@ -88,16 +107,19 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
         shouldValidate: true,
       });
 
+      console.log("Form updated with new file URL:", urlData.publicUrl);
+
       toast({
         title: "Document uploaded",
         description: `${documentFields.find(doc => doc.name === fieldName)?.label} has been uploaded successfully.`,
       });
     } catch (error: any) {
       console.error("Error uploading document:", error);
-      setUploadError(error.message || "Failed to upload document. Please try again.");
+      const errorMessage = error.message || "Failed to upload document. Please try again.";
+      setUploadError(errorMessage);
       toast({
         title: "Upload failed",
-        description: error.message || "Failed to upload document. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

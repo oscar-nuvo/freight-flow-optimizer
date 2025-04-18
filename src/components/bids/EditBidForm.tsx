@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -72,7 +71,12 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
 
   const handleFileUpload = async (file: File) => {
     if (!organization?.id) {
-      setUploadError("Organization not found");
+      setUploadError("Organization not found. Please ensure you're logged in.");
+      toast({
+        title: "Upload Error",
+        description: "Organization not found. Please ensure you're logged in.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -82,11 +86,33 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
     // Check file size (10MB limit)
     const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
     if (file.size > MAX_FILE_SIZE) {
-      setUploadError("File exceeds the 10MB size limit");
+      const errorMsg = `File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds the 10MB limit`;
+      setUploadError(errorMsg);
+      toast({
+        title: "File too large",
+        description: errorMsg,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = ['.pdf', '.doc', '.docx'];
+    const fileExtension = `.${file.name.split('.').pop()?.toLowerCase()}`;
+    if (!allowedTypes.includes(fileExtension)) {
+      const errorMsg = `Invalid file type. Please upload a ${allowedTypes.join(', ')} file`;
+      setUploadError(errorMsg);
+      toast({
+        title: "Invalid file type",
+        description: errorMsg,
+        variant: "destructive",
+      });
       return;
     }
 
     try {
+      console.log("Starting file upload:", file.name);
+
       // Define file path: org_id/bids/contracts/filename_timestamp.ext
       const fileExt = file.name.split(".").pop();
       const fileName = `contract_${Date.now()}.${fileExt}`;
@@ -101,8 +127,11 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
         });
 
       if (uploadError) {
-        throw uploadError;
+        console.error("Upload error details:", uploadError);
+        throw new Error(uploadError.message);
       }
+
+      console.log("File uploaded successfully:", uploadData);
 
       // Get the public URL for the file
       const { data: urlData } = supabase.storage
@@ -110,7 +139,7 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
         .getPublicUrl(filePath);
 
       if (!urlData?.publicUrl) {
-        throw new Error("Could not get public URL for uploaded file");
+        throw new Error("Could not generate public URL for uploaded file");
       }
 
       setFormData(prev => ({
@@ -121,13 +150,21 @@ export const EditBidForm = ({ bid, onSuccess }: EditBidFormProps) => {
       setFileUploaded(true);
       setFileName(file.name);
 
+      console.log("Form updated with new file URL:", urlData.publicUrl);
+
       toast({
         title: "File uploaded",
         description: `${file.name} has been uploaded successfully.`,
       });
     } catch (error: any) {
       console.error("Error uploading file:", error);
-      setUploadError(error.message || "Failed to upload file. Please try again.");
+      const errorMessage = error.message || "Failed to upload file. Please try again.";
+      setUploadError(errorMessage);
+      toast({
+        title: "Upload failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
     }
   };
 
