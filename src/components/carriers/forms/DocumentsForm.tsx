@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -93,10 +92,10 @@ export function DocumentsForm({ carrier }: DocumentsFormProps) {
   const processUpload = async (fieldName: string, file: File) => {
     try {
       const uploadPath = `carriers/${carrier.id}/${fieldName}/${file.name}`;
-      const fileUrl = await uploadFile({
+      const fileUrl = await uploadFile(file, uploadPath, {
         maxSizeBytes: 10 * 1024 * 1024,
         allowedTypes: ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'],
-      }, file, uploadPath);
+      });
       
       if (fileUrl) {
         // Update form value
