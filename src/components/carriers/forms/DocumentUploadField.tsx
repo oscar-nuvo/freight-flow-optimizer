@@ -28,6 +28,8 @@ export function DocumentUploadField({
   onUpload,
   onRemove
 }: DocumentUploadFieldProps) {
+  const uploadProgress = 66; // This will be dynamic in Phase 2
+
   return (
     <FormField
       control={form.control}
@@ -47,7 +49,7 @@ export function DocumentUploadField({
                 />
                 {isUploading && (
                   <div className="absolute top-full left-0 right-0 mt-1">
-                    <Progress value={66} className="h-1" />
+                    <Progress value={uploadProgress} className="h-1" />
                   </div>
                 )}
               </div>

@@ -9,6 +9,7 @@ import { DocumentConfirmDialog } from "./DocumentConfirmDialog";
 import { DocumentUploadField } from "./DocumentUploadField";
 import { CarrierFormValues } from "../CarrierDetailsForm";
 import { AlertTriangle } from "lucide-react";
+import { updateCarrier } from "@/services/carriersService";
 
 interface DocumentsFormProps {
   form: UseFormReturn<CarrierFormValues>;
@@ -66,10 +67,15 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
       );
 
       if (result?.url) {
+        // Update the form field
         form.setValue(fieldName as keyof CarrierFormValues, result.url, {
           shouldDirty: true,
           shouldValidate: true,
         });
+
+        // Update the carrier record in the database
+        const updates = { [fieldName]: result.url };
+        await updateCarrier(carrierId, updates);
 
         toast({
           title: "Document uploaded",
@@ -97,15 +103,30 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
     setPendingUpload(null);
   };
 
-  const handleRemoveDocument = (fieldName: string) => {
-    form.setValue(fieldName as keyof CarrierFormValues, "", {
-      shouldDirty: true,
-      shouldValidate: true,
-    });
-    toast({
-      title: "Document removed",
-      description: `${documentFields.find(doc => doc.name === fieldName)?.label} has been removed.`,
-    });
+  const handleRemoveDocument = async (fieldName: string) => {
+    try {
+      // Update the form field
+      form.setValue(fieldName as keyof CarrierFormValues, "", {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+
+      // Update the carrier record in the database
+      const updates = { [fieldName]: null };
+      await updateCarrier(carrierId, updates);
+
+      toast({
+        title: "Document removed",
+        description: `${documentFields.find(doc => doc.name === fieldName)?.label} has been removed.`,
+      });
+    } catch (error: any) {
+      console.error("Error removing document:", error);
+      toast({
+        title: "Error",
+        description: "Failed to remove document. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
