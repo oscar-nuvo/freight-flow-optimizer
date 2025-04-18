@@ -1,6 +1,5 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 
 /**
  * Handles file upload to Supabase storage
@@ -19,7 +18,7 @@ export const uploadFile = async (
     allowedTypes?: string[];
     onError?: (message: string) => void;
   } = {}
-): Promise<{ success: boolean; url?: string; error?: string }> {
+) => {
   try {
     const {
       maxSizeBytes = 10 * 1024 * 1024, // Default 10MB
