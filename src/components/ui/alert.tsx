@@ -26,9 +26,16 @@ const alertVariants = cva(
   }
 )
 
+// This type explicitly defines all allowed variants
+export interface AlertProps 
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof alertVariants> {
+      variant?: "default" | "destructive" | "info" | "success" | "warning"
+    }
+
 const Alert = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof alertVariants>
+  AlertProps
 >(({ className, variant, ...props }, ref) => (
   <div
     ref={ref}
