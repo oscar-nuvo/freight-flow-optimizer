@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { UseFormReturn } from "react-hook-form";
-import { CarrierFormValues } from "../CarrierOnboardingForm";
+import { CarrierFormValues } from "@/schemas/carrierFormSchema";
 
 interface BasicInfoFormProps {
   form: UseFormReturn<CarrierFormValues>;

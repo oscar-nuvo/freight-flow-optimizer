@@ -8,7 +8,15 @@ import { CarrierFormValues } from "@/schemas/carrierFormSchema";
 interface FormContainerProps {
   form: UseFormReturn<CarrierFormValues>;
   activeTab: string;
-  formState: Record<string, boolean>;
+  formState: {
+    basic: boolean;
+    contact: boolean;
+    compliance: boolean;
+    fleet: boolean;
+    operations: boolean;
+    billing: boolean;
+    preferences: boolean;
+  };
   onTabChange: (value: string) => void;
   onSectionComplete: (section: string) => void;
   isSubmitting: boolean;
