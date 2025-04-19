@@ -5,12 +5,46 @@ import { useToast } from "@/hooks/use-toast";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { updateCarrier } from "@/services/carriersService";
 
-export function useDocumentUpload(form: UseFormReturn<any>, carrierId?: string) {
+export function useDocumentUpload(form: UseFormReturn<any> | undefined, carrierId?: string) {
   const { toast } = useToast();
   const [uploadingField, setUploadingField] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadStatus, setUploadStatus] = useState<Record<string, string>>({});
   const { uploadFile } = useFileUpload("carrier_documents");
+
+  // Function to safely access form values
+  const safeGetFormValue = (fieldName: string): string => {
+    if (!form || typeof form.watch !== 'function') {
+      console.error("Cannot get form value - form not properly initialized");
+      return "";
+    }
+    
+    try {
+      return form.watch(fieldName) || "";
+    } catch (err) {
+      console.error(`Error getting form value for ${fieldName}:`, err);
+      return "";
+    }
+  };
+
+  // Function to safely set form values
+  const safeSetFormValue = (fieldName: string, value: string): boolean => {
+    if (!form || typeof form.setValue !== 'function') {
+      console.error("Cannot set form value - form not properly initialized");
+      return false;
+    }
+    
+    try {
+      form.setValue(fieldName, value, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      return true;
+    } catch (err) {
+      console.error(`Error setting form value for ${fieldName}:`, err);
+      return false;
+    }
+  };
 
   const handleFileUpload = async (fieldName: string, file: File) => {
     if (!carrierId) {
@@ -47,22 +81,39 @@ export function useDocumentUpload(form: UseFormReturn<any>, carrierId?: string) 
       );
 
       if (result?.url) {
-        form.setValue(fieldName, result.url, {
-          shouldDirty: true,
-          shouldValidate: true,
-        });
-
-        setUploadStatus(prev => ({
-          ...prev,
-          [fieldName]: "Upload successful"
-        }));
-
-        await updateCarrier(carrierId, { [fieldName]: result.url });
+        const valueSet = safeSetFormValue(fieldName, result.url);
         
-        toast({
-          title: "Document uploaded",
-          description: `Document has been uploaded successfully.`,
-        });
+        if (valueSet) {
+          setUploadStatus(prev => ({
+            ...prev,
+            [fieldName]: "Upload successful"
+          }));
+
+          try {
+            await updateCarrier(carrierId, { [fieldName]: result.url });
+            
+            toast({
+              title: "Document uploaded",
+              description: `Document has been uploaded successfully.`,
+            });
+          } catch (updateErr: any) {
+            console.error("Error updating carrier after upload:", updateErr);
+            setUploadStatus(prev => ({
+              ...prev,
+              [fieldName]: `Warning: Document uploaded but not saved to profile: ${updateErr.message || "Unknown error"}`
+            }));
+            
+            toast({
+              title: "Partial success",
+              description: "Document uploaded but failed to update carrier profile.",
+              variant: "destructive",
+            });
+          }
+        } else {
+          throw new Error("Failed to update form with uploaded document URL");
+        }
+      } else {
+        throw new Error("Upload failed - no URL returned");
       }
     } catch (err: any) {
       console.error("Error in document upload handler:", err);
@@ -94,24 +145,26 @@ export function useDocumentUpload(form: UseFormReturn<any>, carrierId?: string) 
     }
     
     try {
-      form.setValue(fieldName, "", {
-        shouldDirty: true,
-        shouldValidate: true,
-      });
+      const valueSet = safeSetFormValue(fieldName, "");
+      
+      if (valueSet) {
+        setUploadStatus(prev => ({
+          ...prev,
+          [fieldName]: "Document removed"
+        }));
 
-      setUploadStatus(prev => ({
-        ...prev,
-        [fieldName]: "Document removed"
-      }));
+        const updates = { [fieldName]: null };
+        await updateCarrier(carrierId, updates);
 
-      const updates = { [fieldName]: null };
-      await updateCarrier(carrierId, updates);
-
-      toast({
-        title: "Document removed",
-        description: "Document has been removed.",
-      });
+        toast({
+          title: "Document removed",
+          description: "Document has been removed.",
+        });
+      } else {
+        throw new Error("Failed to update form after removing document");
+      }
     } catch (error: any) {
+      console.error("Error removing document:", error);
       toast({
         title: "Error",
         description: `Failed to remove document: ${error.message || "Please try again"}`,

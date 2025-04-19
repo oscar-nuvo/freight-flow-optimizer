@@ -19,17 +19,9 @@ const documentFields = [
 ];
 
 export function DocumentsForm({ form }: DocumentsFormProps) {
-  const carrierId = form?.getValues()?.id;
-  const {
-    uploadingField,
-    uploadError,
-    uploadStatus,
-    handleFileUpload,
-    handleRemoveDocument
-  } = useDocumentUpload(form, carrierId);
-
-  // Safety check if form isn't available
-  if (!form) {
+  // Safety check if form isn't available or properly initialized
+  if (!form || typeof form.getValues !== 'function') {
+    console.error("Form not properly initialized in DocumentsForm");
     return (
       <Alert variant="destructive">
         <AlertTriangle className="h-4 w-4" />
@@ -37,6 +29,22 @@ export function DocumentsForm({ form }: DocumentsFormProps) {
       </Alert>
     );
   }
+
+  // Safely get carrier ID
+  let carrierId;
+  try {
+    carrierId = form.getValues()?.id;
+  } catch (err) {
+    console.error("Error getting carrier ID:", err);
+  }
+
+  const {
+    uploadingField,
+    uploadError,
+    uploadStatus,
+    handleFileUpload,
+    handleRemoveDocument
+  } = useDocumentUpload(form, carrierId);
 
   return (
     <div className="space-y-6">

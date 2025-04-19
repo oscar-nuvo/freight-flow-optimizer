@@ -23,6 +23,16 @@ export function DocumentsList({
   onUpload,
   onRemove
 }: DocumentsListProps) {
+  // Safety check to ensure form is properly initialized
+  if (!form || typeof form.watch !== 'function') {
+    console.error("Form not properly initialized in DocumentsList");
+    return (
+      <div className="p-4 text-center text-red-500">
+        Form not properly initialized. Please reload the page.
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-6">
       {documentFields.map((doc) => (
@@ -35,7 +45,7 @@ export function DocumentsList({
           isUploading={uploadingField === doc.name}
           onUpload={onUpload}
           onRemove={onRemove}
-          status={uploadStatus[doc.name]}
+          status={uploadStatus[doc.name] || ""}
         />
       ))}
     </div>
