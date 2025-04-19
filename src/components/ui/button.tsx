@@ -23,8 +23,6 @@ const buttonVariants = cva(
           "bg-green-600 text-white hover:bg-green-700",
         info:
           "bg-blue-600 text-white hover:bg-blue-700",
-        warning:
-          "bg-yellow-600 text-white hover:bg-yellow-700",
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -44,8 +42,6 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
-  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | "success" | "info" | "warning"
-  size?: "default" | "sm" | "lg" | "icon"
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
