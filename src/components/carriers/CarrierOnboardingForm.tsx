@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -9,15 +8,15 @@ import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, CircleAlert, Truck, User, MapPin, Building, CreditCard, FileCheck, Settings2 } from "lucide-react";
-import { Carrier } from "@/services/carriersService";
+import { CheckCircle, Building, User, FileCheck, Truck, MapPin, CreditCard, Settings2 } from "lucide-react";
+import { type Carrier } from "@/services/carriersService";
 import { ComplianceForm } from "./forms/ComplianceForm";
 import { FleetDetailsForm } from "./forms/FleetDetailsForm";
 import { OperationalDetailsForm } from "./forms/OperationalDetailsForm";
 import { BillingInfoForm } from "./forms/BillingInfoForm";
 import { PreferencesForm } from "./forms/PreferencesForm";
 
-// Define validation schema for carrier form with proper type for status
+// Define validation schema for carrier form
 const carrierFormSchema = z.object({
   // Basic Info
   name: z.string().min(1, "Carrier name is required"),
@@ -186,19 +185,16 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
     primary_lanes: carrier?.primary_lanes || [],
   };
 
-  // Initialize form with react-hook-form
   const form = useForm<CarrierFormValues>({
     resolver: zodResolver(carrierFormSchema),
     defaultValues,
     mode: "onChange",
   });
 
-  // Handle tab change
   const handleTabChange = (value: string) => {
     setActiveTab(value);
   };
 
-  // Mark section as completed
   const markSectionCompleted = (section: string) => {
     setFormState(prev => ({
       ...prev,
@@ -206,23 +202,18 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
     }));
   };
 
-  // Handle form submission
-  const handleSubmit = (values: CarrierFormValues) => {
-    onSubmit(values);
-  };
-
   return (
-    <Card className="w-full">
+    <Card>
       <CardHeader>
-        <CardTitle>Carrier Profile Setup</CardTitle>
+        <CardTitle>Complete Your Profile</CardTitle>
         <CardDescription>
-          Complete the information below to set up your carrier profile.
+          Fill out the information below to complete your carrier profile setup.
           Required fields are marked with an asterisk (*).
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
             <Tabs value={activeTab} onValueChange={handleTabChange}>
               <TabsList className="grid grid-cols-3 sm:grid-cols-7 mb-8">
                 <TabsTrigger value="basic" className="flex flex-col items-center gap-1 py-2">
@@ -261,25 +252,23 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
                   {formState.preferences && <CheckCircle className="h-3 w-3 text-green-500 absolute top-1 right-1" />}
                 </TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="basic" className="space-y-4">
                 <BasicInfoForm form={form} />
                 <div className="flex justify-between mt-6">
                   <div></div>
-                  <div className="flex gap-2">
-                    <Button 
-                      type="button" 
-                      onClick={() => {
-                        markSectionCompleted("basic");
-                        handleTabChange("contact");
-                      }}
-                    >
-                      Next: Contact Info
-                    </Button>
-                  </div>
+                  <Button 
+                    type="button" 
+                    onClick={() => {
+                      markSectionCompleted("basic");
+                      handleTabChange("contact");
+                    }}
+                  >
+                    Next: Contact Info
+                  </Button>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="contact" className="space-y-4">
                 <ContactInfoForm form={form} />
                 <div className="flex justify-between mt-6">
@@ -301,7 +290,7 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
                   </Button>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="compliance" className="space-y-4">
                 <ComplianceForm form={form} />
                 <div className="flex justify-between mt-6">
@@ -323,7 +312,7 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
                   </Button>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="fleet" className="space-y-4">
                 <FleetDetailsForm form={form} />
                 <div className="flex justify-between mt-6">
@@ -345,7 +334,7 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
                   </Button>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="operations" className="space-y-4">
                 <OperationalDetailsForm form={form} />
                 <div className="flex justify-between mt-6">
@@ -367,7 +356,7 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
                   </Button>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="billing" className="space-y-4">
                 <BillingInfoForm form={form} />
                 <div className="flex justify-between mt-6">
@@ -389,7 +378,7 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
                   </Button>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="preferences" className="space-y-4">
                 <PreferencesForm form={form} />
                 <div className="flex justify-between mt-6">
@@ -408,7 +397,7 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
                     {isSubmitting ? (
                       <>
                         <span className="animate-spin mr-2">⟳</span> 
-                        Submitting...
+                        Completing Profile...
                       </>
                     ) : (
                       "Complete Profile"
