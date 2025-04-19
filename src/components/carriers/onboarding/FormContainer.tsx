@@ -1,6 +1,5 @@
 
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import { FormTabs } from "./FormTabs";
 import { UseFormReturn } from "react-hook-form";
 import { CarrierFormValues } from "@/schemas/carrierFormSchema";
@@ -32,6 +31,8 @@ export function FormContainer({
   isSubmitting,
   children
 }: FormContainerProps) {
+  // We don't need to wrap this in another Form component since it should be
+  // inside a Form context from the parent component
   return (
     <Tabs value={activeTab} onValueChange={onTabChange}>
       <FormTabs formState={formState} />

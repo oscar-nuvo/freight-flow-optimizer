@@ -10,6 +10,16 @@ interface PreferencesFormProps {
 }
 
 export function PreferencesForm({ form }: PreferencesFormProps) {
+  // Make sure the form is properly initialized
+  if (!form || !form.control) {
+    console.error("Form not properly initialized in PreferencesForm");
+    return (
+      <div className="p-4 border border-red-300 bg-red-50 rounded text-red-800">
+        Error: Form not properly initialized. Please refresh the page.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -47,7 +57,7 @@ export function PreferencesForm({ form }: PreferencesFormProps) {
             <FormItem>
               <FormLabel>Telematics Provider</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="e.g., Geotab, Samsara" />
+                <Input {...field} placeholder="e.g., Geotab, Samsara" value={field.value || ''} />
               </FormControl>
               <FormMessage />
             </FormItem>

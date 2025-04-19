@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
 import { TabsContent } from "@/components/ui/tabs";
@@ -29,6 +30,11 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
     markSectionCompleted,
   } = useCarrierForm(carrier, onSubmit);
 
+  // Make sure we have a valid form instance before rendering anything
+  if (!form) {
+    return null;
+  }
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -39,8 +45,9 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Ensure that the Form component is properly set up */}
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormContainer
               form={form}
               activeTab={activeTab}

@@ -14,6 +14,16 @@ import { DocumentsStep } from "@/components/carriers/onboarding/DocumentsStep";
 const CarrierOnboarding = () => {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
+  
+  // Add validation for token parameter
+  if (!token) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+        <ErrorState error="Invalid invitation link. No token provided." isCompleted={false} />
+      </div>
+    );
+  }
+  
   const {
     isLoading,
     carrier,
@@ -76,11 +86,13 @@ const CarrierOnboarding = () => {
             isSubmitting={isSubmitting}
           />
         ) : (
-          <CarrierOnboardingForm 
-            carrier={carrier} 
-            onSubmit={handleSubmitProfile}
-            isSubmitting={isSubmitting}
-          />
+          carrier && (
+            <CarrierOnboardingForm 
+              carrier={carrier} 
+              onSubmit={handleSubmitProfile}
+              isSubmitting={isSubmitting}
+            />
+          )
         )}
       </div>
     </div>
