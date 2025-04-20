@@ -6,7 +6,7 @@ import CarrierBidResponsePage from "../CarrierBidResponsePage";
 import * as invitationsService from "@/services/invitationsService";
 import * as routesService from "@/services/routesService";
 import * as bidResponsesService from "@/services/bidResponsesService";
-import { CarrierInvitation, InvitationStatus } from "@/types/invitation";
+import { CarrierInvitation, InvitationStatus, CurrencyType } from "@/types/invitation";
 import { Route as RouteType, EquipmentType } from "@/types/route";
 
 // Mock the services
@@ -139,7 +139,7 @@ describe("CarrierBidResponsePage", () => {
       }
     ];
 
-    // Mock existing response
+    // Mock existing response - Use CurrencyType for currency
     const mockExistingResponse = {
       id: "response-123",
       bid_id: "bid-123",
@@ -154,7 +154,7 @@ describe("CarrierBidResponsePage", () => {
         "route-1": {
           id: "rate-1",
           value: 1200,
-          currency: "USD",
+          currency: "USD" as CurrencyType,
           comment: "Sample comment"
         }
       }
