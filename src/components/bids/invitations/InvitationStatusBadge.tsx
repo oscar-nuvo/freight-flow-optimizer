@@ -1,3 +1,4 @@
+
 import { Badge } from "@/components/ui/badge";
 import { InvitationStatus } from "@/types/invitation";
 
@@ -37,10 +38,13 @@ export function InvitationStatusBadge({ status, className }: InvitationStatusBad
       case "revoked":
         return "Revoked";
       default:
-        if (typeof status === "string" && status.length > 0) {
-          return status.charAt(0).toUpperCase() + status.slice(1);
-        }
-        return "Unknown Status";
+        // Explicitly treat the status as string in the default case
+        // This helps TypeScript understand we're dealing with a string
+        return typeof status === 'string' 
+          ? (status.length > 0 
+              ? status.charAt(0).toUpperCase() + status.slice(1)
+              : "Unknown Status")
+          : "Unknown Status";
     }
   };
 
