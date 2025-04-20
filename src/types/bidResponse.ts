@@ -1,4 +1,6 @@
 
+import { CurrencyType } from "./invitation";
+
 export interface BidResponseFormValues {
   responderName: string;
   responderEmail: string;
@@ -23,7 +25,7 @@ export interface BidResponseSubmission {
 export interface RouteRateSubmission {
   route_id: string;
   value: number | null;
-  currency: string;
+  currency: CurrencyType;
   comment?: string;
 }
 
@@ -40,7 +42,7 @@ export interface BidResponseWithRates {
   rates: Record<string, {
     id: string;
     value: number;
-    currency: string;
+    currency: CurrencyType;
     comment?: string;
   }>;
 }

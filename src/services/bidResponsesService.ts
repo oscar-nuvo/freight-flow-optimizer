@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { BidResponseFormValues, BidResponseSubmission, BidResponseWithRates } from "@/types/bidResponse";
+import { BidResponseFormValues, BidResponseSubmission, BidResponseWithRates, RouteRateSubmission } from "@/types/bidResponse";
+import { CurrencyType } from "@/types/invitation";
 
 // Submit a new bid response or update an existing one
 export const submitBidResponse = async (
@@ -61,7 +62,7 @@ export const submitBidResponse = async (
         route_id: routeId,
         response_id: responseData.id,
         value: value.value,
-        currency: "USD", // This should come from bid settings
+        currency: "USD" as CurrencyType, // Fixed: Explicitly type as CurrencyType
         comment: value.comment,
         version: currentVersion
       }));
