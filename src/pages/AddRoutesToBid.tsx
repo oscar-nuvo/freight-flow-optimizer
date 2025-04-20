@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
@@ -24,12 +25,12 @@ const AddRoutesToBid = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isCreatingRoute, setIsCreatingRoute] = useState(false);
 
-  const { data: routesData, isLoading: isRoutesLoading } = useQuery({
+  const { data: routesData, isLoading: isRoutesLoading, refetch: refetchRoutes } = useQuery({
     queryKey: ["routes", filters],
     queryFn: () => getRoutes(filters),
   });
 
-  const { data: existingBidRoutes, isLoading: isExistingRoutesLoading } = useQuery({
+  const { data: existingBidRoutes, isLoading: isExistingRoutesLoading, refetch: refetchBidRoutes } = useQuery({
     queryKey: ["bidRoutes", bidId],
     queryFn: () => bidId ? getRoutesByBid(bidId) : Promise.resolve([]),
     enabled: !!bidId,
@@ -110,7 +111,8 @@ const AddRoutesToBid = () => {
           title: "Success",
           description: "Route created and added to bid successfully",
         });
-        refetch(); // Refresh the routes list
+        refetchRoutes(); // Refresh the routes list
+        refetchBidRoutes(); // Refresh the bid routes list
       }
       setIsCreateModalOpen(false);
     } catch (error: any) {

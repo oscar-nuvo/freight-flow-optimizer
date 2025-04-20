@@ -6,7 +6,7 @@ import { RouteFormValues } from "@/types/route";
 interface CreateRouteModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onRouteCreated: (routeId: string) => void;
+  onRouteCreated: (values: RouteFormValues) => Promise<void>;
   isSubmitting?: boolean;
 }
 
@@ -17,7 +17,7 @@ export const CreateRouteModal = ({
   isSubmitting,
 }: CreateRouteModalProps) => {
   const handleSubmit = async (values: RouteFormValues) => {
-    onRouteCreated(values);
+    await onRouteCreated(values);
   };
 
   return (
