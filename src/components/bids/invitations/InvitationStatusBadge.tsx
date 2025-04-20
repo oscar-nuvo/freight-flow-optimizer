@@ -38,13 +38,10 @@ export function InvitationStatusBadge({ status, className }: InvitationStatusBad
       case "revoked":
         return "Revoked";
       default:
-        // Explicitly treat the status as string in the default case
-        // This helps TypeScript understand we're dealing with a string
-        return typeof status === 'string' 
-          ? (status.length > 0 
-              ? status.charAt(0).toUpperCase() + status.slice(1)
-              : "Unknown Status")
-          : "Unknown Status";
+        // TypeScript should never reach here since status is an InvitationStatus,
+        // but provide a defensive fallback for unexpected input.
+        const fallback = String(status);
+        return fallback ? fallback.charAt(0).toUpperCase() + fallback.slice(1) : "Unknown Status";
     }
   };
 
