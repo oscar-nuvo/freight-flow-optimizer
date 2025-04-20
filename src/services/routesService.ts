@@ -36,9 +36,25 @@ export const getRoutes = async (filters?: RouteFilters) => {
 };
 
 export const createRoute = async (values: RouteFormValues) => {
+  // Get the user's organization ID and add it to the route data
+  const { data: orgData, error: orgError } = await supabase.rpc('get_user_org_id');
+  
+  if (orgError) {
+    throw orgError;
+  }
+  
+  if (!orgData) {
+    throw new Error('User is not associated with an organization');
+  }
+
+  const routeData = {
+    ...values,
+    organization_id: orgData
+  };
+  
   const { data, error } = await supabase
     .from("routes")
-    .insert(values)
+    .insert(routeData)
     .select()
     .single();
 

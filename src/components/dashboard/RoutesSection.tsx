@@ -179,26 +179,35 @@ export function RoutesSection() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {routes?.map((route) => (
-                  <TableRow key={route.id}>
-                    <TableCell className="font-medium">{route.origin_city}</TableCell>
-                    <TableCell>{route.destination_city}</TableCell>
-                    <TableCell>{route.equipment_type}</TableCell>
-                    <TableCell>{route.commodity}</TableCell>
-                    <TableCell>{route.weekly_volume}</TableCell>
-                    <TableCell>{route.distance || '-'}</TableCell>
-                    <TableCell>{(route as any).route_bids?.length || 0}</TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteRoute(route)}
-                      >
-                        Delete
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {routes?.map((routeData) => {
+                  // Ensure type safety by casting the route data to the correct type
+                  const route: Route = {
+                    ...routeData,
+                    equipment_type: routeData.equipment_type as EquipmentType,
+                    route_bids: routeData.route_bids || []
+                  };
+                  
+                  return (
+                    <TableRow key={route.id}>
+                      <TableCell className="font-medium">{route.origin_city}</TableCell>
+                      <TableCell>{route.destination_city}</TableCell>
+                      <TableCell>{route.equipment_type}</TableCell>
+                      <TableCell>{route.commodity}</TableCell>
+                      <TableCell>{route.weekly_volume}</TableCell>
+                      <TableCell>{route.distance || '-'}</TableCell>
+                      <TableCell>{route.route_bids?.length || 0}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteRoute(route)}
+                        >
+                          Delete
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
