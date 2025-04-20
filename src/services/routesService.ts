@@ -36,6 +36,23 @@ export const getRoutes = async (filters?: RouteFilters) => {
   return data;
 };
 
+export const getRoutesByBid = async (bidId: string) => {
+  const { data, error } = await supabase
+    .from("route_bids")
+    .select(`
+      route_id,
+      routes (*)
+    `)
+    .eq('bid_id', bidId);
+
+  if (error) {
+    throw error;
+  }
+
+  // Extract the routes from the nested data
+  return data.map(item => item.routes) as Route[];
+};
+
 export const createRoute = async (values: RouteFormValues) => {
   // Get the user's organization ID and add it to the route data
   const { data: orgData, error: orgError } = await supabase.rpc('get_user_org_id');
@@ -118,5 +135,38 @@ export const associateRouteWithBid = async (routeId: string, bidId: string) => {
       throw new Error('This route is already associated with this bid');
     }
     throw error;
+  }
+};
+
+export const removeRouteFromBid = async (routeId: string, bidId: string) => {
+  const { error } = await supabase
+    .from("route_bids")
+    .delete()
+    .match({ route_id: routeId, bid_id: bidId });
+
+  if (error) {
+    throw error;
+  }
+};
+
+export const updateBidLaneCount = async (bidId: string) => {
+  // First, get the count of routes associated with this bid
+  const { count, error: countError } = await supabase
+    .from("route_bids")
+    .select('*', { count: 'exact' })
+    .eq('bid_id', bidId);
+
+  if (countError) {
+    throw countError;
+  }
+
+  // Update the bid's lanes count
+  const { error: updateError } = await supabase
+    .from("bids")
+    .update({ lanes: count || 0 })
+    .eq('id', bidId);
+
+  if (updateError) {
+    throw updateError;
   }
 };

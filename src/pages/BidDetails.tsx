@@ -469,10 +469,10 @@ const BidDetails = () => {
                         <TableRow>
                           <TableHead>Origin</TableHead>
                           <TableHead>Destination</TableHead>
+                          <TableHead>Equipment Type</TableHead>
                           <TableHead>Commodity</TableHead>
                           <TableHead>Distance</TableHead>
                           <TableHead>Weekly Volume</TableHead>
-                          <TableHead>Target Rate</TableHead>
                           <TableHead></TableHead>
                         </TableRow>
                       </TableHeader>

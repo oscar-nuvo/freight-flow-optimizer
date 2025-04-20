@@ -21,6 +21,7 @@ import NotFound from "./pages/NotFound";
 import EditBid from "./pages/EditBid";
 import Pricing from "./pages/Pricing";
 import CarrierOnboarding from "./pages/CarrierOnboarding";
+import AddRoutesToBid from "./pages/AddRoutesToBid";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/bids" element={<ProtectedRoute><Bids /></ProtectedRoute>} />
             <Route path="/bids/new" element={<ProtectedRoute><NewBid /></ProtectedRoute>} />
             <Route path="/bids/:id" element={<ProtectedRoute><BidDetails /></ProtectedRoute>} />
+            <Route path="/bids/:id/routes/new" element={<ProtectedRoute><AddRoutesToBid /></ProtectedRoute>} />
             <Route path="/routes" element={<ProtectedRoute><RoutesList /></ProtectedRoute>} />
             <Route path="/analysis" element={<ProtectedRoute><Analysis /></ProtectedRoute>} />
             <Route path="/bids/:id/edit" element={<ProtectedRoute><EditBid /></ProtectedRoute>} />
