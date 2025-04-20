@@ -354,6 +354,95 @@ export type Database = {
           },
         ]
       }
+      route_bids: {
+        Row: {
+          bid_id: string
+          created_at: string
+          id: string
+          route_id: string
+          updated_at: string
+        }
+        Insert: {
+          bid_id: string
+          created_at?: string
+          id?: string
+          route_id: string
+          updated_at?: string
+        }
+        Update: {
+          bid_id?: string
+          created_at?: string
+          id?: string
+          route_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "route_bids_bid_id_fkey"
+            columns: ["bid_id"]
+            isOneToOne: false
+            referencedRelation: "bids"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_bids_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      routes: {
+        Row: {
+          commodity: string
+          created_at: string
+          destination_city: string
+          distance: number | null
+          equipment_type: string
+          id: string
+          is_deleted: boolean
+          organization_id: string
+          origin_city: string
+          updated_at: string
+          weekly_volume: number
+        }
+        Insert: {
+          commodity: string
+          created_at?: string
+          destination_city: string
+          distance?: number | null
+          equipment_type: string
+          id?: string
+          is_deleted?: boolean
+          organization_id: string
+          origin_city: string
+          updated_at?: string
+          weekly_volume?: number
+        }
+        Update: {
+          commodity?: string
+          created_at?: string
+          destination_city?: string
+          distance?: number | null
+          equipment_type?: string
+          id?: string
+          is_deleted?: boolean
+          organization_id?: string
+          origin_city?: string
+          updated_at?: string
+          weekly_volume?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

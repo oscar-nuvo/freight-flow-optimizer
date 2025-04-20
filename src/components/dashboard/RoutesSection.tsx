@@ -1,74 +1,87 @@
 
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Filter, MapPin } from "lucide-react";
-
-// Mock routes data
-const mockRoutes = [
-  { 
-    id: 1, 
-    origin: "Los Angeles, CA", 
-    destination: "Chicago, IL", 
-    distance: 2015, 
-    carriers: 8, 
-    avgRate: "$2.45", 
-    bestRate: "$2.10", 
-    bids: 3 
-  },
-  { 
-    id: 2, 
-    origin: "New York, NY", 
-    destination: "Miami, FL", 
-    distance: 1280, 
-    carriers: 12, 
-    avgRate: "$2.10", 
-    bestRate: "$1.85", 
-    bids: 4 
-  },
-  { 
-    id: 3, 
-    origin: "Seattle, WA", 
-    destination: "Denver, CO", 
-    distance: 1330, 
-    carriers: 6, 
-    avgRate: "$2.30", 
-    bestRate: "$2.05", 
-    bids: 2 
-  },
-  { 
-    id: 4, 
-    origin: "Dallas, TX", 
-    destination: "Atlanta, GA", 
-    distance: 795, 
-    carriers: 10, 
-    avgRate: "$1.95", 
-    bestRate: "$1.75", 
-    bids: 5 
-  },
-  { 
-    id: 5, 
-    origin: "Chicago, IL", 
-    destination: "Phoenix, AZ", 
-    distance: 1750, 
-    carriers: 7, 
-    avgRate: "$2.25", 
-    bestRate: "$2.00", 
-    bids: 3 
-  },
-];
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { MapPin, Filter, Search } from "lucide-react";
+import { getRoutes, createRoute, updateRoute, deleteRoute } from "@/services/routesService";
+import { Route, RouteFormValues, EquipmentType, RouteFilters } from "@/types/route";
+import { RouteForm } from "@/components/routes/RouteForm";
 
 export function RoutesSection() {
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [filters, setFilters] = useState<RouteFilters>({});
+  const { toast } = useToast();
+
+  const { data: routes, isLoading, refetch } = useQuery({
+    queryKey: ["routes", filters],
+    queryFn: () => getRoutes(filters),
+  });
+
+  const handleCreateRoute = async (values: RouteFormValues) => {
+    try {
+      await createRoute(values);
+      toast({
+        title: "Success",
+        description: "Route created successfully",
+      });
+      setIsCreateModalOpen(false);
+      refetch();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create route",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteRoute = async (route: Route) => {
+    try {
+      await deleteRoute(route.id);
+      toast({
+        title: "Success",
+        description: "Route deleted successfully",
+      });
+      refetch();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete route",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const equipmentTypes: EquipmentType[] = ["Dry Van", "Reefer", "Flatbed"];
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Routes</h1>
-          <p className="text-muted-foreground mt-1">View all routes and associated rates</p>
+          <p className="text-muted-foreground mt-1">Manage your transportation routes</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <Button className="bg-forest hover:bg-forest-600 sm:w-auto">
+          <Button className="bg-forest hover:bg-forest-600 sm:w-auto" onClick={() => setIsCreateModalOpen(true)}>
             <MapPin className="h-4 w-4 mr-2" />
             Create Route
           </Button>
@@ -84,29 +97,44 @@ export function RoutesSection() {
         </CardHeader>
         <CardContent className="px-6 py-4 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="text-sm font-medium mb-1 block">Origin</label>
-            <Input placeholder="Enter origin city" />
+            <Input
+              placeholder="Origin city"
+              value={filters.origin_city || ""}
+              onChange={(e) => setFilters(f => ({ ...f, origin_city: e.target.value }))}
+            />
           </div>
           <div>
-            <label className="text-sm font-medium mb-1 block">Destination</label>
-            <Input placeholder="Enter destination city" />
+            <Input
+              placeholder="Destination city"
+              value={filters.destination_city || ""}
+              onChange={(e) => setFilters(f => ({ ...f, destination_city: e.target.value }))}
+            />
           </div>
           <div>
-            <label className="text-sm font-medium mb-1 block">Equipment Type</label>
-            <Select>
+            <Select
+              value={filters.equipment_type}
+              onValueChange={(value) => setFilters(f => ({ ...f, equipment_type: value as EquipmentType }))}
+            >
               <SelectTrigger>
-                <SelectValue placeholder="All Equipment" />
+                <SelectValue placeholder="Equipment Type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Equipment</SelectItem>
-                <SelectItem value="dry-van">Dry Van</SelectItem>
-                <SelectItem value="reefer">Reefer</SelectItem>
-                <SelectItem value="flatbed">Flatbed</SelectItem>
+                {equipmentTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-end">
-            <Button className="w-full">Search Routes</Button>
+          <div>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setFilters({})}
+            >
+              Reset Filters
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -118,7 +146,12 @@ export function RoutesSection() {
             <div className="flex space-x-2">
               <div className="relative w-64">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search routes..." className="pl-9" />
+                <Input
+                  placeholder="Search routes..."
+                  className="pl-9"
+                  value={filters.commodity || ""}
+                  onChange={(e) => setFilters(f => ({ ...f, commodity: e.target.value }))}
+                />
               </div>
               <Button variant="outline" size="sm">
                 <Filter className="h-4 w-4 mr-2" />
@@ -127,48 +160,59 @@ export function RoutesSection() {
             </div>
           </div>
           <CardDescription>
-            {mockRoutes.length} routes found
+            {routes?.length || 0} routes found
           </CardDescription>
         </CardHeader>
         <CardContent className="px-6">
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b">
-                  <th className="py-3 px-2 text-left font-medium text-muted-foreground">Origin</th>
-                  <th className="py-3 px-2 text-left font-medium text-muted-foreground">Destination</th>
-                  <th className="py-3 px-2 text-left font-medium text-muted-foreground">Distance (mi)</th>
-                  <th className="py-3 px-2 text-left font-medium text-muted-foreground">Carriers</th>
-                  <th className="py-3 px-2 text-left font-medium text-muted-foreground">Avg Rate (per mi)</th>
-                  <th className="py-3 px-2 text-left font-medium text-muted-foreground">Best Rate (per mi)</th>
-                  <th className="py-3 px-2 text-left font-medium text-muted-foreground">Bids</th>
-                  <th className="py-3 px-2 text-left font-medium text-muted-foreground"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {mockRoutes.map((route) => (
-                  <tr key={route.id} className="border-b hover:bg-muted/50">
-                    <td className="py-3 px-2">
-                      <div className="font-medium">{route.origin}</div>
-                    </td>
-                    <td className="py-3 px-2">
-                      <div className="font-medium">{route.destination}</div>
-                    </td>
-                    <td className="py-3 px-2">{route.distance.toLocaleString()}</td>
-                    <td className="py-3 px-2">{route.carriers}</td>
-                    <td className="py-3 px-2">{route.avgRate}</td>
-                    <td className="py-3 px-2 text-forest font-medium">{route.bestRate}</td>
-                    <td className="py-3 px-2">{route.bids}</td>
-                    <td className="py-3 px-2 text-right">
-                      <Button variant="ghost" size="sm">View</Button>
-                    </td>
-                  </tr>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Origin</TableHead>
+                  <TableHead>Destination</TableHead>
+                  <TableHead>Equipment Type</TableHead>
+                  <TableHead>Commodity</TableHead>
+                  <TableHead>Weekly Volume</TableHead>
+                  <TableHead>Distance (mi)</TableHead>
+                  <TableHead>Associated Bids</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {routes?.map((route) => (
+                  <TableRow key={route.id}>
+                    <TableCell className="font-medium">{route.origin_city}</TableCell>
+                    <TableCell>{route.destination_city}</TableCell>
+                    <TableCell>{route.equipment_type}</TableCell>
+                    <TableCell>{route.commodity}</TableCell>
+                    <TableCell>{route.weekly_volume}</TableCell>
+                    <TableCell>{route.distance || '-'}</TableCell>
+                    <TableCell>{(route as any).route_bids?.length || 0}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteRoute(route)}
+                      >
+                        Delete
+                      </Button>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+        <AlertDialogContent className="sm:max-w-[425px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Create New Route</AlertDialogTitle>
+          </AlertDialogHeader>
+          <RouteForm onSubmit={handleCreateRoute} />
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
