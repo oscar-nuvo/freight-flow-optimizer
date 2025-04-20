@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
@@ -16,6 +15,7 @@ import { Route } from "@/types/route";
 import { getRoutesByBid, removeRouteFromBid } from "@/services/routesService";
 import { toast as sonnerToast } from "sonner";
 import { BidInvitationsTable } from "@/components/bids/invitations/BidInvitationsTable";
+import { InviteCarriersButton } from "@/components/bids/InviteCarriersButton";
 
 interface Bid {
   id: string;
@@ -47,7 +47,6 @@ const BidDetails = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Define permission variables for bid actions
   const canEdit = bid?.status === "draft";
   const canPublish = bid?.status === "draft" && (bid?.lanes || 0) > 0;
   const canPause = bid?.status === "active" || bid?.status === "published";
@@ -148,10 +147,8 @@ const BidDetails = () => {
       console.log(`Removing route ${routeId} from bid ${id}`);
       await removeRouteFromBid(routeId, id);
       
-      // Update local state
       setRoutes(prevRoutes => prevRoutes.filter(route => route.id !== routeId));
       
-      // Refresh bid to update lane count
       fetchBid();
       
       sonnerToast.success("Route removed from bid successfully");
@@ -565,12 +562,15 @@ const BidDetails = () => {
                   <div className="flex justify-between items-center">
                     <CardTitle>Carriers</CardTitle>
                     {(bid.status === "published" || bid.status === "active") && (
-                      <Button 
-                        size="sm"
-                        onClick={() => navigate(`/bids/${bid.id}/invite`)}
-                      >
-                        Invite Carriers
-                      </Button>
+                      <InviteCarriersButton
+                        bidId={bid.id}
+                        bidName={bid.name}
+                        status={bid.status}
+                        hasRoutes={(routes && routes.length > 0)}
+                        onInvitationsSent={() => {
+                          // Optionally reload invitations table data here if needed
+                        }}
+                      />
                     )}
                   </div>
                   <CardDescription>
@@ -578,21 +578,17 @@ const BidDetails = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center py-12">
-                    <p className="text-muted-foreground mb-4">
-                      {bid.status === "draft" 
-                        ? "You can invite carriers after publishing the bid" 
-                        : "No carriers have been invited to this bid yet"}
-                    </p>
-                    {(bid.status === "published" || bid.status === "active") && (
-                      <Button
-                        className="bg-forest hover:bg-forest-600"
-                        onClick={() => navigate(`/bids/${bid.id}/invite`)}
-                      >
-                        Invite Carriers
-                      </Button>
-                    )}
-                  </div>
+                  {bid.status === "draft" ? (
+                    <div className="text-center py-12">
+                      <p className="text-muted-foreground mb-4">
+                        You can invite carriers after publishing the bid
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <BidInvitationsTable bidId={bid.id} />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -633,10 +629,6 @@ const BidDetails = () => {
               </Card>
             </TabsContent>
           </Tabs>
-
-          {bid.status === "published" && (
-            <BidInvitationsTable bidId={bid.id} />
-          )}
         </div>
       )}
     </DashboardLayout>
