@@ -1,5 +1,5 @@
 
-import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { CarrierFormValues } from "../CarrierDetailsForm";
@@ -122,7 +122,7 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
             {additionalContacts.map((contact: AdditionalContact, index: number) => (
               <Card key={index}>
                 <CardContent className="pt-4 pb-2">
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-start">
                     <div>
                       <p className="font-medium">{contact.name}</p>
                       <p className="text-sm text-muted-foreground">{contact.title}</p>
@@ -130,9 +130,20 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
                         <p className="text-sm">{contact.email}</p>
                         <p className="text-sm">{contact.phone}</p>
                       </div>
-                      {contact.receives_rate_inquiries && (
-                        <p className="text-xs text-green-600 mt-1">Receives rate inquiries</p>
-                      )}
+                      <div className="mt-2 flex items-center gap-2">
+                        <Checkbox
+                          checked={contact.receives_rate_inquiries}
+                          disabled
+                          id={`rate-inquiries-${index}`}
+                          className="scale-90"
+                        />
+                        <label
+                          htmlFor={`rate-inquiries-${index}`}
+                          className={`text-xs ${contact.receives_rate_inquiries ? 'text-green-600' : 'text-muted-foreground'} font-medium cursor-default`}
+                        >
+                          Receives rate inquiries
+                        </label>
+                      </div>
                     </div>
                     <Button 
                       type="button" 
