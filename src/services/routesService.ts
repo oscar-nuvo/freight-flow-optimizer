@@ -23,7 +23,7 @@ export const getRoutes = async (filters?: RouteFilters) => {
     query = query.eq('equipment_type', filters.equipment_type);
   }
   if (filters?.commodity) {
-    query = query.eq('commodity', filters.commodity);
+    query = query.ilike('commodity', `%${filters.commodity}%`);
   }
 
   const { data, error } = await query.order('created_at', { ascending: false });
