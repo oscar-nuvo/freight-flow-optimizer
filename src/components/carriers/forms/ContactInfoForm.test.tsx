@@ -3,13 +3,8 @@ import { describe, it, expect, beforeAll } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ContactInfoForm } from "./ContactInfoForm";
 import { useForm } from "react-hook-form";
-import * as matchers from '@testing-library/jest-dom/matchers';
 import { CarrierFormValues } from "../CarrierDetailsForm";
-
-// Add jest-dom matchers
-beforeAll(() => {
-  expect.extend(matchers);
-});
+import '@testing-library/jest-dom';
 
 function renderForm() {
   // Using partial CarrierFormValues with just the required fields for the test
