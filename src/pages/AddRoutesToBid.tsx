@@ -1,61 +1,51 @@
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { getRoutes, associateRouteWithBid, getRoutesByBid, createRoute } from "@/services/routesService";
-import { Route, EquipmentType, RouteFilters, RouteFormValues } from "@/types/route";
+import { associateRouteWithBid, getRoutesByBid, createRoute } from "@/services/routesService";
+import { RouteFormValues } from "@/types/route";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, Search, Filter, MapPin, Plus } from "lucide-react";
-import { RoutesFilter } from "@/components/routes/RoutesFilter";
+import { ChevronLeft, MapPin, Plus } from "lucide-react";
 import { CreateRouteModal } from "@/components/routes/CreateRouteModal";
+import { EnhancedRoutesFilter } from "@/components/routes/EnhancedRoutesFilter";
+import { EnhancedRoutesTable } from "@/components/routes/EnhancedRoutesTable";
+import { useRouteSearch } from "@/hooks/useRouteSearch";
 
 const AddRoutesToBid = () => {
   const { id: bidId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filters, setFilters] = useState<RouteFilters>({});
   const [selectedRoutes, setSelectedRoutes] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isCreatingRoute, setIsCreatingRoute] = useState(false);
 
-  const { data: routesData, isLoading: isRoutesLoading, refetch: refetchRoutes } = useQuery({
-    queryKey: ["routes", filters],
-    queryFn: () => getRoutes(filters),
-  });
+  // Use the custom hook for route search
+  const {
+    routes,
+    isLoading: isRoutesLoading,
+    isSearching,
+    isError,
+    searchTerm,
+    setSearchTerm,
+    filters,
+    setFilters,
+    refetch: refetchRoutes,
+    resultsCount
+  } = useRouteSearch();
 
+  // Fetch routes already associated with this bid
   const { data: existingBidRoutes, isLoading: isExistingRoutesLoading, refetch: refetchBidRoutes } = useQuery({
     queryKey: ["bidRoutes", bidId],
     queryFn: () => bidId ? getRoutesByBid(bidId) : Promise.resolve([]),
     enabled: !!bidId,
   });
 
+  // Create a set of existing route IDs for fast lookup
   const existingRouteIds = new Set(existingBidRoutes?.map(route => route.id) || []);
-
-  const routes: Route[] | undefined = routesData?.map(route => ({
-    ...route,
-    equipment_type: route.equipment_type as EquipmentType
-  }));
-
-  const filteredRoutes = routes?.filter(route => {
-    if (!searchTerm) return true;
-    
-    const term = searchTerm.toLowerCase();
-    return (
-      route.origin_city.toLowerCase().includes(term) ||
-      route.destination_city.toLowerCase().includes(term) ||
-      route.commodity.toLowerCase().includes(term)
-    );
-  });
-
-  const handleFilterChange = (newFilters: RouteFilters) => {
-    setFilters(newFilters);
-  };
 
   const handleRouteSelect = (routeId: string) => {
     if (existingRouteIds.has(routeId)) {
@@ -169,86 +159,42 @@ const AddRoutesToBid = () => {
           </div>
         </div>
 
-        <RoutesFilter 
+        <EnhancedRoutesFilter 
           filters={filters} 
-          onFilterChange={handleFilterChange} 
+          onFilterChange={setFilters}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          isSearching={isSearching}
+          resultsCount={resultsCount}
         />
 
         <Card>
           <CardHeader className="px-6 py-4">
             <div className="flex justify-between items-center">
               <CardTitle className="text-lg">Available Routes</CardTitle>
-              <div className="flex space-x-2">
-                <div className="relative w-64">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search routes..."
-                    className="pl-9"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                <Button variant="outline" size="sm">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                </Button>
+              <div className="text-sm text-muted-foreground">
+                {resultsCount} routes found
               </div>
             </div>
             <CardDescription>
-              {filteredRoutes?.length || 0} routes found ({existingBidRoutes?.length || 0} already added)
+              {existingBidRoutes?.length ? `${existingBidRoutes.length} routes already added to this bid` : "No routes added to this bid yet"}
             </CardDescription>
           </CardHeader>
           <CardContent className="px-6">
-            {isLoading ? (
-              <div className="py-8 text-center">Loading routes...</div>
-            ) : !filteredRoutes || filteredRoutes.length === 0 ? (
-              <div className="py-8 text-center">
-                No routes found. Create your first route to get started.
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="py-3 px-2 text-left font-medium text-muted-foreground w-16"></th>
-                      <th className="py-3 px-2 text-left font-medium text-muted-foreground">Origin</th>
-                      <th className="py-3 px-2 text-left font-medium text-muted-foreground">Destination</th>
-                      <th className="py-3 px-2 text-left font-medium text-muted-foreground">Equipment Type</th>
-                      <th className="py-3 px-2 text-left font-medium text-muted-foreground">Commodity</th>
-                      <th className="py-3 px-2 text-left font-medium text-muted-foreground">Weekly Volume</th>
-                      <th className="py-3 px-2 text-left font-medium text-muted-foreground">Distance (mi)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredRoutes.map((route) => {
-                      const isRouteAssociated = existingRouteIds.has(route.id);
-                      return (
-                        <tr 
-                          key={route.id} 
-                          className={`border-b hover:bg-muted/50 ${selectedRoutes.includes(route.id) ? 'bg-muted/30' : ''} ${isRouteAssociated ? 'opacity-50' : ''}`}
-                          onClick={() => !isRouteAssociated && handleRouteSelect(route.id)}
-                        >
-                          <td className="py-3 px-2">
-                            <Checkbox 
-                              checked={selectedRoutes.includes(route.id)}
-                              disabled={isRouteAssociated}
-                              onCheckedChange={() => handleRouteSelect(route.id)}
-                              className="ml-2"
-                            />
-                          </td>
-                          <td className="py-3 px-2 font-medium">{route.origin_city}</td>
-                          <td className="py-3 px-2">{route.destination_city}</td>
-                          <td className="py-3 px-2">{route.equipment_type}</td>
-                          <td className="py-3 px-2">{route.commodity}</td>
-                          <td className="py-3 px-2">{route.weekly_volume}</td>
-                          <td className="py-3 px-2">{route.distance || '-'}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            <EnhancedRoutesTable 
+              routes={routes} 
+              isLoading={isLoading}
+              isError={isError}
+              isSearching={isSearching}
+              selectedRoutes={selectedRoutes}
+              onRouteSelect={handleRouteSelect}
+              disabledRoutes={existingRouteIds}
+              emptyMessage={
+                searchTerm || (filters && Object.values(filters).some(Boolean))
+                  ? "No routes match your search criteria. Try adjusting your filters."
+                  : "No routes found. Create your first route to get started."
+              }
+            />
           </CardContent>
         </Card>
 

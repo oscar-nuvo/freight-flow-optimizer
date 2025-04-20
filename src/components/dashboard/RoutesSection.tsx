@@ -1,6 +1,5 @@
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import {
   Card,
@@ -11,31 +10,31 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
-import { MapPin, Filter, Search } from "lucide-react";
-import { getRoutes, createRoute, updateRoute, deleteRoute } from "@/services/routesService";
-import { Route, RouteFormValues, EquipmentType, RouteFilters } from "@/types/route";
+import { MapPin, Plus } from "lucide-react";
+import { createRoute, updateRoute, deleteRoute } from "@/services/routesService";
+import { Route, RouteFormValues } from "@/types/route";
 import { RouteForm } from "@/components/routes/RouteForm";
-import { RoutesFilter } from "@/components/routes/RoutesFilter";
-import { RoutesTable } from "@/components/routes/RoutesTable";
+import { EnhancedRoutesFilter } from "@/components/routes/EnhancedRoutesFilter";
+import { EnhancedRoutesTable } from "@/components/routes/EnhancedRoutesTable";
+import { useRouteSearch } from "@/hooks/useRouteSearch";
 
 export function RoutesSection() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [routeToEdit, setRouteToEdit] = useState<Route | null>(null);
-  const [filters, setFilters] = useState<RouteFilters>({});
-  const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
-
-  const { data: routesData, isLoading, refetch } = useQuery({
-    queryKey: ["routes", filters],
-    queryFn: () => getRoutes(filters),
-  });
-
-  // Ensure routes have the correct type by casting equipment_type to EquipmentType
-  const routes: Route[] | undefined = routesData?.map(route => ({
-    ...route,
-    equipment_type: route.equipment_type as EquipmentType
-  }));
+  
+  const {
+    routes,
+    isLoading,
+    isSearching,
+    isError,
+    searchTerm,
+    setSearchTerm,
+    filters,
+    setFilters,
+    refetch,
+    resultsCount
+  } = useRouteSearch();
 
   const handleCreateOrUpdateRoute = async (values: RouteFormValues) => {
     try {
@@ -96,22 +95,6 @@ export function RoutesSection() {
     setRouteToEdit(null);
   };
 
-  const handleFilterChange = (newFilters: RouteFilters) => {
-    setFilters(newFilters);
-  };
-
-  // Filter routes by search term across multiple fields
-  const filteredRoutes = routes?.filter(route => {
-    if (!searchTerm) return true;
-    
-    const term = searchTerm.toLowerCase();
-    return (
-      route.origin_city.toLowerCase().includes(term) ||
-      route.destination_city.toLowerCase().includes(term) ||
-      route.commodity.toLowerCase().includes(term)
-    );
-  });
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -127,41 +110,42 @@ export function RoutesSection() {
         </div>
       </div>
 
-      <RoutesFilter 
+      <EnhancedRoutesFilter 
         filters={filters} 
-        onFilterChange={handleFilterChange} 
+        onFilterChange={setFilters}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        isSearching={isSearching}
+        resultsCount={resultsCount}
       />
 
       <Card>
         <CardHeader className="px-6 py-4">
           <div className="flex justify-between items-center">
             <CardTitle className="text-lg">All Routes</CardTitle>
-            <div className="flex space-x-2">
-              <div className="relative w-64">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search routes..."
-                  className="pl-9"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
-                Filter
-              </Button>
+            <div className="text-sm text-muted-foreground">
+              {resultsCount} routes found
             </div>
           </div>
           <CardDescription>
-            {filteredRoutes?.length || 0} routes found
+            {searchTerm || (filters && Object.values(filters).some(Boolean)) 
+              ? "Filtered results based on your search criteria" 
+              : "Showing all routes"}
           </CardDescription>
         </CardHeader>
         <CardContent className="px-6">
-          <RoutesTable 
-            routes={filteredRoutes || null} 
+          <EnhancedRoutesTable 
+            routes={routes} 
             isLoading={isLoading}
+            isError={isError}
+            isSearching={isSearching}
             onEditRoute={handleEditRoute}
             onDeleteRoute={handleDeleteRoute}
+            emptyMessage={
+              searchTerm || (filters && Object.values(filters).some(Boolean))
+                ? "No routes match your search criteria. Try adjusting your filters."
+                : "No routes found. Create your first route to get started."
+            }
           />
         </CardContent>
       </Card>
