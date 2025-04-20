@@ -10,7 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatDistance } from "date-fns";
 import { InvitationStatusBadge } from "./InvitationStatusBadge";
-import { Mail, MessageSquare, Bell } from "lucide-react";
+import { Mail, MessageSquare, Bell, Link } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+// Added for building full link
+const getInvitationLink = (token: string) => {
+  if (typeof window === "undefined") return token;
+  return `${window.location.origin}/bid/respond/${token}`;
+};
 
 interface BidInvitationsTableProps {
   bidId: string;
@@ -25,11 +32,12 @@ export function BidInvitationsTable({ bidId }: BidInvitationsTableProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [invitations, setInvitations] = useState<CarrierInvitationWithCarrier[]>([]);
   const [activeTab, setActiveTab] = useState<string>("all");
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchInvitations = async () => {
       if (!bidId) return;
-      
+
       try {
         setIsLoading(true);
         const data = await getBidCarriers(bidId);
@@ -40,7 +48,7 @@ export function BidInvitationsTable({ bidId }: BidInvitationsTableProps) {
         setIsLoading(false);
       }
     };
-    
+
     fetchInvitations();
   }, [bidId]);
 
@@ -64,6 +72,24 @@ export function BidInvitationsTable({ bidId }: BidInvitationsTableProps) {
       return formatDistance(new Date(dateString), new Date(), { addSuffix: true });
     } catch (e) {
       return "Invalid date";
+    }
+  };
+
+  const handleCopyLink = async (token: string) => {
+    try {
+      const link = getInvitationLink(token);
+      await navigator.clipboard.writeText(link);
+      toast({
+        title: "Copied",
+        description: "Invitation link copied to clipboard",
+      });
+    } catch (error) {
+      console.error("Failed to copy link:", error);
+      toast({
+        title: "Error",
+        description: "Failed to copy link",
+        variant: "destructive",
+      });
     }
   };
 
@@ -128,7 +154,7 @@ export function BidInvitationsTable({ bidId }: BidInvitationsTableProps) {
               Responded ({respondedCount})
             </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value={activeTab}>
             <div className="rounded-md border overflow-hidden">
               <Table>
@@ -163,11 +189,24 @@ export function BidInvitationsTable({ bidId }: BidInvitationsTableProps) {
                       </TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              // Placeholder for Remind action
+                              // You may implement remind functionality here
+                            }}
+                          >
                             Remind
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleCopyLink(invitation.token)}
+                            title="Copy Invitation Link"
+                          >
                             Copy Link
+                            <Link className="ml-1 h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>
@@ -182,3 +221,4 @@ export function BidInvitationsTable({ bidId }: BidInvitationsTableProps) {
     </Card>
   );
 }
+
