@@ -1,0 +1,557 @@
+import { useState, useEffect } from "react";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { Plus, Trash2, Mail, Phone, MessageSquare } from "lucide-react";
+import { UseFormReturn } from "react-hook-form";
+import { type CarrierFormValues } from "../CarrierOnboardingForm";
+
+const countryCodes = [
+  { code: "+1", country: "USA" },
+  { code: "+1", country: "Canada" },
+  { code: "+52", country: "Mexico" },
+];
+
+const notificationChannels = [
+  { id: "email", label: "Email", icon: Mail },
+  { id: "sms", label: "SMS", icon: Phone },
+  { id: "whatsapp", label: "WhatsApp", icon: MessageSquare },
+];
+
+interface AdditionalContact {
+  name: string;
+  phone: string;
+  email: string;
+  title: string;
+  receives_rate_inquiries: boolean;
+  notification_channels: string[];
+  country_code: string;
+}
+
+interface ContactInfoFormExternalProps {
+  form: UseFormReturn<CarrierFormValues>;
+}
+
+function validatePhoneWithCountryCode(phone: string, countryCode: string) {
+  // Allow empty phone for optional field
+  if (!phone) return true;
+  const cleanPhone = phone.replace(/[\s\-()]/g, '');
+  switch(countryCode) {
+    case "+1":
+      return /^\+?1?\d{10}$/.test(cleanPhone);
+    case "+52":
+      return /^\+?52?\d{10}$/.test(cleanPhone);
+    default:
+      return false;
+  }
+}
+
+export function ContactInfoFormExternal({ form }: ContactInfoFormExternalProps) {
+  // Primary Contact State
+  const [primaryCountryCode, setPrimaryCountryCode] = useState("+1");
+  const [primaryChannels, setPrimaryChannels] = useState<string[]>(() =>
+    form.getValues("primary_notification_channels") || []
+  );
+  const [primaryContactTouched, setPrimaryContactTouched] = useState(false);
+  const [primaryContactErrors, setPrimaryContactErrors] = useState<{[key: string]: string}>({});
+
+  // Additional Contacts State
+  const [newContact, setNewContact] = useState<AdditionalContact>({
+    name: "",
+    phone: "",
+    email: "",
+    title: "",
+    receives_rate_inquiries: false,
+    notification_channels: [],
+    country_code: "+1",
+  });
+  const [showAddContact, setShowAddContact] = useState(false);
+  const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
+
+  useEffect(() => {
+    // Infer code from prefilled phone or keep default
+    const contactPhone = form.getValues("contact_phone") || "";
+    if (contactPhone.startsWith("+52")) setPrimaryCountryCode("+52");
+    else setPrimaryCountryCode("+1");
+    setPrimaryChannels(form.getValues("primary_notification_channels") || []);
+  }, [form]);
+
+  const additionalContacts = form.watch('additional_contacts') || [];
+
+  // -- Validation logic
+  function validatePrimaryContact() {
+    const errors: {[key: string]: string} = {};
+    const name = form.getValues("contact_name") || "";
+    const email = form.getValues("contact_email") || "";
+    const phone = form.getValues("contact_phone") || "";
+
+    if (name.trim() === "") {
+      errors.name = "Primary contact name required.";
+    }
+    if (!email.trim()) {
+      errors.email = "Primary contact email required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.email = "Invalid email format";
+    }
+    if (phone && !validatePhoneWithCountryCode(phone, primaryCountryCode)) {
+      errors.phone = "Invalid phone number for selected country";
+    }
+    if (primaryChannels.length === 0) {
+      errors.notification_channels = "At least one notification channel is required";
+    }
+    return errors;
+  }
+
+  const handlePrimaryChannelToggle = (channel: string) => {
+    let updated = [...primaryChannels];
+    if (updated.includes(channel)) {
+      updated = updated.filter((c) => c !== channel);
+    } else {
+      updated.push(channel);
+    }
+    setPrimaryChannels(updated);
+    form.setValue("primary_notification_channels", updated, { shouldValidate: false });
+    if (primaryContactTouched) setPrimaryContactErrors(validatePrimaryContact());
+    console.log("[PrimaryChannels] Changed:", updated);
+  };
+
+  const handlePrimaryBlur = () => {
+    // Auto-format phone with country code
+    const phone = form.getValues("contact_phone") || "";
+    let formattedPhone = phone;
+    if (phone && !phone.startsWith("+")) {
+      formattedPhone = `${primaryCountryCode} ${phone}`;
+    }
+    form.setValue("contact_phone", formattedPhone);
+    // Set notification channels
+    if (primaryChannels.length > 0) {
+      form.setValue("primary_notification_channels", primaryChannels, { shouldValidate: false });
+    }
+    setPrimaryContactErrors(validatePrimaryContact());
+    setPrimaryContactTouched(true);
+    console.log("[PrimaryBlur] Formatted phone to:", formattedPhone);
+  };
+
+  // --- Additional contact validation
+  const validateContact = (contact: AdditionalContact) => {
+    const errors: {[key: string]: string} = {};
+    if (!contact.name.trim()) {
+      errors.name = "Name is required";
+    }
+    if (!contact.email.trim()) {
+      errors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email)) {
+      errors.email = "Invalid email format";
+    }
+    if (contact.phone && !validatePhoneWithCountryCode(contact.phone, contact.country_code)) {
+      errors.phone = "Invalid phone number for selected country";
+    }
+    if (contact.receives_rate_inquiries && contact.notification_channels.length === 0) {
+      errors.notification_channels = "At least one notification channel is required";
+    }
+    return errors;
+  };
+
+  const addContact = () => {
+    const errors = validateContact(newContact);
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      console.log("[AddContact] Validation failed:", errors);
+      return;
+    }
+    let formattedPhone = newContact.phone;
+    if (formattedPhone && !formattedPhone.startsWith("+")) {
+      formattedPhone = `${newContact.country_code} ${formattedPhone}`;
+    }
+    const contactToAdd = {
+      ...newContact,
+      phone: formattedPhone,
+    };
+    const updatedContacts = [...additionalContacts, contactToAdd];
+    form.setValue('additional_contacts', updatedContacts);
+    setNewContact({
+      name: "",
+      phone: "",
+      email: "",
+      title: "",
+      receives_rate_inquiries: false,
+      notification_channels: [],
+      country_code: "+1",
+    });
+    setFormErrors({});
+    setShowAddContact(false);
+    console.log("[AddContact] Contact added:", contactToAdd);
+  };
+
+  const removeContact = (idx: number) => {
+    const updated = [...additionalContacts];
+    updated.splice(idx, 1);
+    form.setValue('additional_contacts', updated);
+    console.log("[RemoveContact] Contact at index", idx, "removed.");
+  };
+
+  const toggleNotificationChannel = (channel: string) => {
+    const updatedChannels = [...newContact.notification_channels];
+    const index = updatedChannels.indexOf(channel);
+    if (index === -1) {
+      updatedChannels.push(channel);
+    } else {
+      updatedChannels.splice(index, 1);
+    }
+    setNewContact({...newContact, notification_channels: updatedChannels});
+    if (updatedChannels.length > 0 && formErrors.notification_channels) {
+      const { notification_channels, ...rest } = formErrors;
+      setFormErrors(rest);
+    }
+  };
+
+  // --- UI
+  return (
+    <div className="space-y-6">
+      {/* PRIMARY CONTACT */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="contact_name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Primary Contact Name *</FormLabel>
+              <FormControl>
+                <Input {...field} onBlur={() => { setPrimaryContactTouched(true); setPrimaryContactErrors(validatePrimaryContact()); }} />
+              </FormControl>
+              {primaryContactTouched && primaryContactErrors.name && (
+                <p className="text-sm text-red-500 mt-1">{primaryContactErrors.name}</p>
+              )}
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="contact_phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Primary Contact Phone</FormLabel>
+              <FormControl>
+                <div className="flex gap-2">
+                  <div className="w-1/3">
+                    <Select
+                      value={primaryCountryCode}
+                      onValueChange={val => {
+                        setPrimaryCountryCode(val);
+                        setPrimaryContactErrors(validatePrimaryContact());
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Code" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {countryCodes.map((country) => (
+                          <SelectItem key={country.code + country.country} value={country.code}>
+                            {country.code} ({country.country})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex-1">
+                    <Input 
+                      type="tel"
+                      {...field}
+                      onBlur={() => { field.onBlur(); handlePrimaryBlur(); }}
+                      onChange={e => { field.onChange(e); setPrimaryContactTouched(true); setPrimaryContactErrors(validatePrimaryContact()); }}
+                      className={primaryContactTouched && primaryContactErrors.phone ? "border-red-500" : ""}
+                      placeholder="Phone number"
+                    />
+                  </div>
+                </div>
+              </FormControl>
+              {primaryContactTouched && primaryContactErrors.phone && (
+                <p className="text-sm text-red-500 mt-1">{primaryContactErrors.phone}</p>
+              )}
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="contact_email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Primary Contact Email *</FormLabel>
+              <FormControl>
+                <Input 
+                  {...field}
+                  type="email"
+                  onBlur={() => { setPrimaryContactTouched(true); setPrimaryContactErrors(validatePrimaryContact()); }}
+                  onChange={e => { field.onChange(e); setPrimaryContactTouched(true); setPrimaryContactErrors(validatePrimaryContact()); }}
+                  className={primaryContactTouched && primaryContactErrors.email ? "border-red-500" : ""}
+                />
+              </FormControl>
+              {primaryContactTouched && primaryContactErrors.email && (
+                <p className="text-sm text-red-500 mt-1">{primaryContactErrors.email}</p>
+              )}
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="col-span-full mt-2">
+          <label className="text-sm font-medium mb-2 block">
+            Notification Channels* for Primary Contact
+          </label>
+          <div className="flex flex-wrap gap-3 mt-2">
+            {notificationChannels.map((channel) => {
+              const isSelected = primaryChannels.includes(channel.id);
+              const Icon = channel.icon;
+              return (
+                <Button
+                  key={channel.id}
+                  type="button"
+                  variant={isSelected ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handlePrimaryChannelToggle(channel.id)}
+                  className={isSelected ? "bg-primary text-primary-foreground" : "bg-background"}
+                >
+                  <Icon className="h-4 w-4 mr-2" />
+                  {channel.label}
+                </Button>
+              );
+            })}
+          </div>
+          {primaryContactTouched && primaryContactErrors.notification_channels && (
+            <p className="text-sm text-red-500 mt-1">{primaryContactErrors.notification_channels}</p>
+          )}
+        </div>
+      </div>
+
+      {/* ADDITIONAL CONTACTS */}
+      <div className="mt-8">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-medium">Additional Contacts</h3>
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="sm"
+            onClick={() => setShowAddContact(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Contact
+          </Button>
+        </div>
+        {additionalContacts.length > 0 ? (
+          <div className="space-y-4">
+            {additionalContacts.map((contact: AdditionalContact, idx: number) => (
+              <Card key={idx}>
+                <CardContent className="pt-4 pb-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium">{contact.name}</p>
+                      <p className="text-sm text-muted-foreground">{contact.title}</p>
+                      <div className="mt-2">
+                        <p className="text-sm">{contact.email}</p>
+                        <p className="text-sm">{contact.phone}</p>
+                      </div>
+                      <div className="mt-2 flex items-center gap-2">
+                        <Checkbox
+                          checked={contact.receives_rate_inquiries}
+                          disabled
+                          id={`rate-inquiries-${idx}`}
+                          className="scale-90"
+                        />
+                        <label
+                          htmlFor={`rate-inquiries-${idx}`}
+                          className={`text-xs ${contact.receives_rate_inquiries ? 'text-green-600' : 'text-muted-foreground'} font-medium cursor-default`}
+                        >
+                          Receives rate inquiries
+                        </label>
+                      </div>
+                      {contact.receives_rate_inquiries && contact.notification_channels && (
+                        <div className="mt-2">
+                          <p className="text-xs text-muted-foreground mb-1">Notification channels:</p>
+                          <div className="flex gap-2">
+                            {contact.notification_channels.map((channel) => {
+                              const channelInfo = notificationChannels.find(c => c.id === channel);
+                              if (!channelInfo) return null;
+                              const Icon = channelInfo.icon;
+                              return (
+                                <div key={channel} className="inline-flex items-center px-2 py-1 bg-muted rounded-md text-xs">
+                                  <Icon className="h-3 w-3 mr-1" />
+                                  {channelInfo.label}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => removeContact(idx)}
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">No additional contacts added yet.</p>
+        )}
+
+        {/* ADD CONTACT DRAWER */}
+        {showAddContact && (
+          <Card className="mt-4">
+            <CardContent className="pt-4">
+              <h4 className="font-medium mb-3">Add New Contact</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="text-sm font-medium">Name*</label>
+                  <Input 
+                    value={newContact.name}
+                    onChange={(e) => {
+                      setNewContact({...newContact, name: e.target.value});
+                      if (formErrors.name) setFormErrors((err) => ({ ...err, name: undefined }));
+                    }}
+                    className={"mt-1" + (formErrors.name ? " border-red-500" : "")}
+                  />
+                  {formErrors.name && <p className="text-sm text-red-500 mt-1">{formErrors.name}</p>}
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Job Title</label>
+                  <Input 
+                    value={newContact.title}
+                    onChange={(e) => setNewContact({...newContact, title: e.target.value})}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Email*</label>
+                  <Input 
+                    type="email"
+                    value={newContact.email}
+                    onChange={(e) => {
+                      setNewContact({...newContact, email: e.target.value});
+                      if (formErrors.email) setFormErrors((err) => ({ ...err, email: undefined }));
+                    }}
+                    className={"mt-1" + (formErrors.email ? " border-red-500" : "")}
+                  />
+                  {formErrors.email && <p className="text-sm text-red-500 mt-1">{formErrors.email}</p>}
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Phone</label>
+                  <div className="flex mt-1 gap-2">
+                    <div className="w-1/3">
+                      <Select
+                        value={newContact.country_code}
+                        onValueChange={(val) => setNewContact({...newContact, country_code: val})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Code" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {countryCodes.map((country) => (
+                            <SelectItem key={country.code + country.country} value={country.code}>
+                              {country.code} ({country.country})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex-1">
+                      <Input 
+                        type="tel"
+                        value={newContact.phone}
+                        onChange={(e) => {
+                          setNewContact({...newContact, phone: e.target.value});
+                          if (formErrors.phone) setFormErrors((err) => ({ ...err, phone: undefined }));
+                        }}
+                        className={formErrors.phone ? "border-red-500" : ""}
+                        placeholder="Phone number"
+                      />
+                    </div>
+                  </div>
+                  {formErrors.phone && <p className="text-sm text-red-500 mt-1">{formErrors.phone}</p>}
+                </div>
+              </div>
+              <div className="space-y-4 mb-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="rate-inquiries"
+                    checked={newContact.receives_rate_inquiries}
+                    onCheckedChange={(checked) =>
+                      setNewContact({
+                        ...newContact, 
+                        receives_rate_inquiries: checked === true
+                      })
+                    }
+                  />
+                  <label
+                    htmlFor="rate-inquiries"
+                    className="text-sm font-medium leading-none cursor-pointer"
+                  >
+                    This contact should receive inquiries for rates
+                  </label>
+                </div>
+                
+                {newContact.receives_rate_inquiries && (
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      Notification Channels*
+                    </label>
+                    <div className="flex flex-wrap gap-3 mt-2">
+                      {notificationChannels.map((channel) => {
+                        const isSelected = newContact.notification_channels.includes(channel.id);
+                        const Icon = channel.icon;
+                        return (
+                          <Button
+                            key={channel.id}
+                            type="button"
+                            variant={isSelected ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => toggleNotificationChannel(channel.id)}
+                            className={isSelected ? "bg-primary text-primary-foreground" : "bg-background"}
+                          >
+                            <Icon className="h-4 w-4 mr-2" />
+                            {channel.label}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    {formErrors.notification_channels && (
+                      <p className="text-sm text-red-500 mt-1">{formErrors.notification_channels}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddContact(false);
+                    setFormErrors({});
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="button" 
+                  onClick={addContact}
+                >
+                  Add Contact
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -15,10 +15,9 @@ import { FleetDetailsForm } from "./forms/FleetDetailsForm";
 import { OperationalDetailsForm } from "./forms/OperationalDetailsForm";
 import { BillingInfoForm } from "./forms/BillingInfoForm";
 import { PreferencesForm } from "./forms/PreferencesForm";
+import { ContactInfoFormExternal } from "./forms/ContactInfoFormExternal";
 
-// Define validation schema for carrier form
 const carrierFormSchema = z.object({
-  // Basic Info
   name: z.string().min(1, "Carrier name is required"),
   legal_business_name: z.string().optional(),
   status: z.enum(["pending", "active", "inactive"]),
@@ -26,8 +25,6 @@ const carrierFormSchema = z.object({
   website: z.string().optional(),
   description: z.string().optional(),
   country: z.string().optional(),
-
-  // Contact Info
   contact_name: z.string().optional(),
   contact_email: z.string().email("Invalid email address").optional(),
   contact_phone: z.string().optional(),
@@ -37,8 +34,6 @@ const carrierFormSchema = z.object({
   state: z.string().optional(),
   zip_code: z.string().optional(),
   additional_contacts: z.array(z.any()).optional(),
-
-  // Compliance
   registration_type: z.string().optional(),
   mc_number: z.string().optional(),
   usdot_number: z.string().optional(),
@@ -49,8 +44,6 @@ const carrierFormSchema = z.object({
   authority_types: z.array(z.string()).optional(),
   handles_inbond_ca_shipments: z.boolean().optional(),
   rfc_number: z.string().optional(),
-
-  // Fleet
   cdl_drivers_count: z.number().optional(),
   b1_drivers_count: z.number().optional(),
   offers_team_driver_services: z.boolean().optional(),
@@ -59,16 +52,12 @@ const carrierFormSchema = z.object({
   reefer_trailers_count: z.number().optional(),
   flatbed_trailers_count: z.number().optional(),
   authorized_for_hazmat: z.boolean().optional(),
-
-  // Operational
   countries_of_operation: z.array(z.string()).optional(),
   service_types: z.array(z.string()).optional(),
   provides_cross_border_services: z.boolean().optional(),
   cross_border_routes: z.array(z.string()).optional(),
   engages_in_trailer_exchanges: z.boolean().optional(),
   trailer_exchange_partners: z.string().optional(),
-
-  // Billing
   bank_name: z.string().optional(),
   account_name: z.string().optional(),
   account_number: z.string().optional(),
@@ -78,12 +67,8 @@ const carrierFormSchema = z.object({
   billing_email: z.string().email("Invalid email address").optional().or(z.literal('')),
   currency: z.string().optional(),
   payout_method: z.string().optional(),
-
-  // Preferences
   tracking_method: z.string().optional(),
   telematics_provider: z.string().optional(),
-
-  // Commercial Preferences
   yard_locations: z.array(z.any()).optional(),
   primary_lanes: z.array(z.any()).optional(),
 });
@@ -116,7 +101,6 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
     preferences: false,
   });
 
-  // Default values from carrier data
   const defaultValues: Partial<CarrierFormValues> = {
     name: carrier?.name || "",
     legal_business_name: carrier?.legal_business_name || "",
@@ -135,7 +119,6 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
     zip_code: carrier?.zip_code || "",
     additional_contacts: carrier?.additional_contacts || [],
     
-    // Compliance fields
     registration_type: carrier?.registration_type || "",
     mc_number: carrier?.mc_number || "",
     usdot_number: carrier?.usdot_number || "",
@@ -147,7 +130,6 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
     handles_inbond_ca_shipments: carrier?.handles_inbond_ca_shipments || false,
     rfc_number: carrier?.rfc_number || "",
     
-    // Fleet fields
     cdl_drivers_count: carrier?.cdl_drivers_count || undefined,
     b1_drivers_count: carrier?.b1_drivers_count || undefined,
     offers_team_driver_services: carrier?.offers_team_driver_services || false,
@@ -157,7 +139,6 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
     flatbed_trailers_count: carrier?.flatbed_trailers_count || undefined,
     authorized_for_hazmat: carrier?.authorized_for_hazmat || false,
     
-    // Operational fields
     countries_of_operation: carrier?.countries_of_operation || [],
     service_types: carrier?.service_types || [],
     provides_cross_border_services: carrier?.provides_cross_border_services || false,
@@ -165,7 +146,6 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
     engages_in_trailer_exchanges: carrier?.engages_in_trailer_exchanges || false,
     trailer_exchange_partners: carrier?.trailer_exchange_partners || "",
     
-    // Billing fields
     bank_name: carrier?.bank_name || "",
     account_name: carrier?.account_name || "",
     account_number: carrier?.account_number || "",
@@ -176,11 +156,9 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
     currency: carrier?.currency || "",
     payout_method: carrier?.payout_method || "",
     
-    // Preference fields
     tracking_method: carrier?.tracking_method || "",
     telematics_provider: carrier?.telematics_provider || "",
     
-    // Commercial preference fields
     yard_locations: carrier?.yard_locations || [],
     primary_lanes: carrier?.primary_lanes || [],
   };
@@ -270,7 +248,7 @@ export function CarrierOnboardingForm({ carrier, onSubmit, isSubmitting }: Carri
               </TabsContent>
 
               <TabsContent value="contact" className="space-y-4">
-                <ContactInfoForm form={form} />
+                <ContactInfoFormExternal form={form} />
                 <div className="flex justify-between mt-6">
                   <Button 
                     type="button" 
