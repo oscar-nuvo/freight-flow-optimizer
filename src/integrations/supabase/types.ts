@@ -9,6 +9,45 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          changes: Json | null
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          organization_id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          changes?: Json | null
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          organization_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          changes?: Json | null
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          organization_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       bids: {
         Row: {
           carriers: number | null
@@ -448,6 +487,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_audit_log: {
+        Args: {
+          p_entity_type: string
+          p_entity_id: string
+          p_action: string
+          p_changes?: Json
+          p_metadata?: Json
+          p_ip_address?: string
+        }
+        Returns: string
+      }
       get_user_org_id: {
         Args: { user_id?: string }
         Returns: string
@@ -479,6 +529,10 @@ export type Database = {
       is_org_member: {
         Args: { org_uuid: string }
         Returns: boolean
+      }
+      jsonb_diff_val: {
+        Args: { val1: Json; val2: Json }
+        Returns: Json
       }
     }
     Enums: {

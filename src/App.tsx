@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,6 +21,7 @@ import EditBid from "./pages/EditBid";
 import Pricing from "./pages/Pricing";
 import CarrierOnboarding from "./pages/CarrierOnboarding";
 import AddRoutesToBid from "./pages/AddRoutesToBid";
+import AuditLogs from "./pages/AuditLogs";
 
 const queryClient = new QueryClient();
 
@@ -47,8 +47,8 @@ const App = () => (
             <Route path="/bids/:id/edit" element={<ProtectedRoute><EditBid /></ProtectedRoute>} />
             <Route path="/routes" element={<ProtectedRoute><RoutesList /></ProtectedRoute>} />
             <Route path="/analysis" element={<ProtectedRoute><Analysis /></ProtectedRoute>} />
+            <Route path="/audit-logs" element={<ProtectedRoute><AuditLogs /></ProtectedRoute>} />
             <Route path="/carrier-onboarding/:token" element={<CarrierOnboarding />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
