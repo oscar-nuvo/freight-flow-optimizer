@@ -1,4 +1,3 @@
-
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
@@ -11,24 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-
-const countryCodes = [
-  { code: "+1", country: "USA" },
-  { code: "+1", country: "Canada" },
-  { code: "+52", country: "Mexico" },
-];
-
-const countryCodeOptions = [
-  { code: "+1", country: "USA", label: "+1 (USA)" },
-  { code: "+1", country: "Canada", label: "+1 (Canada)" },
-  { code: "+52", country: "Mexico", label: "+52 (Mexico)" },
-];
-
-const notificationChannels = [
-  { id: "email", label: "Email", icon: Mail },
-  { id: "sms", label: "SMS", icon: Phone },
-  { id: "whatsapp", label: "WhatsApp", icon: MessageSquare },
-];
+import { countryCodeOptions, validatePhoneWithCountryCode } from "./utils/contactUtils";
 
 interface ContactInfoFormProps {
   form: UseFormReturn<CarrierFormValues>;
@@ -42,21 +24,7 @@ interface AdditionalContact {
   receives_rate_inquiries: boolean;
   notification_channels: string[];
   country_code: string;
-  country: string; // Added country property to fix TypeScript error
-}
-
-function validatePhoneWithCountryCode(phone: string, countryCode: string) {
-  if (!phone) return true;
-  const cleanPhone = phone.replace(/[\s\-()]/g, '');
-
-  switch(countryCode) {
-    case "+1": // US/Canada
-      return /^\+?1?\d{10}$/.test(cleanPhone);
-    case "+52": // Mexico
-      return /^\+?52?\d{10}$/.test(cleanPhone);
-    default:
-      return false;
-  }
+  country: string;
 }
 
 export function ContactInfoForm({ form }: ContactInfoFormProps) {
@@ -68,7 +36,7 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
     receives_rate_inquiries: false,
     notification_channels: [],
     country_code: "+1",
-    country: "USA", // Initialize with default country
+    country: "USA",
   });
   const [showAddContact, setShowAddContact] = useState(false);
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
@@ -207,7 +175,7 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
       receives_rate_inquiries: false,
       notification_channels: [],
       country_code: "+1",
-      country: "USA", // Reset with default country
+      country: "USA",
     });
     setFormErrors({});
     setShowAddContact(false);
