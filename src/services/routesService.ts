@@ -29,6 +29,7 @@ export const getRoutes = async (filters?: RouteFilters) => {
   const { data, error } = await query.order('created_at', { ascending: false });
 
   if (error) {
+    console.error("Error fetching routes:", error);
     throw error;
   }
 
@@ -37,20 +38,35 @@ export const getRoutes = async (filters?: RouteFilters) => {
 };
 
 export const getRoutesByBid = async (bidId: string) => {
-  const { data, error } = await supabase
-    .from("route_bids")
-    .select(`
-      route_id,
-      routes (*)
-    `)
-    .eq('bid_id', bidId);
+  console.log("Fetching routes for bid:", bidId);
+  
+  try {
+    const { data, error } = await supabase
+      .from("route_bids")
+      .select(`
+        route_id,
+        routes (*)
+      `)
+      .eq('bid_id', bidId);
 
-  if (error) {
-    throw error;
+    if (error) {
+      console.error("Error fetching routes by bid:", error);
+      throw error;
+    }
+
+    if (!data || data.length === 0) {
+      console.log("No routes found for bid:", bidId);
+      return [];
+    }
+
+    // Extract the routes from the nested data and log for debugging
+    const routes = data.map(item => item.routes) as Route[];
+    console.log("Routes fetched for bid:", routes);
+    return routes;
+  } catch (err) {
+    console.error("Exception fetching routes by bid:", err);
+    throw err;
   }
-
-  // Extract the routes from the nested data
-  return data.map(item => item.routes) as Route[];
 };
 
 export const createRoute = async (values: RouteFormValues) => {
@@ -58,6 +74,7 @@ export const createRoute = async (values: RouteFormValues) => {
   const { data: orgData, error: orgError } = await supabase.rpc('get_user_org_id');
   
   if (orgError) {
+    console.error("Error getting organization ID:", orgError);
     throw orgError;
   }
   
@@ -77,6 +94,7 @@ export const createRoute = async (values: RouteFormValues) => {
     .single();
 
   if (error) {
+    console.error("Error creating route:", error);
     if (error.code === '23505') {
       throw new Error('A route with these parameters already exists');
     }
@@ -95,6 +113,7 @@ export const updateRoute = async (id: string, values: Partial<RouteFormValues>) 
     .single();
 
   if (error) {
+    console.error("Error updating route:", error);
     if (error.code === '23505') {
       throw new Error('A route with these parameters already exists');
     }
@@ -121,52 +140,92 @@ export const deleteRoute = async (id: string) => {
     .eq('id', id);
 
   if (error) {
+    console.error("Error deleting route:", error);
     throw error;
   }
 };
 
 export const associateRouteWithBid = async (routeId: string, bidId: string) => {
-  const { error } = await supabase
-    .from("route_bids")
-    .insert({ route_id: routeId, bid_id: bidId });
+  console.log(`Associating route ${routeId} with bid ${bidId}`);
+  
+  try {
+    const { error } = await supabase
+      .from("route_bids")
+      .insert({ route_id: routeId, bid_id: bidId });
 
-  if (error) {
-    if (error.code === '23505') {
-      throw new Error('This route is already associated with this bid');
+    if (error) {
+      console.error("Error associating route with bid:", error);
+      if (error.code === '23505') {
+        throw new Error('This route is already associated with this bid');
+      }
+      throw error;
     }
-    throw error;
+    
+    // After successful association, update the bid's lane count
+    await updateBidLaneCount(bidId);
+    
+    console.log(`Successfully associated route ${routeId} with bid ${bidId}`);
+  } catch (err) {
+    console.error("Exception in associateRouteWithBid:", err);
+    throw err;
   }
 };
 
 export const removeRouteFromBid = async (routeId: string, bidId: string) => {
-  const { error } = await supabase
-    .from("route_bids")
-    .delete()
-    .match({ route_id: routeId, bid_id: bidId });
+  console.log(`Removing route ${routeId} from bid ${bidId}`);
+  
+  try {
+    const { error } = await supabase
+      .from("route_bids")
+      .delete()
+      .match({ route_id: routeId, bid_id: bidId });
 
-  if (error) {
-    throw error;
+    if (error) {
+      console.error("Error removing route from bid:", error);
+      throw error;
+    }
+    
+    // After successfully removing, update the bid's lane count
+    await updateBidLaneCount(bidId);
+    
+    console.log(`Successfully removed route ${routeId} from bid ${bidId}`);
+  } catch (err) {
+    console.error("Exception in removeRouteFromBid:", err);
+    throw err;
   }
 };
 
 export const updateBidLaneCount = async (bidId: string) => {
-  // First, get the count of routes associated with this bid
-  const { count, error: countError } = await supabase
-    .from("route_bids")
-    .select('*', { count: 'exact' })
-    .eq('bid_id', bidId);
+  console.log(`Updating lane count for bid ${bidId}`);
+  
+  try {
+    // First, get the count of routes associated with this bid
+    const { count, error: countError } = await supabase
+      .from("route_bids")
+      .select('*', { count: 'exact' })
+      .eq('bid_id', bidId);
 
-  if (countError) {
-    throw countError;
-  }
+    if (countError) {
+      console.error("Error counting routes for bid:", countError);
+      throw countError;
+    }
 
-  // Update the bid's lanes count
-  const { error: updateError } = await supabase
-    .from("bids")
-    .update({ lanes: count || 0 })
-    .eq('id', bidId);
+    console.log(`Found ${count} routes for bid ${bidId}`);
 
-  if (updateError) {
-    throw updateError;
+    // Update the bid's lanes count
+    const { error: updateError } = await supabase
+      .from("bids")
+      .update({ lanes: count || 0 })
+      .eq('id', bidId);
+
+    if (updateError) {
+      console.error("Error updating bid lane count:", updateError);
+      throw updateError;
+    }
+    
+    console.log(`Successfully updated lane count to ${count} for bid ${bidId}`);
+  } catch (err) {
+    console.error("Exception in updateBidLaneCount:", err);
+    throw err;
   }
 };

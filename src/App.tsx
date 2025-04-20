@@ -44,9 +44,9 @@ const App = () => (
             <Route path="/bids/new" element={<ProtectedRoute><NewBid /></ProtectedRoute>} />
             <Route path="/bids/:id" element={<ProtectedRoute><BidDetails /></ProtectedRoute>} />
             <Route path="/bids/:id/routes/new" element={<ProtectedRoute><AddRoutesToBid /></ProtectedRoute>} />
+            <Route path="/bids/:id/edit" element={<ProtectedRoute><EditBid /></ProtectedRoute>} />
             <Route path="/routes" element={<ProtectedRoute><RoutesList /></ProtectedRoute>} />
             <Route path="/analysis" element={<ProtectedRoute><Analysis /></ProtectedRoute>} />
-            <Route path="/bids/:id/edit" element={<ProtectedRoute><EditBid /></ProtectedRoute>} />
             <Route path="/carrier-onboarding/:token" element={<CarrierOnboarding />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

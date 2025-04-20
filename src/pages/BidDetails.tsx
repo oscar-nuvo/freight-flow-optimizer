@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
@@ -8,9 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { ChevronLeft, ArrowUpDown, FileText, Calendar, Box, Truck, AlertCircle, Check, Pause, X } from "lucide-react";
+import { ChevronLeft, ArrowUpDown, FileText, Calendar, Box, Truck, AlertCircle, Check, Pause, X, Plus, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Route } from "@/types/route";
+import { getRoutesByBid, removeRouteFromBid } from "@/services/routesService";
+import { toast as sonnerToast } from "sonner";
 
 interface Bid {
   id: string;
@@ -35,7 +39,9 @@ interface Bid {
 const BidDetails = () => {
   const { id } = useParams<{ id: string }>();
   const [bid, setBid] = useState<Bid | null>(null);
+  const [routes, setRoutes] = useState<Route[]>([]);
   const [loading, setLoading] = useState(true);
+  const [routesLoading, setRoutesLoading] = useState(true);
   const { organization } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -46,8 +52,15 @@ const BidDetails = () => {
     }
   }, [id, organization]);
 
+  useEffect(() => {
+    if (id) {
+      fetchRoutes();
+    }
+  }, [id]);
+
   const fetchBid = async () => {
     try {
+      console.log("Fetching bid details for:", id);
       const { data, error } = await supabase
         .from("bids")
         .select("*")
@@ -56,6 +69,7 @@ const BidDetails = () => {
         .single();
 
       if (error) throw error;
+      console.log("Bid details fetched:", data);
       setBid(data);
     } catch (error: any) {
       console.error("Error fetching bid:", error);
@@ -69,10 +83,32 @@ const BidDetails = () => {
     }
   };
 
+  const fetchRoutes = async () => {
+    if (!id) return;
+    
+    setRoutesLoading(true);
+    try {
+      console.log("Fetching routes for bid:", id);
+      const routesData = await getRoutesByBid(id);
+      console.log("Routes fetched successfully:", routesData);
+      setRoutes(routesData);
+    } catch (error: any) {
+      console.error("Error fetching routes for bid:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load routes for this bid. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setRoutesLoading(false);
+    }
+  };
+
   const updateBidStatus = async (status: string) => {
     if (!bid) return;
 
     try {
+      console.log(`Updating bid ${bid.id} status to ${status}`);
       const { error } = await supabase
         .from("bids")
         .update({ status })
@@ -86,6 +122,7 @@ const BidDetails = () => {
         title: "Success",
         description: `Bid status updated to ${status}`,
       });
+      console.log(`Bid status successfully updated to ${status}`);
     } catch (error: any) {
       console.error("Error updating bid status:", error);
       toast({
@@ -93,6 +130,27 @@ const BidDetails = () => {
         description: "Failed to update bid status",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleRemoveRoute = async (routeId: string) => {
+    if (!id) return;
+    
+    try {
+      console.log(`Removing route ${routeId} from bid ${id}`);
+      await removeRouteFromBid(routeId, id);
+      
+      // Update local state
+      setRoutes(prevRoutes => prevRoutes.filter(route => route.id !== routeId));
+      
+      // Refresh bid to update lane count
+      fetchBid();
+      
+      sonnerToast.success("Route removed from bid successfully");
+      console.log("Route removed successfully");
+    } catch (error: any) {
+      console.error("Error removing route from bid:", error);
+      sonnerToast.error("Failed to remove route from bid");
     }
   };
 
@@ -444,7 +502,7 @@ const BidDetails = () => {
                     size="sm"
                     onClick={() => navigate(`/bids/${bid.id}/routes/new`)}
                   >
-                    Add Route
+                    <Plus className="h-4 w-4 mr-2" /> Add Route
                   </Button>
                 </div>
                 <CardDescription>
@@ -452,14 +510,19 @@ const BidDetails = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {(!bid.lanes || bid.lanes === 0) ? (
+                {routesLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-forest mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading routes...</p>
+                  </div>
+                ) : routes.length === 0 ? (
                   <div className="text-center py-12">
                     <p className="text-muted-foreground mb-4">No routes have been added to this bid yet</p>
                     <Button
                       className="bg-forest hover:bg-forest-600"
                       onClick={() => navigate(`/bids/${bid.id}/routes/new`)}
                     >
-                      Add Your First Route
+                      <Plus className="h-4 w-4 mr-2" /> Add Your First Route
                     </Button>
                   </div>
                 ) : (
@@ -471,17 +534,32 @@ const BidDetails = () => {
                           <TableHead>Destination</TableHead>
                           <TableHead>Equipment Type</TableHead>
                           <TableHead>Commodity</TableHead>
-                          <TableHead>Distance</TableHead>
+                          <TableHead>Distance (mi)</TableHead>
                           <TableHead>Weekly Volume</TableHead>
                           <TableHead></TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        <TableRow>
-                          <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
-                            Route management will be implemented soon
-                          </TableCell>
-                        </TableRow>
+                        {routes.map((route) => (
+                          <TableRow key={route.id}>
+                            <TableCell className="font-medium">{route.origin_city}</TableCell>
+                            <TableCell>{route.destination_city}</TableCell>
+                            <TableCell>{route.equipment_type}</TableCell>
+                            <TableCell>{route.commodity}</TableCell>
+                            <TableCell>{route.distance || '-'}</TableCell>
+                            <TableCell>{route.weekly_volume}</TableCell>
+                            <TableCell className="text-right">
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => handleRemoveRoute(route.id)}
+                                title="Remove route from bid"
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
                       </TableBody>
                     </Table>
                   </div>
