@@ -14,7 +14,6 @@ import {
   ReceiptText, Landmark, Truck as TruckIcon, FileCheck, Settings2 
 } from "lucide-react";
 
-// Import form components
 import { BasicInfoForm } from "./forms/BasicInfoForm";
 import { OperationalDetailsForm } from "./forms/OperationalDetailsForm";
 import { FleetDetailsForm } from "./forms/FleetDetailsForm";
@@ -26,7 +25,6 @@ import { CommercialPreferencesForm } from "./forms/CommercialPreferencesForm";
 import { PreferencesForm } from "./forms/PreferencesForm";
 
 const carrierFormSchema = z.object({
-  // Basic Info
   id: z.string().optional(),
   name: z.string().min(2, "Name must be at least 2 characters"),
   legal_business_name: z.string().optional(),
@@ -39,13 +37,11 @@ const carrierFormSchema = z.object({
   description: z.string().optional(),
   status: z.enum(["active", "pending", "inactive"]),
   
-  // Contact Info
   contact_name: z.string().optional(),
   contact_phone: z.string().optional(),
   contact_email: z.string().email("Invalid email address").optional().or(z.literal('')),
   additional_contacts: z.array(z.any()).optional(),
   
-  // Address Info
   address_line1: z.string().optional(),
   address_line2: z.string().optional(),
   city: z.string().optional(),
@@ -53,7 +49,6 @@ const carrierFormSchema = z.object({
   zip_code: z.string().optional(),
   country: z.string().optional(),
   
-  // Operational Details
   countries_of_operation: z.array(z.string()).optional(),
   service_types: z.array(z.string()).optional(),
   provides_cross_border_services: z.boolean().optional(),
@@ -61,7 +56,6 @@ const carrierFormSchema = z.object({
   engages_in_trailer_exchanges: z.boolean().optional(),
   trailer_exchange_partners: z.string().optional(),
   
-  // Fleet Details
   cdl_drivers_count: z.number().optional(),
   b1_drivers_count: z.number().optional(),
   offers_team_driver_services: z.boolean().optional(),
@@ -71,7 +65,6 @@ const carrierFormSchema = z.object({
   flatbed_trailers_count: z.number().optional(),
   authorized_for_hazmat: z.boolean().optional(),
   
-  // Compliance
   registration_type: z.string().optional(),
   is_ctpat_certified: z.boolean().optional(),
   ctpat_svi_number: z.string().optional(),
@@ -79,18 +72,15 @@ const carrierFormSchema = z.object({
   authority_types: z.array(z.string()).optional(),
   handles_inbond_ca_shipments: z.boolean().optional(),
   
-  // Documents
   bank_statement_doc: z.string().optional(),
   cargo_insurance_doc: z.string().optional(),
   primary_liability_doc: z.string().optional(),
   w9_form_doc: z.string().optional(),
   
-  // Insurance Details
   insurance_provider: z.string().optional(),
   insurance_policy_number: z.string().optional(),
   insurance_expiry: z.string().optional(),
   
-  // Billing Info
   bank_name: z.string().optional(),
   account_name: z.string().optional(),
   account_number: z.string().optional(),
@@ -101,11 +91,11 @@ const carrierFormSchema = z.object({
   currency: z.string().optional(),
   payout_method: z.string().optional(),
   
-  // Commercial Preferences
   yard_locations: z.array(z.any()).optional(),
   primary_lanes: z.array(z.any()).optional(),
   tracking_method: z.string().optional(),
   telematics_provider: z.string().optional(),
+  primary_notification_channels: z.array(z.string()).optional(),
 });
 
 export type CarrierFormValues = z.infer<typeof carrierFormSchema>;
@@ -193,6 +183,7 @@ export function CarrierDetailsForm({ carrier }: CarrierDetailsFormProps) {
       primary_lanes: carrier.primary_lanes || [],
       tracking_method: carrier.tracking_method || "",
       telematics_provider: carrier.telematics_provider || "",
+      primary_notification_channels: carrier.primary_notification_channels || [],
     },
   });
 
@@ -204,7 +195,6 @@ export function CarrierDetailsForm({ carrier }: CarrierDetailsFormProps) {
         title: "Carrier updated",
         description: `${getSectionName(activeTab)} section has been saved successfully.`,
       });
-      // Mark the profile as completed if it wasn't before
       if (!carrier.profile_completed_at) {
         await updateCarrier(carrier.id, { 
           ...data, 
@@ -223,7 +213,6 @@ export function CarrierDetailsForm({ carrier }: CarrierDetailsFormProps) {
     }
   };
 
-  // Helper function to get section name for toast messages
   const getSectionName = (tabId: string): string => {
     switch (tabId) {
       case "basic": return "Basic Info";

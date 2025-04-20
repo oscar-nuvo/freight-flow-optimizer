@@ -91,6 +91,7 @@ export interface Carrier {
   primary_lanes?: any[];
   tracking_method?: string;
   telematics_provider?: string;
+  primary_notification_channels?: string[];
 }
 
 export interface CarrierFormData {

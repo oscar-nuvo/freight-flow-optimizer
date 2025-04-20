@@ -164,6 +164,7 @@ export type Database = {
           power_units_count: number | null
           primary_lanes: Json[] | null
           primary_liability_doc: string | null
+          primary_notification_channels: string[] | null
           profile_completed_at: string | null
           provides_cross_border_services: boolean | null
           reefer_trailers_count: number | null
@@ -233,6 +234,7 @@ export type Database = {
           power_units_count?: number | null
           primary_lanes?: Json[] | null
           primary_liability_doc?: string | null
+          primary_notification_channels?: string[] | null
           profile_completed_at?: string | null
           provides_cross_border_services?: boolean | null
           reefer_trailers_count?: number | null
@@ -302,6 +304,7 @@ export type Database = {
           power_units_count?: number | null
           primary_lanes?: Json[] | null
           primary_liability_doc?: string | null
+          primary_notification_channels?: string[] | null
           profile_completed_at?: string | null
           provides_cross_border_services?: boolean | null
           reefer_trailers_count?: number | null
