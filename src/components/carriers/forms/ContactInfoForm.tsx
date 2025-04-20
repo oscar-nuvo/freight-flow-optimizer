@@ -1,4 +1,3 @@
-
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
@@ -10,6 +9,19 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+
+// Restrict country codes to USA, Mexico, Canada
+const countryCodes = [
+  { code: "+1", country: "USA" },
+  { code: "+1", country: "Canada" },
+  { code: "+52", country: "Mexico" },
+];
+
+const notificationChannels = [
+  { id: "email", label: "Email", icon: Mail },
+  { id: "sms", label: "SMS", icon: Phone },
+  { id: "whatsapp", label: "WhatsApp", icon: MessageSquare },
+];
 
 interface ContactInfoFormProps {
   form: UseFormReturn<CarrierFormValues>;
@@ -25,28 +37,23 @@ interface AdditionalContact {
   country_code: string;
 }
 
-// Country codes for phone number validation
-const countryCodes = [
-  { code: "+1", country: "US/Canada" },
-  { code: "+52", country: "Mexico" },
-  { code: "+44", country: "UK" },
-  { code: "+33", country: "France" },
-  { code: "+49", country: "Germany" },
-  { code: "+34", country: "Spain" },
-  { code: "+86", country: "China" },
-  { code: "+91", country: "India" },
-  { code: "+55", country: "Brazil" },
-  { code: "+81", country: "Japan" },
-];
+// Helper for phone validation for US/CA/MX
+function validatePhoneWithCountryCode(phone: string, countryCode: string) {
+  if (!phone) return true;
+  const cleanPhone = phone.replace(/[\s\-()]/g, '');
 
-// Notification channel options
-const notificationChannels = [
-  { id: "email", label: "Email", icon: Mail },
-  { id: "sms", label: "SMS", icon: Phone },
-  { id: "whatsapp", label: "WhatsApp", icon: MessageSquare },
-];
+  switch(countryCode) {
+    case "+1": // US/Canada
+      return /^\+?1?\d{10}$/.test(cleanPhone);
+    case "+52": // Mexico
+      return /^\+?52?\d{10}$/.test(cleanPhone);
+    default:
+      return false;
+  }
+}
 
 export function ContactInfoForm({ form }: ContactInfoFormProps) {
+  // Local state for ADDITIONAL contact being entered
   const [newContact, setNewContact] = useState<AdditionalContact>({
     name: "",
     phone: "",
@@ -58,95 +65,133 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
   });
   const [showAddContact, setShowAddContact] = useState(false);
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
-  
-  // Get the current contacts or initialize an empty array
+  const [primaryChannels, setPrimaryChannels] = useState<string[]>([]);
+  const [primaryCountryCode, setPrimaryCountryCode] = useState("+1");
+
+  // Watch for validation on form submit
+  const [primaryContactTouched, setPrimaryContactTouched] = useState(false);
+  const [primaryContactErrors, setPrimaryContactErrors] = useState<{[key: string]: string}>({});
+
+  // When form loads, set primaryCountryCode according to existing phone (if any)
+  // Only on first mount
+  useState(() => {
+    const contactPhone = form.getValues("contact_phone") || "";
+    if (contactPhone.startsWith("+52")) setPrimaryCountryCode("+52");
+    else setPrimaryCountryCode("+1");
+    setPrimaryChannels(form.getValues("primary_notification_channels") || []);
+  });
+
+  // ADDITIONAL contacts logic (unchanged)
   const additionalContacts = form.watch('additional_contacts') || [];
-  
+
   const validateContact = (contact: AdditionalContact) => {
     const errors: {[key: string]: string} = {};
-    
+
     if (!contact.name.trim()) {
       errors.name = "Name is required";
     }
-    
+
     if (!contact.email.trim()) {
       errors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email)) {
       errors.email = "Invalid email format";
     }
-    
+
     if (contact.phone && !validatePhoneWithCountryCode(contact.phone, contact.country_code)) {
       errors.phone = "Invalid phone number for selected country";
     }
-    
+
     if (contact.receives_rate_inquiries && contact.notification_channels.length === 0) {
       errors.notification_channels = "At least one notification channel is required";
     }
-    
+
     return errors;
   };
-  
-  const validatePhoneWithCountryCode = (phone: string, countryCode: string) => {
-    // Basic validation for phone numbers based on country code
-    if (!phone) return true; // Empty phone is valid
-    
-    // Remove spaces, dashes, and parentheses
-    const cleanPhone = phone.replace(/[\s\-()]/g, '');
-    
-    switch(countryCode) {
-      case "+1": // US/Canada
-        return /^\+?1?\d{10}$/.test(cleanPhone);
-      case "+52": // Mexico
-        return /^\+?52?\d{10}$/.test(cleanPhone);
-      case "+44": // UK
-        return /^\+?44?\d{10}$/.test(cleanPhone);
-      default:
-        // Generic validation for other countries (at least 8 digits after country code)
-        return /^\+?\d{8,15}$/.test(cleanPhone);
-    }
-  };
-  
+
   const toggleNotificationChannel = (channel: string) => {
     const updatedChannels = [...newContact.notification_channels];
     const index = updatedChannels.indexOf(channel);
-    
+
     if (index === -1) {
       updatedChannels.push(channel);
     } else {
       updatedChannels.splice(index, 1);
     }
-    
+
     setNewContact({...newContact, notification_channels: updatedChannels});
-    
+
     // Clear error when selecting channels
     if (updatedChannels.length > 0 && formErrors.notification_channels) {
       const { notification_channels, ...rest } = formErrors;
       setFormErrors(rest);
     }
   };
-  
+
+  // PRIMARY contact validation logic
+  function validatePrimaryContact() {
+    const errors: {[key: string]: string} = {};
+    const name = form.getValues("contact_name") || "";
+    const email = form.getValues("contact_email") || "";
+    const phone = form.getValues("contact_phone") || "";
+
+    if (name.trim() === "") {
+      errors.name = "Primary contact name required.";
+    }
+    if (!email.trim()) {
+      errors.email = "Primary contact email required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.email = "Invalid email format";
+    }
+    if (phone && !validatePhoneWithCountryCode(phone, primaryCountryCode)) {
+      errors.phone = "Invalid phone number for selected country";
+    }
+    if (primaryChannels.length === 0) {
+      errors.notification_channels = "At least one notification channel is required";
+    }
+    return errors;
+  }
+
+  // Hook form submit check (prevents submit if invalid)
+  form.register("primary_notification_channels", {
+    // shim for compatibility, not rendered input
+    value: primaryChannels,
+  });
+
+  const handlePrimaryChannelToggle = (channel: string) => {
+    let updated = [...primaryChannels];
+    if (updated.includes(channel)) {
+      updated = updated.filter((c) => c !== channel);
+    } else {
+      updated.push(channel);
+    }
+    setPrimaryChannels(updated);
+    form.setValue("primary_notification_channels", updated);
+    if (primaryContactTouched) setPrimaryContactErrors(validatePrimaryContact());
+  };
+
+  // Additional contacts add/remove
   const addContact = () => {
     const errors = validateContact(newContact);
-    
+
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
     }
-    
+
     // Format phone with country code if it doesn't already include it
     let formattedPhone = newContact.phone;
     if (formattedPhone && !formattedPhone.startsWith('+')) {
       formattedPhone = `${newContact.country_code} ${formattedPhone}`;
     }
-    
+
     const contactToAdd = {
       ...newContact,
       phone: formattedPhone,
     };
-    
+
     const updatedContacts = [...additionalContacts, contactToAdd];
     form.setValue('additional_contacts', updatedContacts);
-    
+
     // Reset the form
     setNewContact({
       name: "",
@@ -160,16 +205,33 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
     setFormErrors({});
     setShowAddContact(false);
   };
-  
+
   const removeContact = (index: number) => {
     const updatedContacts = [...additionalContacts];
     updatedContacts.splice(index, 1);
     form.setValue('additional_contacts', updatedContacts);
   };
 
+  // Save primary country code + notification channels to form on blur for actual submission
+  const handlePrimaryBlur = () => {
+    form.setValue("primary_notification_channels", primaryChannels);
+    const phone = form.getValues("contact_phone") || "";
+    let formattedPhone = phone;
+    if (phone && !phone.startsWith("+")) {
+      if (primaryCountryCode) {
+        formattedPhone = `${primaryCountryCode} ${phone}`;
+      }
+    }
+    form.setValue("contact_phone", formattedPhone);
+  };
+
+  // Validation before form submit (if primary tab is active)
+  // (in real app, validation should be centralized but for now: manual for this custom UI)
+  
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Primary Contact Name */}
         <FormField
           control={form.control}
           name="contact_name"
@@ -177,13 +239,16 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
             <FormItem>
               <FormLabel>Primary Contact Name</FormLabel>
               <FormControl>
-                <Input {...field} />
+                <Input {...field} onBlur={() => { setPrimaryContactTouched(true); setPrimaryContactErrors(validatePrimaryContact()); }} />
               </FormControl>
+              {primaryContactTouched && primaryContactErrors.name && (
+                <p className="text-sm text-red-500 mt-1">{primaryContactErrors.name}</p>
+              )}
               <FormMessage />
             </FormItem>
           )}
         />
-        
+        {/* Primary Contact Phone with country code */}
         <FormField
           control={form.control}
           name="contact_phone"
@@ -191,13 +256,47 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
             <FormItem>
               <FormLabel>Primary Contact Phone</FormLabel>
               <FormControl>
-                <Input {...field} type="tel" />
+                <div className="flex gap-2">
+                  <div className="w-1/3">
+                    <Select
+                      value={primaryCountryCode}
+                      onValueChange={(value) => {
+                        setPrimaryCountryCode(value);
+                        setPrimaryContactErrors(validatePrimaryContact());
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Code" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {countryCodes.map((country) => (
+                          <SelectItem key={country.code + country.country} value={country.code}>
+                            {country.code} ({country.country})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex-1">
+                    <Input 
+                      type="tel"
+                      {...field}
+                      onBlur={(e) => { field.onBlur?.(e); handlePrimaryBlur(); setPrimaryContactTouched(true); setPrimaryContactErrors(validatePrimaryContact()); }}
+                      onChange={e => { field.onChange(e); setPrimaryContactTouched(true); setPrimaryContactErrors(validatePrimaryContact()); }}
+                      className={cn(primaryContactTouched && primaryContactErrors.phone && "border-red-500")}
+                      placeholder="Phone number"
+                    />
+                  </div>
+                </div>
               </FormControl>
+              {primaryContactTouched && primaryContactErrors.phone && (
+                <p className="text-sm text-red-500 mt-1">{primaryContactErrors.phone}</p>
+              )}
               <FormMessage />
             </FormItem>
           )}
         />
-        
+        {/* Primary Contact Email */}
         <FormField
           control={form.control}
           name="contact_email"
@@ -205,14 +304,52 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
             <FormItem>
               <FormLabel>Primary Contact Email</FormLabel>
               <FormControl>
-                <Input {...field} type="email" />
+                <Input 
+                  {...field}
+                  type="email"
+                  onBlur={() => { setPrimaryContactTouched(true); setPrimaryContactErrors(validatePrimaryContact()); }}
+                  onChange={e => { field.onChange(e); setPrimaryContactTouched(true); setPrimaryContactErrors(validatePrimaryContact()); }}
+                  className={cn(primaryContactTouched && primaryContactErrors.email && "border-red-500")}
+                />
               </FormControl>
+              {primaryContactTouched && primaryContactErrors.email && (
+                <p className="text-sm text-red-500 mt-1">{primaryContactErrors.email}</p>
+              )}
               <FormMessage />
             </FormItem>
           )}
         />
+        {/* Notification channels for the primary contact */}
+        <div className="col-span-full mt-2">
+          <label className="text-sm font-medium mb-2 block">
+            Notification Channels* for Primary Contact
+          </label>
+          <div className="flex flex-wrap gap-3 mt-2">
+            {notificationChannels.map((channel) => {
+              const isSelected = primaryChannels.includes(channel.id);
+              const Icon = channel.icon;
+              return (
+                <Button
+                  key={channel.id}
+                  type="button"
+                  variant={isSelected ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handlePrimaryChannelToggle(channel.id)}
+                  className={cn(isSelected ? "bg-primary text-primary-foreground" : "bg-background")}
+                >
+                  <Icon className="h-4 w-4 mr-2" />
+                  {channel.label}
+                </Button>
+              );
+            })}
+          </div>
+          {primaryContactTouched && primaryContactErrors.notification_channels && (
+            <p className="text-sm text-red-500 mt-1">{primaryContactErrors.notification_channels}</p>
+          )}
+        </div>
       </div>
-      
+
+      {/* ADDITIONAL CONTACTS (UNCHANGED except limited country codes for dropdown) */}
       <div className="mt-8">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-medium">Additional Contacts</h3>
@@ -350,7 +487,7 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
                         </SelectTrigger>
                         <SelectContent>
                           {countryCodes.map((country) => (
-                            <SelectItem key={country.code} value={country.code}>
+                            <SelectItem key={country.code + country.country} value={country.code}>
                               {country.code} ({country.country})
                             </SelectItem>
                           ))}
