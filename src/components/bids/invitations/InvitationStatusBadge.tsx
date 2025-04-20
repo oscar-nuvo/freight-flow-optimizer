@@ -1,4 +1,3 @@
-
 import { Badge } from "@/components/ui/badge";
 import { InvitationStatus } from "@/types/invitation";
 
@@ -38,10 +37,10 @@ export function InvitationStatusBadge({ status, className }: InvitationStatusBad
       case "revoked":
         return "Revoked";
       default:
-        // Fixed the type error by ensuring status is treated as a string
-        return typeof status === "string"
-          ? status.charAt(0).toUpperCase() + status.slice(1)
-          : "Unknown Status";
+        if (typeof status === "string" && status.length > 0) {
+          return status.charAt(0).toUpperCase() + status.slice(1);
+        }
+        return "Unknown Status";
     }
   };
 
