@@ -5,9 +5,11 @@ import { UseFormReturn } from "react-hook-form";
 import { CarrierFormValues } from "../CarrierDetailsForm";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Mail, Phone, MessageSquare } from "lucide-react";
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 interface ContactInfoFormProps {
   form: UseFormReturn<CarrierFormValues>;
@@ -19,7 +21,30 @@ interface AdditionalContact {
   email: string;
   title: string;
   receives_rate_inquiries: boolean;
+  notification_channels: string[];
+  country_code: string;
 }
+
+// Country codes for phone number validation
+const countryCodes = [
+  { code: "+1", country: "US/Canada" },
+  { code: "+52", country: "Mexico" },
+  { code: "+44", country: "UK" },
+  { code: "+33", country: "France" },
+  { code: "+49", country: "Germany" },
+  { code: "+34", country: "Spain" },
+  { code: "+86", country: "China" },
+  { code: "+91", country: "India" },
+  { code: "+55", country: "Brazil" },
+  { code: "+81", country: "Japan" },
+];
+
+// Notification channel options
+const notificationChannels = [
+  { id: "email", label: "Email", icon: Mail },
+  { id: "sms", label: "SMS", icon: Phone },
+  { id: "whatsapp", label: "WhatsApp", icon: MessageSquare },
+];
 
 export function ContactInfoForm({ form }: ContactInfoFormProps) {
   const [newContact, setNewContact] = useState<AdditionalContact>({
@@ -28,27 +53,112 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
     email: "",
     title: "",
     receives_rate_inquiries: false,
+    notification_channels: [],
+    country_code: "+1",
   });
   const [showAddContact, setShowAddContact] = useState(false);
+  const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
   
   // Get the current contacts or initialize an empty array
   const additionalContacts = form.watch('additional_contacts') || [];
   
-  const addContact = () => {
-    if (newContact.name && newContact.email) {
-      const updatedContacts = [...additionalContacts, newContact];
-      form.setValue('additional_contacts', updatedContacts);
-      
-      // Reset the form
-      setNewContact({
-        name: "",
-        phone: "",
-        email: "",
-        title: "",
-        receives_rate_inquiries: false,
-      });
-      setShowAddContact(false);
+  const validateContact = (contact: AdditionalContact) => {
+    const errors: {[key: string]: string} = {};
+    
+    if (!contact.name.trim()) {
+      errors.name = "Name is required";
     }
+    
+    if (!contact.email.trim()) {
+      errors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email)) {
+      errors.email = "Invalid email format";
+    }
+    
+    if (contact.phone && !validatePhoneWithCountryCode(contact.phone, contact.country_code)) {
+      errors.phone = "Invalid phone number for selected country";
+    }
+    
+    if (contact.receives_rate_inquiries && contact.notification_channels.length === 0) {
+      errors.notification_channels = "At least one notification channel is required";
+    }
+    
+    return errors;
+  };
+  
+  const validatePhoneWithCountryCode = (phone: string, countryCode: string) => {
+    // Basic validation for phone numbers based on country code
+    if (!phone) return true; // Empty phone is valid
+    
+    // Remove spaces, dashes, and parentheses
+    const cleanPhone = phone.replace(/[\s\-()]/g, '');
+    
+    switch(countryCode) {
+      case "+1": // US/Canada
+        return /^\+?1?\d{10}$/.test(cleanPhone);
+      case "+52": // Mexico
+        return /^\+?52?\d{10}$/.test(cleanPhone);
+      case "+44": // UK
+        return /^\+?44?\d{10}$/.test(cleanPhone);
+      default:
+        // Generic validation for other countries (at least 8 digits after country code)
+        return /^\+?\d{8,15}$/.test(cleanPhone);
+    }
+  };
+  
+  const toggleNotificationChannel = (channel: string) => {
+    const updatedChannels = [...newContact.notification_channels];
+    const index = updatedChannels.indexOf(channel);
+    
+    if (index === -1) {
+      updatedChannels.push(channel);
+    } else {
+      updatedChannels.splice(index, 1);
+    }
+    
+    setNewContact({...newContact, notification_channels: updatedChannels});
+    
+    // Clear error when selecting channels
+    if (updatedChannels.length > 0 && formErrors.notification_channels) {
+      const { notification_channels, ...rest } = formErrors;
+      setFormErrors(rest);
+    }
+  };
+  
+  const addContact = () => {
+    const errors = validateContact(newContact);
+    
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    
+    // Format phone with country code if it doesn't already include it
+    let formattedPhone = newContact.phone;
+    if (formattedPhone && !formattedPhone.startsWith('+')) {
+      formattedPhone = `${newContact.country_code} ${formattedPhone}`;
+    }
+    
+    const contactToAdd = {
+      ...newContact,
+      phone: formattedPhone,
+    };
+    
+    const updatedContacts = [...additionalContacts, contactToAdd];
+    form.setValue('additional_contacts', updatedContacts);
+    
+    // Reset the form
+    setNewContact({
+      name: "",
+      phone: "",
+      email: "",
+      title: "",
+      receives_rate_inquiries: false,
+      notification_channels: [],
+      country_code: "+1",
+    });
+    setFormErrors({});
+    setShowAddContact(false);
   };
   
   const removeContact = (index: number) => {
@@ -144,6 +254,24 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
                           Receives rate inquiries
                         </label>
                       </div>
+                      {contact.receives_rate_inquiries && contact.notification_channels && (
+                        <div className="mt-2">
+                          <p className="text-xs text-muted-foreground mb-1">Notification channels:</p>
+                          <div className="flex gap-2">
+                            {contact.notification_channels.map((channel) => {
+                              const channelInfo = notificationChannels.find(c => c.id === channel);
+                              if (!channelInfo) return null;
+                              const Icon = channelInfo.icon;
+                              return (
+                                <div key={channel} className="inline-flex items-center px-2 py-1 bg-muted rounded-md text-xs">
+                                  <Icon className="h-3 w-3 mr-1" />
+                                  {channelInfo.label}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <Button 
                       type="button" 
@@ -168,12 +296,19 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
               <h4 className="font-medium mb-3">Add New Contact</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="text-sm font-medium">Name</label>
+                  <label className="text-sm font-medium">Name*</label>
                   <Input 
                     value={newContact.name}
-                    onChange={(e) => setNewContact({...newContact, name: e.target.value})}
-                    className="mt-1"
+                    onChange={(e) => {
+                      setNewContact({...newContact, name: e.target.value});
+                      if (formErrors.name) {
+                        const { name, ...rest } = formErrors;
+                        setFormErrors(rest);
+                      }
+                    }}
+                    className={cn("mt-1", formErrors.name && "border-red-500")}
                   />
+                  {formErrors.name && <p className="text-sm text-red-500 mt-1">{formErrors.name}</p>}
                 </div>
                 
                 <div>
@@ -186,57 +321,129 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
                 </div>
                 
                 <div>
-                  <label className="text-sm font-medium">Email</label>
+                  <label className="text-sm font-medium">Email*</label>
                   <Input 
                     type="email"
                     value={newContact.email}
-                    onChange={(e) => setNewContact({...newContact, email: e.target.value})}
-                    className="mt-1"
+                    onChange={(e) => {
+                      setNewContact({...newContact, email: e.target.value});
+                      if (formErrors.email) {
+                        const { email, ...rest } = formErrors;
+                        setFormErrors(rest);
+                      }
+                    }}
+                    className={cn("mt-1", formErrors.email && "border-red-500")}
                   />
+                  {formErrors.email && <p className="text-sm text-red-500 mt-1">{formErrors.email}</p>}
                 </div>
                 
                 <div>
                   <label className="text-sm font-medium">Phone</label>
-                  <Input 
-                    type="tel"
-                    value={newContact.phone}
-                    onChange={(e) => setNewContact({...newContact, phone: e.target.value})}
-                    className="mt-1"
-                  />
+                  <div className="flex mt-1 gap-2">
+                    <div className="w-1/3">
+                      <Select
+                        value={newContact.country_code}
+                        onValueChange={(value) => setNewContact({...newContact, country_code: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Code" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {countryCodes.map((country) => (
+                            <SelectItem key={country.code} value={country.code}>
+                              {country.code} ({country.country})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex-1">
+                      <Input 
+                        type="tel"
+                        value={newContact.phone}
+                        onChange={(e) => {
+                          setNewContact({...newContact, phone: e.target.value});
+                          if (formErrors.phone) {
+                            const { phone, ...rest } = formErrors;
+                            setFormErrors(rest);
+                          }
+                        }}
+                        className={cn(formErrors.phone && "border-red-500")}
+                        placeholder="Phone number"
+                      />
+                    </div>
+                  </div>
+                  {formErrors.phone && <p className="text-sm text-red-500 mt-1">{formErrors.phone}</p>}
                 </div>
               </div>
               
-              <div className="flex items-center space-x-2 mb-4">
-                <Checkbox
-                  id="rate-inquiries"
-                  checked={newContact.receives_rate_inquiries}
-                  onCheckedChange={(checked) => 
-                    setNewContact({
-                      ...newContact, 
-                      receives_rate_inquiries: checked === true
-                    })
-                  }
-                />
-                <label
-                  htmlFor="rate-inquiries"
-                  className="text-sm font-medium leading-none cursor-pointer"
-                >
-                  This contact should receive inquiries for rates
-                </label>
+              <div className="space-y-4 mb-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="rate-inquiries"
+                    checked={newContact.receives_rate_inquiries}
+                    onCheckedChange={(checked) => 
+                      setNewContact({
+                        ...newContact, 
+                        receives_rate_inquiries: checked === true
+                      })
+                    }
+                  />
+                  <label
+                    htmlFor="rate-inquiries"
+                    className="text-sm font-medium leading-none cursor-pointer"
+                  >
+                    This contact should receive inquiries for rates
+                  </label>
+                </div>
+                
+                {newContact.receives_rate_inquiries && (
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      Notification Channels*
+                    </label>
+                    <div className="flex flex-wrap gap-3 mt-2">
+                      {notificationChannels.map((channel) => {
+                        const isSelected = newContact.notification_channels.includes(channel.id);
+                        const Icon = channel.icon;
+                        return (
+                          <Button
+                            key={channel.id}
+                            type="button"
+                            variant={isSelected ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => toggleNotificationChannel(channel.id)}
+                            className={cn(
+                              isSelected ? "bg-primary text-primary-foreground" : "bg-background",
+                            )}
+                          >
+                            <Icon className="h-4 w-4 mr-2" />
+                            {channel.label}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    {formErrors.notification_channels && (
+                      <p className="text-sm text-red-500 mt-1">{formErrors.notification_channels}</p>
+                    )}
+                  </div>
+                )}
               </div>
               
               <div className="flex justify-end gap-2">
                 <Button 
                   type="button" 
                   variant="outline"
-                  onClick={() => setShowAddContact(false)}
+                  onClick={() => {
+                    setShowAddContact(false);
+                    setFormErrors({});
+                  }}
                 >
                   Cancel
                 </Button>
                 <Button 
                   type="button" 
                   onClick={addContact}
-                  disabled={!newContact.name || !newContact.email}
                 >
                   Add Contact
                 </Button>
