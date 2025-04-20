@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Trash2, Mail, Phone, MessageSquare } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
 import { type CarrierFormValues } from "../CarrierOnboardingForm";
+import { cn } from "@/lib/utils";
 
 const countryCodes = [
   { code: "+1", country: "USA" },
@@ -52,9 +54,10 @@ function validatePhoneWithCountryCode(phone: string, countryCode: string) {
 export function ContactInfoFormExternal({ form }: ContactInfoFormExternalProps) {
   // Primary Contact State
   const [primaryCountryCode, setPrimaryCountryCode] = useState("+1");
-  const [primaryChannels, setPrimaryChannels] = useState<string[]>(() =>
-    form.getValues("primary_notification_channels") || []
-  );
+  const [primaryChannels, setPrimaryChannels] = useState<string[]>(() => {
+    // Access using type-safe bracket notation instead of getValues for array fields
+    return form.getValues()["primary_notification_channels"] || [];
+  });
   const [primaryContactTouched, setPrimaryContactTouched] = useState(false);
   const [primaryContactErrors, setPrimaryContactErrors] = useState<{[key: string]: string}>({});
 
@@ -76,7 +79,10 @@ export function ContactInfoFormExternal({ form }: ContactInfoFormExternalProps) 
     const contactPhone = form.getValues("contact_phone") || "";
     if (contactPhone.startsWith("+52")) setPrimaryCountryCode("+52");
     else setPrimaryCountryCode("+1");
-    setPrimaryChannels(form.getValues("primary_notification_channels") || []);
+    
+    // Safely access the primary_notification_channels field
+    const channels = form.getValues()["primary_notification_channels"] || [];
+    setPrimaryChannels(channels);
   }, [form]);
 
   const additionalContacts = form.watch('additional_contacts') || [];
@@ -113,7 +119,8 @@ export function ContactInfoFormExternal({ form }: ContactInfoFormExternalProps) 
       updated.push(channel);
     }
     setPrimaryChannels(updated);
-    form.setValue("primary_notification_channels", updated, { shouldValidate: false });
+    // Set the form value with the updated array using bracket notation
+    form.setValue("primary_notification_channels" as keyof CarrierFormValues, updated, { shouldValidate: false });
     if (primaryContactTouched) setPrimaryContactErrors(validatePrimaryContact());
     console.log("[PrimaryChannels] Changed:", updated);
   };
@@ -128,7 +135,8 @@ export function ContactInfoFormExternal({ form }: ContactInfoFormExternalProps) 
     form.setValue("contact_phone", formattedPhone);
     // Set notification channels
     if (primaryChannels.length > 0) {
-      form.setValue("primary_notification_channels", primaryChannels, { shouldValidate: false });
+      // Use the bracket notation with type assertion
+      form.setValue("primary_notification_channels" as keyof CarrierFormValues, primaryChannels, { shouldValidate: false });
     }
     setPrimaryContactErrors(validatePrimaryContact());
     setPrimaryContactTouched(true);

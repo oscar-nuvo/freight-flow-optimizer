@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -34,6 +35,7 @@ const carrierFormSchema = z.object({
   state: z.string().optional(),
   zip_code: z.string().optional(),
   additional_contacts: z.array(z.any()).optional(),
+  primary_notification_channels: z.array(z.string()).optional(), // Add this field to the schema
   registration_type: z.string().optional(),
   mc_number: z.string().optional(),
   usdot_number: z.string().optional(),
