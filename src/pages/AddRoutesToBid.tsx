@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
@@ -6,12 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { getRoutes, associateRouteWithBid, getRoutesByBid } from "@/services/routesService";
-import { Route, EquipmentType, RouteFilters } from "@/types/route";
+import { getRoutes, associateRouteWithBid, getRoutesByBid, createRoute } from "@/services/routesService";
+import { Route, EquipmentType, RouteFilters, RouteFormValues } from "@/types/route";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, Search, Filter, MapPin } from "lucide-react";
+import { ChevronLeft, Search, Filter, MapPin, Plus } from "lucide-react";
 import { RoutesFilter } from "@/components/routes/RoutesFilter";
+import { CreateRouteModal } from "@/components/routes/CreateRouteModal";
 
 const AddRoutesToBid = () => {
   const { id: bidId } = useParams<{ id: string }>();
@@ -21,30 +21,27 @@ const AddRoutesToBid = () => {
   const [filters, setFilters] = useState<RouteFilters>({});
   const [selectedRoutes, setSelectedRoutes] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCreatingRoute, setIsCreatingRoute] = useState(false);
 
-  // Query to get all available routes
   const { data: routesData, isLoading: isRoutesLoading } = useQuery({
     queryKey: ["routes", filters],
     queryFn: () => getRoutes(filters),
   });
 
-  // Query to get routes already associated with this bid
   const { data: existingBidRoutes, isLoading: isExistingRoutesLoading } = useQuery({
     queryKey: ["bidRoutes", bidId],
     queryFn: () => bidId ? getRoutesByBid(bidId) : Promise.resolve([]),
     enabled: !!bidId,
   });
 
-  // Create a Set of existing route IDs for efficient lookup
   const existingRouteIds = new Set(existingBidRoutes?.map(route => route.id) || []);
 
-  // Ensure routes have the correct type by casting equipment_type to EquipmentType
   const routes: Route[] | undefined = routesData?.map(route => ({
     ...route,
     equipment_type: route.equipment_type as EquipmentType
   }));
 
-  // Filter routes by search term across multiple fields
   const filteredRoutes = routes?.filter(route => {
     if (!searchTerm) return true;
     
@@ -61,7 +58,6 @@ const AddRoutesToBid = () => {
   };
 
   const handleRouteSelect = (routeId: string) => {
-    // Prevent selection if route is already associated
     if (existingRouteIds.has(routeId)) {
       return;
     }
@@ -78,7 +74,6 @@ const AddRoutesToBid = () => {
 
     setIsSubmitting(true);
     try {
-      // Associate each selected route with the bid
       for (const routeId of selectedRoutes) {
         await associateRouteWithBid(routeId, bidId);
       }
@@ -88,7 +83,6 @@ const AddRoutesToBid = () => {
         description: `${selectedRoutes.length} routes added to bid successfully`,
       });
 
-      // Navigate back to the bid details page
       navigate(`/bids/${bidId}`);
     } catch (error: any) {
       console.error("Error adding routes to bid:", error);
@@ -99,6 +93,35 @@ const AddRoutesToBid = () => {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleCreateRoute = async (values: RouteFormValues) => {
+    setIsCreatingRoute(true);
+    try {
+      console.log("Creating new route:", values);
+      const newRoute = await createRoute(values);
+      console.log("Route created successfully:", newRoute);
+
+      if (newRoute && bidId) {
+        console.log("Associating new route with bid:", bidId);
+        await associateRouteWithBid(newRoute.id, bidId);
+        toast({
+          title: "Success",
+          description: "Route created and added to bid successfully",
+        });
+        refetch(); // Refresh the routes list
+      }
+      setIsCreateModalOpen(false);
+    } catch (error: any) {
+      console.error("Error creating route:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create route",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingRoute(false);
     }
   };
 
@@ -120,10 +143,18 @@ const AddRoutesToBid = () => {
             </Button>
             <div>
               <h1 className="text-3xl font-bold">Add Routes to Bid</h1>
-              <p className="text-muted-foreground mt-1">Select routes to add to this bid</p>
+              <p className="text-muted-foreground mt-1">Select or create routes to add to this bid</p>
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button 
+              onClick={() => setIsCreateModalOpen(true)}
+              variant="outline"
+              className="sm:w-auto"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create New Route
+            </Button>
             <Button 
               onClick={handleAddRoutes}
               disabled={selectedRoutes.length === 0 || isSubmitting}
@@ -217,10 +248,16 @@ const AddRoutesToBid = () => {
             )}
           </CardContent>
         </Card>
+
+        <CreateRouteModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onRouteCreated={handleCreateRoute}
+          isSubmitting={isCreatingRoute}
+        />
       </div>
     </DashboardLayout>
   );
 };
 
 export default AddRoutesToBid;
-
