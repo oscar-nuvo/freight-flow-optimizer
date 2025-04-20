@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
@@ -108,11 +107,9 @@ const AddRoutesToBid = () => {
         console.log("Associating new route with bid:", bidId);
         await associateRouteWithBid(newRoute.id, bidId);
         
-        // Specific success toast for route creation and bid association
         toast({
           title: "Route Added Successfully", 
-          description: `This new route has been added to the bid`, 
-          variant: "success"  // Use the success variant if available
+          description: `This new route has been added to the bid`
         });
 
         refetchRoutes(); // Refresh the routes list
@@ -267,4 +264,3 @@ const AddRoutesToBid = () => {
 };
 
 export default AddRoutesToBid;
-
