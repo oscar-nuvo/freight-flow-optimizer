@@ -1,4 +1,5 @@
 
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import CarrierBidResponsePage from "../CarrierBidResponsePage";
@@ -6,8 +7,8 @@ import * as invitationsService from "@/services/invitationsService";
 import * as routesService from "@/services/routesService";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
-jest.mock("@/services/invitationsService");
-jest.mock("@/services/routesService");
+vi.mock("@/services/invitationsService");
+vi.mock("@/services/routesService");
 
 const mockInvitation = {
   id: "inv-1",
@@ -71,12 +72,12 @@ const unrelatedRoutes = [
 
 describe("CarrierBidResponsePage", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("shows only the routes associated with the invited bid", async () => {
-    (invitationsService.getInvitationByToken as jest.Mock).mockResolvedValue(mockInvitation);
-    (routesService.getRoutesByBid as jest.Mock).mockResolvedValue(bidRoutes);
+    vi.mocked(invitationsService.getInvitationByToken).mockResolvedValue(mockInvitation);
+    vi.mocked(routesService.getRoutesByBid).mockResolvedValue(bidRoutes);
 
     render(
       <MemoryRouter initialEntries={["/invite/token-abc"]}>
@@ -97,8 +98,8 @@ describe("CarrierBidResponsePage", () => {
   });
 
   it("does not display routes for other bids", async () => {
-    (invitationsService.getInvitationByToken as jest.Mock).mockResolvedValue(mockInvitation);
-    (routesService.getRoutesByBid as jest.Mock).mockResolvedValue(bidRoutes.concat(unrelatedRoutes));
+    vi.mocked(invitationsService.getInvitationByToken).mockResolvedValue(mockInvitation);
+    vi.mocked(routesService.getRoutesByBid).mockResolvedValue(bidRoutes.concat(unrelatedRoutes));
 
     render(
       <MemoryRouter initialEntries={["/invite/token-abc"]}>
@@ -116,7 +117,7 @@ describe("CarrierBidResponsePage", () => {
   });
 
   it("displays an error if invitation token is invalid", async () => {
-    (invitationsService.getInvitationByToken as jest.Mock).mockResolvedValue(null);
+    vi.mocked(invitationsService.getInvitationByToken).mockResolvedValue(null);
 
     render(
       <MemoryRouter initialEntries={["/invite/unknown-token"]}>
@@ -132,8 +133,8 @@ describe("CarrierBidResponsePage", () => {
   });
 
   it("does not show any data if the bid has no routes", async () => {
-    (invitationsService.getInvitationByToken as jest.Mock).mockResolvedValue(mockInvitation);
-    (routesService.getRoutesByBid as jest.Mock).mockResolvedValue([]);
+    vi.mocked(invitationsService.getInvitationByToken).mockResolvedValue(mockInvitation);
+    vi.mocked(routesService.getRoutesByBid).mockResolvedValue([]);
 
     render(
       <MemoryRouter initialEntries={["/invite/token-abc"]}>
