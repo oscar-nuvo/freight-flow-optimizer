@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
@@ -15,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Route } from "@/types/route";
 import { getRoutesByBid, removeRouteFromBid } from "@/services/routesService";
 import { toast as sonnerToast } from "sonner";
+import { BidInvitationsTable } from "@/components/bids/invitations/BidInvitationsTable";
 
 interface Bid {
   id: string;
@@ -224,19 +224,13 @@ const BidDetails = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <DashboardLayout>
+  return (
+    <DashboardLayout>
+      {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-forest"></div>
         </div>
-      </DashboardLayout>
-    );
-  }
-
-  if (!bid) {
-    return (
-      <DashboardLayout>
+      ) : !bid ? (
         <div className="flex flex-col items-center justify-center h-64">
           <AlertCircle className="h-12 w-12 text-destructive mb-4" />
           <h2 className="text-xl font-bold mb-2">Bid Not Found</h2>
@@ -245,404 +239,398 @@ const BidDetails = () => {
             <ChevronLeft className="h-4 w-4 mr-2" /> Back to Bids
           </Button>
         </div>
-      </DashboardLayout>
-    );
-  }
-
-  const canPublish = bid.status === "draft";
-  const canPause = bid.status === "published" || bid.status === "active";
-  const canResume = bid.status === "paused";
-  const canClose = bid.status === "published" || bid.status === "active" || bid.status === "paused";
-  const canEdit = bid.status === "draft" || bid.status === "published" || bid.status === "paused";
-
-  return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex flex-wrap justify-between items-start gap-4">
-          <div className="flex items-center">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mr-2"
-              onClick={() => navigate("/bids")}
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Back
-            </Button>
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold">{bid.name}</h1>
-              <div className="flex items-center mt-1">
-                <Badge variant={getStatusBadgeVariant(bid.status)} className="mr-2">
-                  {statusIcons[bid.status as keyof typeof statusIcons]}
-                  <span className="ml-1">{bid.status.charAt(0).toUpperCase() + bid.status.slice(1)}</span>
-                </Badge>
-                <span className="text-sm text-muted-foreground">
-                  Created {new Date(bid.created_at).toLocaleDateString()}
-                </span>
+      ) : (
+        <div className="space-y-6">
+          <div className="flex flex-wrap justify-between items-start gap-4">
+            <div className="flex items-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mr-2"
+                onClick={() => navigate("/bids")}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Back
+              </Button>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold">{bid.name}</h1>
+                <div className="flex items-center mt-1">
+                  <Badge variant={getStatusBadgeVariant(bid.status)} className="mr-2">
+                    {statusIcons[bid.status as keyof typeof statusIcons]}
+                    <span className="ml-1">{bid.status.charAt(0).toUpperCase() + bid.status.slice(1)}</span>
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    Created {new Date(bid.created_at).toLocaleDateString()}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex flex-wrap gap-2">
-            {canEdit && (
-              <Button 
-                variant="outline"
-                onClick={() => navigate(`/bids/${bid.id}/edit`)}
-              >
-                Edit Bid
-              </Button>
-            )}
-            {canPublish && (
-              <Button 
-                className="bg-green-600 hover:bg-green-700"
-                onClick={() => updateBidStatus("published")}
-              >
-                <Check className="h-4 w-4 mr-2" />
-                Publish
-              </Button>
-            )}
-            {canPause && (
-              <Button 
-                variant="destructive"
-                onClick={() => updateBidStatus("paused")}
-              >
-                <Pause className="h-4 w-4 mr-2" />
-                Pause
-              </Button>
-            )}
-            {canResume && (
-              <Button 
-                className="bg-blue-600 hover:bg-blue-700"
-                onClick={() => updateBidStatus("active")}
-              >
-                Resume
-              </Button>
-            )}
-            {canClose && (
-              <Button 
-                variant="outline"
-                onClick={() => updateBidStatus("closed")}
-              >
-                <X className="h-4 w-4 mr-2" />
-                Close Bid
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="routes">Routes</TabsTrigger>
-            <TabsTrigger value="carriers">Carriers</TabsTrigger>
-            <TabsTrigger value="responses">Responses</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Bid Information</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Equipment Type</h3>
-                      <p className="flex items-center mt-1">
-                        <Box className="h-4 w-4 mr-2 text-muted-foreground" />
-                        {getEquipmentTypeLabel(bid.equipment_type)}
-                      </p>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Mode</h3>
-                      <p className="flex items-center mt-1">
-                        <Truck className="h-4 w-4 mr-2 text-muted-foreground" />
-                        {getModeLabel(bid.mode)}
-                      </p>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Rate Duration</h3>
-                      <p className="mt-1">{getRateDurationLabel(bid.rate_duration)}</p>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Last Date to Submit</h3>
-                      <p className="flex items-center mt-1">
-                        <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                        {formatDate(bid.submission_date)}
-                      </p>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Start of Operations</h3>
-                      <p className="flex items-center mt-1">
-                        <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                        {formatDate(bid.start_date)}
-                      </p>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Lanes</h3>
-                      <p className="mt-1">{bid.lanes || 0}</p>
-                    </div>
-                  </div>
-
-                  {bid.contract_file && (
-                    <div className="mt-6 pt-4 border-t">
-                      <h3 className="text-sm font-medium mb-2">RFP Contract</h3>
-                      <a 
-                        href={bid.contract_file} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="flex items-center text-blue-600 hover:underline"
-                      >
-                        <FileText className="h-4 w-4 mr-2" />
-                        View Contract
-                      </a>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Instructions</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {bid.instructions ? (
-                    <div className="prose prose-sm max-w-full">
-                      <p>{bid.instructions}</p>
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground">No instructions provided</p>
-                  )}
-                </CardContent>
-              </Card>
+            <div className="flex flex-wrap gap-2">
+              {canEdit && (
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate(`/bids/${bid.id}/edit`)}
+                >
+                  Edit Bid
+                </Button>
+              )}
+              {canPublish && (
+                <Button 
+                  className="bg-green-600 hover:bg-green-700"
+                  onClick={() => updateBidStatus("published")}
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  Publish
+                </Button>
+              )}
+              {canPause && (
+                <Button 
+                  variant="destructive"
+                  onClick={() => updateBidStatus("paused")}
+                >
+                  <Pause className="h-4 w-4 mr-2" />
+                  Pause
+                </Button>
+              )}
+              {canResume && (
+                <Button 
+                  className="bg-blue-600 hover:bg-blue-700"
+                  onClick={() => updateBidStatus("active")}
+                >
+                  Resume
+                </Button>
+              )}
+              {canClose && (
+                <Button 
+                  variant="outline"
+                  onClick={() => updateBidStatus("closed")}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Close Bid
+                </Button>
+              )}
             </div>
+          </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Bid Status</CardTitle>
-                <CardDescription>Current status and progress</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm font-medium">Progress</span>
-                      <span className="text-sm font-medium">{bid.progress || 0}%</span>
+          <Tabs defaultValue="overview" className="w-full">
+            <TabsList>
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="routes">Routes</TabsTrigger>
+              <TabsTrigger value="carriers">Carriers</TabsTrigger>
+              <TabsTrigger value="responses">Responses</TabsTrigger>
+              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Bid Information</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground">Equipment Type</h3>
+                        <p className="flex items-center mt-1">
+                          <Box className="h-4 w-4 mr-2 text-muted-foreground" />
+                          {getEquipmentTypeLabel(bid.equipment_type)}
+                        </p>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground">Mode</h3>
+                        <p className="flex items-center mt-1">
+                          <Truck className="h-4 w-4 mr-2 text-muted-foreground" />
+                          {getModeLabel(bid.mode)}
+                        </p>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground">Rate Duration</h3>
+                        <p className="mt-1">{getRateDurationLabel(bid.rate_duration)}</p>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground">Last Date to Submit</h3>
+                        <p className="flex items-center mt-1">
+                          <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                          {formatDate(bid.submission_date)}
+                        </p>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground">Start of Operations</h3>
+                        <p className="flex items-center mt-1">
+                          <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                          {formatDate(bid.start_date)}
+                        </p>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground">Lanes</h3>
+                        <p className="mt-1">{bid.lanes || 0}</p>
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2.5">
-                      <div 
-                        className="bg-forest h-2.5 rounded-full" 
-                        style={{ width: `${bid.progress || 0}%` }}
-                      ></div>
-                    </div>
-                  </div>
 
-                  {bid.status === "draft" && (
-                    <Alert>
-                      <AlertDescription>
-                        This bid is still in draft mode. You need to add routes and publish it to start collecting responses.
-                      </AlertDescription>
-                    </Alert>
-                  )}
+                    {bid.contract_file && (
+                      <div className="mt-6 pt-4 border-t">
+                        <h3 className="text-sm font-medium mb-2">RFP Contract</h3>
+                        <a 
+                          href={bid.contract_file} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="flex items-center text-blue-600 hover:underline"
+                        >
+                          <FileText className="h-4 w-4 mr-2" />
+                          View Contract
+                        </a>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
 
-                  {bid.status === "published" && (
-                    <Alert variant="info">
-                      <AlertDescription>
-                        Your bid is published and ready to receive responses. Invite carriers to start receiving bids.
-                      </AlertDescription>
-                    </Alert>
-                  )}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Instructions</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {bid.instructions ? (
+                      <div className="prose prose-sm max-w-full">
+                        <p>{bid.instructions}</p>
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">No instructions provided</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
 
-                  {bid.status === "paused" && (
-                    <Alert variant="destructive">
-                      <AlertDescription>
-                        This bid is currently paused. Carriers cannot submit responses while paused.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  {bid.status === "closed" && (
-                    <Alert variant="success">
-                      <AlertDescription>
-                        This bid is closed. No new responses can be submitted.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {(bid.status === "draft" || bid.lanes === 0) && (
               <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center py-6">
-                    <h3 className="text-xl font-semibold mb-2">Next Steps</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Add routes to your bid to continue setting up your RFP
-                    </p>
-                    <Button
-                      className="bg-forest hover:bg-forest-600"
-                      onClick={() => navigate(`/bids/${bid.id}/routes/new`)}
-                    >
-                      Add Routes
-                    </Button>
+                <CardHeader>
+                  <CardTitle className="text-lg">Bid Status</CardTitle>
+                  <CardDescription>Current status and progress</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm font-medium">Progress</span>
+                        <span className="text-sm font-medium">{bid.progress || 0}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <div 
+                          className="bg-forest h-2.5 rounded-full" 
+                          style={{ width: `${bid.progress || 0}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    {bid.status === "draft" && (
+                      <Alert>
+                        <AlertDescription>
+                          This bid is still in draft mode. You need to add routes and publish it to start collecting responses.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    {bid.status === "published" && (
+                      <Alert variant="info">
+                        <AlertDescription>
+                          Your bid is published and ready to receive responses. Invite carriers to start receiving bids.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    {bid.status === "paused" && (
+                      <Alert variant="destructive">
+                        <AlertDescription>
+                          This bid is currently paused. Carriers cannot submit responses while paused.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    {bid.status === "closed" && (
+                      <Alert variant="success">
+                        <AlertDescription>
+                          This bid is closed. No new responses can be submitted.
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </div>
                 </CardContent>
               </Card>
-            )}
-          </TabsContent>
 
-          <TabsContent value="routes">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <CardTitle>Routes</CardTitle>
-                  <Button 
-                    size="sm"
-                    onClick={() => navigate(`/bids/${bid.id}/routes/new`)}
-                  >
-                    <Plus className="h-4 w-4 mr-2" /> Add Route
-                  </Button>
-                </div>
-                <CardDescription>
-                  Manage the routes for this bid
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {routesLoading ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-forest mx-auto mb-4"></div>
-                    <p className="text-muted-foreground">Loading routes...</p>
-                  </div>
-                ) : routes.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-muted-foreground mb-4">No routes have been added to this bid yet</p>
-                    <Button
-                      className="bg-forest hover:bg-forest-600"
-                      onClick={() => navigate(`/bids/${bid.id}/routes/new`)}
-                    >
-                      <Plus className="h-4 w-4 mr-2" /> Add Your First Route
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Origin</TableHead>
-                          <TableHead>Destination</TableHead>
-                          <TableHead>Equipment Type</TableHead>
-                          <TableHead>Commodity</TableHead>
-                          <TableHead>Distance (mi)</TableHead>
-                          <TableHead>Weekly Volume</TableHead>
-                          <TableHead></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {routes.map((route) => (
-                          <TableRow key={route.id}>
-                            <TableCell className="font-medium">{route.origin_city}</TableCell>
-                            <TableCell>{route.destination_city}</TableCell>
-                            <TableCell>{route.equipment_type}</TableCell>
-                            <TableCell>{route.commodity}</TableCell>
-                            <TableCell>{route.distance || '-'}</TableCell>
-                            <TableCell>{route.weekly_volume}</TableCell>
-                            <TableCell className="text-right">
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleRemoveRoute(route.id)}
-                                title="Remove route from bid"
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+              {(bid.status === "draft" || bid.lanes === 0) && (
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center py-6">
+                      <h3 className="text-xl font-semibold mb-2">Next Steps</h3>
+                      <p className="text-muted-foreground mb-4">
+                        Add routes to your bid to continue setting up your RFP
+                      </p>
+                      <Button
+                        className="bg-forest hover:bg-forest-600"
+                        onClick={() => navigate(`/bids/${bid.id}/routes/new`)}
+                      >
+                        Add Routes
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
 
-          <TabsContent value="carriers">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <CardTitle>Carriers</CardTitle>
-                  {(bid.status === "published" || bid.status === "active") && (
+            <TabsContent value="routes">
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle>Routes</CardTitle>
                     <Button 
                       size="sm"
-                      onClick={() => navigate(`/bids/${bid.id}/invite`)}
+                      onClick={() => navigate(`/bids/${bid.id}/routes/new`)}
                     >
-                      Invite Carriers
+                      <Plus className="h-4 w-4 mr-2" /> Add Route
                     </Button>
+                  </div>
+                  <CardDescription>
+                    Manage the routes for this bid
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {routesLoading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-forest mx-auto mb-4"></div>
+                      <p className="text-muted-foreground">Loading routes...</p>
+                    </div>
+                  ) : routes.length === 0 ? (
+                    <div className="text-center py-12">
+                      <p className="text-muted-foreground mb-4">No routes have been added to this bid yet</p>
+                      <Button
+                        className="bg-forest hover:bg-forest-600"
+                        onClick={() => navigate(`/bids/${bid.id}/routes/new`)}
+                      >
+                        <Plus className="h-4 w-4 mr-2" /> Add Your First Route
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Origin</TableHead>
+                            <TableHead>Destination</TableHead>
+                            <TableHead>Equipment Type</TableHead>
+                            <TableHead>Commodity</TableHead>
+                            <TableHead>Distance (mi)</TableHead>
+                            <TableHead>Weekly Volume</TableHead>
+                            <TableHead></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {routes.map((route) => (
+                            <TableRow key={route.id}>
+                              <TableCell className="font-medium">{route.origin_city}</TableCell>
+                              <TableCell>{route.destination_city}</TableCell>
+                              <TableCell>{route.equipment_type}</TableCell>
+                              <TableCell>{route.commodity}</TableCell>
+                              <TableCell>{route.distance || '-'}</TableCell>
+                              <TableCell>{route.weekly_volume}</TableCell>
+                              <TableCell className="text-right">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  onClick={() => handleRemoveRoute(route.id)}
+                                  title="Remove route from bid"
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
-                </div>
-                <CardDescription>
-                  Manage carriers invited to this bid
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground mb-4">
-                    {bid.status === "draft" 
-                      ? "You can invite carriers after publishing the bid" 
-                      : "No carriers have been invited to this bid yet"}
-                  </p>
-                  {(bid.status === "published" || bid.status === "active") && (
-                    <Button
-                      className="bg-forest hover:bg-forest-600"
-                      onClick={() => navigate(`/bids/${bid.id}/invite`)}
-                    >
-                      Invite Carriers
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          <TabsContent value="responses">
-            <Card>
-              <CardHeader>
-                <CardTitle>Responses</CardTitle>
-                <CardDescription>
-                  Track carrier responses to your bid
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground mb-4">
-                    No responses have been received yet
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <TabsContent value="carriers">
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle>Carriers</CardTitle>
+                    {(bid.status === "published" || bid.status === "active") && (
+                      <Button 
+                        size="sm"
+                        onClick={() => navigate(`/bids/${bid.id}/invite`)}
+                      >
+                        Invite Carriers
+                      </Button>
+                    )}
+                  </div>
+                  <CardDescription>
+                    Manage carriers invited to this bid
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground mb-4">
+                      {bid.status === "draft" 
+                        ? "You can invite carriers after publishing the bid" 
+                        : "No carriers have been invited to this bid yet"}
+                    </p>
+                    {(bid.status === "published" || bid.status === "active") && (
+                      <Button
+                        className="bg-forest hover:bg-forest-600"
+                        onClick={() => navigate(`/bids/${bid.id}/invite`)}
+                      >
+                        Invite Carriers
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          <TabsContent value="analytics">
-            <Card>
-              <CardHeader>
-                <CardTitle>Analytics</CardTitle>
-                <CardDescription>
-                  Analyze bid responses and make data-driven decisions
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground mb-4">
-                    Analytics will be available once responses are received
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+            <TabsContent value="responses">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Responses</CardTitle>
+                  <CardDescription>
+                    Track carrier responses to your bid
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground mb-4">
+                      No responses have been received yet
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="analytics">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Analytics</CardTitle>
+                  <CardDescription>
+                    Analyze bid responses and make data-driven decisions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground mb-4">
+                      Analytics will be available once responses are received
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+
+          {bid.status === "published" && (
+            <BidInvitationsTable bidId={bid.id} />
+          )}
+        </div>
+      )}
     </DashboardLayout>
   );
 };
