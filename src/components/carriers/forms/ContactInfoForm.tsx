@@ -1,3 +1,4 @@
+
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
@@ -266,7 +267,7 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
                     <Input 
                       type="tel"
                       {...field}
-                      onBlur={(e) => { field.onBlur?.(e); handlePrimaryBlur(); setPrimaryContactTouched(true); setPrimaryContactErrors(validatePrimaryContact()); }}
+                      onBlur={() => { field.onBlur(); handlePrimaryBlur(); setPrimaryContactTouched(true); setPrimaryContactErrors(validatePrimaryContact()); }}
                       onChange={e => { field.onChange(e); setPrimaryContactTouched(true); setPrimaryContactErrors(validatePrimaryContact()); }}
                       className={cn(primaryContactTouched && primaryContactErrors.phone && "border-red-500")}
                       placeholder="Phone number"
