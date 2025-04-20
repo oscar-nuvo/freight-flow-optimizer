@@ -59,9 +59,12 @@ export const getRoutesByBid = async (bidId: string) => {
       return [];
     }
 
-    // Extract the routes from the nested data and log for debugging
-    const routes = data.map(item => item.routes) as Route[];
-    console.log("Routes fetched for bid:", routes);
+    // Extract ONLY routes that are not soft deleted
+    const routes = data
+      .map(item => item.routes)
+      .filter(route => route && route.is_deleted === false) as Route[];
+
+    console.log("Routes fetched for bid (not deleted):", routes);
     return routes;
   } catch (err) {
     console.error("Exception fetching routes by bid:", err);
