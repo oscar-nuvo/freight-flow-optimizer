@@ -5,7 +5,7 @@ import { CarrierFormValues } from "../CarrierDetailsForm";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, Mail, Phone, MessageSquare } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -73,13 +73,16 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
   const [primaryContactErrors, setPrimaryContactErrors] = useState<{[key: string]: string}>({});
 
   // When form loads, set primaryCountryCode according to existing phone (if any)
-  // Only on first mount
-  useState(() => {
+  useEffect(() => {
     const contactPhone = form.getValues("contact_phone") || "";
     if (contactPhone.startsWith("+52")) setPrimaryCountryCode("+52");
     else setPrimaryCountryCode("+1");
-    setPrimaryChannels(form.getValues("primary_notification_channels") || []);
-  });
+    
+    // Initialize primaryChannels from form data if available
+    if (form.getValues().primary_notification_channels) {
+      setPrimaryChannels(form.getValues().primary_notification_channels || []);
+    }
+  }, [form]);
 
   // ADDITIONAL contacts logic (unchanged)
   const additionalContacts = form.watch('additional_contacts') || [];
@@ -151,12 +154,7 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
     return errors;
   }
 
-  // Hook form submit check (prevents submit if invalid)
-  form.register("primary_notification_channels", {
-    // shim for compatibility, not rendered input
-    value: primaryChannels,
-  });
-
+  // Manual handling for primary notification channels since it's not part of the form schema
   const handlePrimaryChannelToggle = (channel: string) => {
     let updated = [...primaryChannels];
     if (updated.includes(channel)) {
@@ -165,7 +163,10 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
       updated.push(channel);
     }
     setPrimaryChannels(updated);
-    form.setValue("primary_notification_channels", updated);
+    
+    // Store in form values
+    form.setValue("primary_notification_channels", updated, { shouldValidate: false });
+    
     if (primaryContactTouched) setPrimaryContactErrors(validatePrimaryContact());
   };
 
@@ -214,7 +215,12 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
 
   // Save primary country code + notification channels to form on blur for actual submission
   const handlePrimaryBlur = () => {
-    form.setValue("primary_notification_channels", primaryChannels);
+    // Store the channels data to be submitted with the form
+    if (primaryChannels.length > 0) {
+      // Use the setValue method with { shouldValidate: false } to avoid validation
+      form.setValue("primary_notification_channels", primaryChannels, { shouldValidate: false });
+    }
+    
     const phone = form.getValues("contact_phone") || "";
     let formattedPhone = phone;
     if (phone && !phone.startsWith("+")) {
@@ -224,9 +230,6 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
     }
     form.setValue("contact_phone", formattedPhone);
   };
-
-  // Validation before form submit (if primary tab is active)
-  // (in real app, validation should be centralized but for now: manual for this custom UI)
   
   return (
     <div className="space-y-6">
