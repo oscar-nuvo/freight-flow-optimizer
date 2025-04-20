@@ -1,3 +1,4 @@
+
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
@@ -41,6 +42,7 @@ interface AdditionalContact {
   receives_rate_inquiries: boolean;
   notification_channels: string[];
   country_code: string;
+  country: string; // Added country property to fix TypeScript error
 }
 
 function validatePhoneWithCountryCode(phone: string, countryCode: string) {
@@ -66,6 +68,7 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
     receives_rate_inquiries: false,
     notification_channels: [],
     country_code: "+1",
+    country: "USA", // Initialize with default country
   });
   const [showAddContact, setShowAddContact] = useState(false);
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
@@ -204,6 +207,7 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
       receives_rate_inquiries: false,
       notification_channels: [],
       country_code: "+1",
+      country: "USA", // Reset with default country
     });
     setFormErrors({});
     setShowAddContact(false);
