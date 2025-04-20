@@ -47,33 +47,24 @@ export function RoutesTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {routes.map((routeData) => {
-            // Ensure type safety by casting the route data to the correct type
-            const route: Route = {
-              ...routeData,
-              equipment_type: routeData.equipment_type as EquipmentType,
-              route_bids: routeData.route_bids || []
-            };
-            
-            return (
-              <TableRow key={route.id}>
-                <TableCell className="font-medium">{route.origin_city}</TableCell>
-                <TableCell>{route.destination_city}</TableCell>
-                <TableCell>{route.equipment_type}</TableCell>
-                <TableCell>{route.commodity}</TableCell>
-                <TableCell>{route.weekly_volume}</TableCell>
-                <TableCell>{route.distance || '-'}</TableCell>
-                <TableCell>{route.route_bids?.length || 0}</TableCell>
-                <TableCell className="text-right">
-                  <RouteActions 
-                    route={route} 
-                    onEdit={onEditRoute} 
-                    onDelete={onDeleteRoute}
-                  />
-                </TableCell>
-              </TableRow>
-            );
-          })}
+          {routes.map((route) => (
+            <TableRow key={route.id}>
+              <TableCell className="font-medium">{route.origin_city}</TableCell>
+              <TableCell>{route.destination_city}</TableCell>
+              <TableCell>{route.equipment_type}</TableCell>
+              <TableCell>{route.commodity}</TableCell>
+              <TableCell>{route.weekly_volume}</TableCell>
+              <TableCell>{route.distance || '-'}</TableCell>
+              <TableCell>{route.route_bids?.length || 0}</TableCell>
+              <TableCell className="text-right">
+                <RouteActions 
+                  route={route} 
+                  onEdit={onEditRoute} 
+                  onDelete={onDeleteRoute}
+                />
+              </TableCell>
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
     </div>

@@ -26,10 +26,16 @@ export function RoutesSection() {
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
-  const { data: routes, isLoading, refetch } = useQuery({
+  const { data: routesData, isLoading, refetch } = useQuery({
     queryKey: ["routes", filters],
     queryFn: () => getRoutes(filters),
   });
+
+  // Ensure routes have the correct type by casting equipment_type to EquipmentType
+  const routes: Route[] | undefined = routesData?.map(route => ({
+    ...route,
+    equipment_type: route.equipment_type as EquipmentType
+  }));
 
   const handleCreateOrUpdateRoute = async (values: RouteFormValues) => {
     try {

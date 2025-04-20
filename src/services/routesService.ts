@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { Route, RouteFormValues, RouteFilters } from "@/types/route";
+import { Route, RouteFormValues, RouteFilters, EquipmentType } from "@/types/route";
 
 export const getRoutes = async (filters?: RouteFilters) => {
   let query = supabase
@@ -32,6 +32,7 @@ export const getRoutes = async (filters?: RouteFilters) => {
     throw error;
   }
 
+  // This data doesn't need to be cast here as we'll handle it at the component level
   return data;
 };
 
