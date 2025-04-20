@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { getRoutes, associateRouteWithBid } from "@/services/routesService";
+import { getRoutes, associateRouteWithBid, getRoutesByBid } from "@/services/routesService";
 import { Route, EquipmentType, RouteFilters } from "@/types/route";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
@@ -22,10 +22,21 @@ const AddRoutesToBid = () => {
   const [selectedRoutes, setSelectedRoutes] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: routesData, isLoading } = useQuery({
+  // Query to get all available routes
+  const { data: routesData, isLoading: isRoutesLoading } = useQuery({
     queryKey: ["routes", filters],
     queryFn: () => getRoutes(filters),
   });
+
+  // Query to get routes already associated with this bid
+  const { data: existingBidRoutes, isLoading: isExistingRoutesLoading } = useQuery({
+    queryKey: ["bidRoutes", bidId],
+    queryFn: () => bidId ? getRoutesByBid(bidId) : Promise.resolve([]),
+    enabled: !!bidId,
+  });
+
+  // Create a Set of existing route IDs for efficient lookup
+  const existingRouteIds = new Set(existingBidRoutes?.map(route => route.id) || []);
 
   // Ensure routes have the correct type by casting equipment_type to EquipmentType
   const routes: Route[] | undefined = routesData?.map(route => ({
@@ -50,6 +61,11 @@ const AddRoutesToBid = () => {
   };
 
   const handleRouteSelect = (routeId: string) => {
+    // Prevent selection if route is already associated
+    if (existingRouteIds.has(routeId)) {
+      return;
+    }
+
     setSelectedRoutes(prev => 
       prev.includes(routeId) 
         ? prev.filter(id => id !== routeId)
@@ -75,6 +91,7 @@ const AddRoutesToBid = () => {
       // Navigate back to the bid details page
       navigate(`/bids/${bidId}`);
     } catch (error: any) {
+      console.error("Error adding routes to bid:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to add routes to bid",
@@ -84,6 +101,8 @@ const AddRoutesToBid = () => {
       setIsSubmitting(false);
     }
   };
+
+  const isLoading = isRoutesLoading || isExistingRoutesLoading;
 
   return (
     <DashboardLayout>
@@ -142,7 +161,7 @@ const AddRoutesToBid = () => {
               </div>
             </div>
             <CardDescription>
-              {filteredRoutes?.length || 0} routes found
+              {filteredRoutes?.length || 0} routes found ({existingBidRoutes?.length || 0} already added)
             </CardDescription>
           </CardHeader>
           <CardContent className="px-6">
@@ -167,27 +186,31 @@ const AddRoutesToBid = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredRoutes.map((route) => (
-                      <tr 
-                        key={route.id} 
-                        className={`border-b hover:bg-muted/50 ${selectedRoutes.includes(route.id) ? 'bg-muted/30' : ''}`}
-                        onClick={() => handleRouteSelect(route.id)}
-                      >
-                        <td className="py-3 px-2">
-                          <Checkbox 
-                            checked={selectedRoutes.includes(route.id)}
-                            onCheckedChange={() => handleRouteSelect(route.id)}
-                            className="ml-2"
-                          />
-                        </td>
-                        <td className="py-3 px-2 font-medium">{route.origin_city}</td>
-                        <td className="py-3 px-2">{route.destination_city}</td>
-                        <td className="py-3 px-2">{route.equipment_type}</td>
-                        <td className="py-3 px-2">{route.commodity}</td>
-                        <td className="py-3 px-2">{route.weekly_volume}</td>
-                        <td className="py-3 px-2">{route.distance || '-'}</td>
-                      </tr>
-                    ))}
+                    {filteredRoutes.map((route) => {
+                      const isRouteAssociated = existingRouteIds.has(route.id);
+                      return (
+                        <tr 
+                          key={route.id} 
+                          className={`border-b hover:bg-muted/50 ${selectedRoutes.includes(route.id) ? 'bg-muted/30' : ''} ${isRouteAssociated ? 'opacity-50' : ''}`}
+                          onClick={() => !isRouteAssociated && handleRouteSelect(route.id)}
+                        >
+                          <td className="py-3 px-2">
+                            <Checkbox 
+                              checked={selectedRoutes.includes(route.id)}
+                              disabled={isRouteAssociated}
+                              onCheckedChange={() => handleRouteSelect(route.id)}
+                              className="ml-2"
+                            />
+                          </td>
+                          <td className="py-3 px-2 font-medium">{route.origin_city}</td>
+                          <td className="py-3 px-2">{route.destination_city}</td>
+                          <td className="py-3 px-2">{route.equipment_type}</td>
+                          <td className="py-3 px-2">{route.commodity}</td>
+                          <td className="py-3 px-2">{route.weekly_volume}</td>
+                          <td className="py-3 px-2">{route.distance || '-'}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -200,3 +223,4 @@ const AddRoutesToBid = () => {
 };
 
 export default AddRoutesToBid;
+
