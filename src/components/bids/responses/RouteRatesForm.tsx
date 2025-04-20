@@ -49,7 +49,7 @@ export function RouteRatesForm({ routes, initialValues, onChange, currency }: Ro
     onChange(updatedValues);
   };
 
-  if (routes.length === 0) {
+  if (!routes || routes.length === 0) {
     return <div className="text-center p-6 bg-gray-50 rounded-lg">No routes available for this bid.</div>;
   }
 

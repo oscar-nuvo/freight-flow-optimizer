@@ -12,14 +12,15 @@ import {
 } from "@/services/bidResponsesService";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, AlertCircle, CheckCircle } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Loader2, AlertCircle, CheckCircle, Calendar, Truck, FileText, Info } from "lucide-react";
 import RouteRatesForm from "@/components/bids/responses/RouteRatesForm";
 import ResponderInfoForm from "@/components/bids/responses/ResponderInfoForm";
 import { CarrierInvitation } from "@/types/invitation";
 import { Route } from "@/types/route";
 import { BidResponseFormValues } from "@/types/bidResponse";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 export function CarrierBidResponsePage() {
   const { token } = useParams<{ token: string }>();
@@ -35,6 +36,7 @@ export function CarrierBidResponsePage() {
   const [invitation, setInvitation] = useState<CarrierInvitation | null>(null);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [existingResponse, setExistingResponse] = useState<any | null>(null);
+  const [bidDetails, setBidDetails] = useState<any | null>(null);
   
   // Form state
   const [formValues, setFormValues] = useState<BidResponseFormValues>({
@@ -72,6 +74,19 @@ export function CarrierBidResponsePage() {
         // Check if invitation has already been responded to
         const bidId = invitationData.bid_id;
         const carrierId = invitationData.carrier_id;
+        
+        // Fetch bid details
+        try {
+          const { data: bidData } = await supabase
+            .from("bids")
+            .select("*")
+            .eq("id", bidId)
+            .single();
+          
+          setBidDetails(bidData);
+        } catch (err) {
+          console.error("Error fetching bid details:", err);
+        }
         
         // Load routes for this bid
         const routesData = await getRoutesByBid(bidId);
@@ -213,6 +228,16 @@ export function CarrierBidResponsePage() {
     }
   };
 
+  // Format date for display
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "Not specified";
+    try {
+      return format(new Date(dateString), "MMM d, yyyy");
+    } catch (e) {
+      return dateString;
+    }
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -290,11 +315,87 @@ export function CarrierBidResponsePage() {
               </Alert>
             )}
             
+            {/* Bid Details Section */}
             <div className="mb-8">
-              <h3 className="text-lg font-medium mb-2">Bid Information</h3>
-              <p className="text-gray-600 mb-4">
-                Please review the routes below and provide your rates.
-              </p>
+              <h3 className="text-lg font-medium mb-4">Bid Information</h3>
+              
+              {bidDetails && (
+                <Card className="border-2 mb-6">
+                  <CardContent className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div className="flex items-start space-x-2">
+                        <FileText className="h-5 w-5 text-gray-500 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Bid Name</p>
+                          <p>{bidDetails.name}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start space-x-2">
+                        <Info className="h-5 w-5 text-gray-500 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Status</p>
+                          <p className="capitalize">{bidDetails.status}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start space-x-2">
+                        <Calendar className="h-5 w-5 text-gray-500 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Start Date</p>
+                          <p>{formatDate(bidDetails.start_date)}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start space-x-2">
+                        <Calendar className="h-5 w-5 text-gray-500 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">End Date</p>
+                          <p>{formatDate(bidDetails.end_date)}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start space-x-2">
+                        <Truck className="h-5 w-5 text-gray-500 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Mode</p>
+                          <p className="capitalize">{bidDetails.mode?.replace(/_/g, ' ') || 'Not specified'}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start space-x-2">
+                        <Calendar className="h-5 w-5 text-gray-500 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Rate Duration</p>
+                          <p className="capitalize">{bidDetails.rate_duration || 'Not specified'}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {bidDetails.instructions && (
+                      <div className="mt-4">
+                        <p className="text-sm font-medium text-gray-500 mb-1">Instructions</p>
+                        <p className="text-sm whitespace-pre-line border p-3 rounded-md bg-gray-50">{bidDetails.instructions}</p>
+                      </div>
+                    )}
+                    
+                    {bidDetails.contract_file && (
+                      <div className="mt-4">
+                        <p className="text-sm font-medium text-gray-500 mb-1">Contract</p>
+                        <a 
+                          href={bidDetails.contract_file} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 underline text-sm"
+                        >
+                          View Contract
+                        </a>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+              
               {invitation?.custom_message && (
                 <Alert className="mb-4">
                   <AlertTitle>Message from Bid Manager</AlertTitle>
@@ -319,7 +420,7 @@ export function CarrierBidResponsePage() {
                 routes={routes}
                 initialValues={formValues.routeRates}
                 onChange={handleRouteRatesChange}
-                currency="USD" // Default to USD, should come from bid details
+                currency={bidDetails?.currency || "USD"}
               />
             </div>
             
