@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,6 +21,7 @@ import NotFound from "./pages/NotFound";
 import EditBid from "./pages/EditBid";
 import Pricing from "./pages/Pricing";
 import CarrierOnboarding from "./pages/CarrierOnboarding";
+import CarrierBidResponsePage from "./pages/CarrierBidResponsePage";
 import AddRoutesToBid from "./pages/AddRoutesToBid";
 import AuditLogs from "./pages/AuditLogs";
 
@@ -49,6 +51,7 @@ const App = () => (
             <Route path="/analysis" element={<ProtectedRoute><Analysis /></ProtectedRoute>} />
             <Route path="/audit-logs" element={<ProtectedRoute><AuditLogs /></ProtectedRoute>} />
             <Route path="/carrier-onboarding/:token" element={<CarrierOnboarding />} />
+            <Route path="/bid/respond/:token" element={<CarrierBidResponsePage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
