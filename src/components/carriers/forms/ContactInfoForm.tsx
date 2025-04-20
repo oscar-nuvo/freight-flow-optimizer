@@ -4,13 +4,12 @@ import { UseFormReturn } from "react-hook-form";
 import { CarrierFormValues } from "../CarrierDetailsForm";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Mail, Phone, MessageSquare } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { countryCodeOptions, validatePhoneWithCountryCode } from "./utils/contactUtils";
+import { countryCodeOptions, validatePhoneWithCountryCode, notificationChannels } from "./utils/contactUtils";
 
 interface ContactInfoFormProps {
   form: UseFormReturn<CarrierFormValues>;

@@ -2,10 +2,19 @@
 /**
  * Shared utilities for contact forms (internal/external).
  */
+
+import { Mail, Phone, MessageSquare } from "lucide-react";
+
 export const countryCodeOptions = [
   { code: "+1", country: "USA", label: "+1 (USA)" },
   { code: "+1", country: "Canada", label: "+1 (Canada)" },
   { code: "+52", country: "Mexico", label: "+52 (Mexico)" },
+];
+
+export const notificationChannels = [
+  { id: "email", label: "Email", icon: Mail },
+  { id: "phone", label: "Phone", icon: Phone },
+  { id: "sms", label: "SMS", icon: MessageSquare },
 ];
 
 export function getCountryFromCode(code: string, country: string | undefined) {

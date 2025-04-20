@@ -1,17 +1,27 @@
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ContactInfoForm } from "./ContactInfoForm";
 import { useForm } from "react-hook-form";
+import * as matchers from '@testing-library/jest-dom/matchers';
+import { CarrierFormValues } from "../CarrierDetailsForm";
+
+// Add jest-dom matchers
+beforeAll(() => {
+  expect.extend(matchers);
+});
 
 function renderForm() {
-  const form = useForm({ defaultValues: {
-    contact_name: "",
-    contact_email: "",
-    contact_phone: "",
-    additional_contacts: [],
-    primary_notification_channels: []
-  }});
+  // Using partial CarrierFormValues with just the required fields for the test
+  const form = useForm<Partial<CarrierFormValues>>({ 
+    defaultValues: {
+      contact_name: "",
+      contact_email: "",
+      contact_phone: "",
+      additional_contacts: [],
+      primary_notification_channels: []
+    }
+  });
   return render(<ContactInfoForm form={form} />);
 }
 
