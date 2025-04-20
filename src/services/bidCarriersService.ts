@@ -6,6 +6,7 @@ import { CarrierInvitation } from "@/types/invitation";
 // Get all carriers that have been invited to a bid
 export const getBidCarriers = async (bidId: string): Promise<{ carrier: Carrier; invitation: CarrierInvitation }[]> => {
   try {
+    // Use plain query until supabase types are regenerated for new tables
     const { data, error } = await supabase
       .from("bid_carrier_invitations")
       .select(`
@@ -18,6 +19,8 @@ export const getBidCarriers = async (bidId: string): Promise<{ carrier: Carrier;
       console.error("Error fetching bid carriers:", error);
       throw error;
     }
+
+    if (!data) return [];
 
     // Map the data to the expected format
     return data.map((item: any) => ({

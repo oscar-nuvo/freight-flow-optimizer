@@ -17,7 +17,7 @@ export const getBidInvitations = async (bidId: string): Promise<CarrierInvitatio
       throw error;
     }
 
-    return data as CarrierInvitation[];
+    return (data ?? []) as CarrierInvitation[];
   } catch (error) {
     console.error("Error in getBidInvitations:", error);
     throw error;
@@ -58,7 +58,7 @@ export const getActiveCarriersForInvitation = async (): Promise<Carrier[]> => {
       throw error;
     }
 
-    return data as Carrier[];
+    return (data ?? []) as Carrier[];
   } catch (error) {
     console.error("Error in getActiveCarriersForInvitation:", error);
     return []; // Return empty array instead of throwing to prevent UI errors
@@ -100,7 +100,7 @@ export const createBidInvitations = async (
       throw error;
     }
     
-    return data as CarrierInvitation[];
+    return (data ?? []) as CarrierInvitation[];
   } catch (error: any) {
     console.error("Error in createBidInvitations:", error);
     throw error;

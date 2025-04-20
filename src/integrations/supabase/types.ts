@@ -48,6 +48,73 @@ export type Database = {
         }
         Relationships: []
       }
+      bid_carrier_invitations: {
+        Row: {
+          bid_id: string
+          carrier_id: string
+          created_by: string
+          custom_message: string | null
+          delivery_channels: Database["public"]["Enums"]["delivery_channel"][]
+          delivery_status: Json
+          id: string
+          invited_at: string
+          responded_at: string | null
+          revoked_at: string | null
+          status: Database["public"]["Enums"]["invitation_status"]
+          token: string
+        }
+        Insert: {
+          bid_id: string
+          carrier_id: string
+          created_by: string
+          custom_message?: string | null
+          delivery_channels?: Database["public"]["Enums"]["delivery_channel"][]
+          delivery_status?: Json
+          id?: string
+          invited_at?: string
+          responded_at?: string | null
+          revoked_at?: string | null
+          status?: Database["public"]["Enums"]["invitation_status"]
+          token: string
+        }
+        Update: {
+          bid_id?: string
+          carrier_id?: string
+          created_by?: string
+          custom_message?: string | null
+          delivery_channels?: Database["public"]["Enums"]["delivery_channel"][]
+          delivery_status?: Json
+          id?: string
+          invited_at?: string
+          responded_at?: string | null
+          revoked_at?: string | null
+          status?: Database["public"]["Enums"]["invitation_status"]
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bid_carrier_invitations_bid_id_fkey"
+            columns: ["bid_id"]
+            isOneToOne: false
+            referencedRelation: "bids"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bid_carrier_invitations_carrier_id_fkey"
+            columns: ["carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bid_carrier_invitations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bids: {
         Row: {
           carriers: number | null
@@ -112,6 +179,135 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      carrier_bid_responses: {
+        Row: {
+          bid_id: string
+          carrier_id: string
+          id: string
+          invitation_id: string
+          raw_response_json: Json | null
+          responder_email: string
+          responder_name: string
+          routes_submitted: number
+          submitted_at: string
+          version: number
+        }
+        Insert: {
+          bid_id: string
+          carrier_id: string
+          id?: string
+          invitation_id: string
+          raw_response_json?: Json | null
+          responder_email: string
+          responder_name: string
+          routes_submitted?: number
+          submitted_at?: string
+          version: number
+        }
+        Update: {
+          bid_id?: string
+          carrier_id?: string
+          id?: string
+          invitation_id?: string
+          raw_response_json?: Json | null
+          responder_email?: string
+          responder_name?: string
+          routes_submitted?: number
+          submitted_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "carrier_bid_responses_bid_id_fkey"
+            columns: ["bid_id"]
+            isOneToOne: false
+            referencedRelation: "bids"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "carrier_bid_responses_carrier_id_fkey"
+            columns: ["carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "carrier_bid_responses_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "bid_carrier_invitations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      carrier_route_rates: {
+        Row: {
+          bid_id: string
+          carrier_id: string
+          comment: string | null
+          currency: Database["public"]["Enums"]["currency_type"]
+          id: string
+          response_id: string
+          route_id: string
+          submitted_at: string
+          value: number | null
+          version: number
+        }
+        Insert: {
+          bid_id: string
+          carrier_id: string
+          comment?: string | null
+          currency?: Database["public"]["Enums"]["currency_type"]
+          id?: string
+          response_id: string
+          route_id: string
+          submitted_at?: string
+          value?: number | null
+          version: number
+        }
+        Update: {
+          bid_id?: string
+          carrier_id?: string
+          comment?: string | null
+          currency?: Database["public"]["Enums"]["currency_type"]
+          id?: string
+          response_id?: string
+          route_id?: string
+          submitted_at?: string
+          value?: number | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "carrier_route_rates_bid_id_fkey"
+            columns: ["bid_id"]
+            isOneToOne: false
+            referencedRelation: "bids"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "carrier_route_rates_carrier_id_fkey"
+            columns: ["carrier_id"]
+            isOneToOne: false
+            referencedRelation: "carriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "carrier_route_rates_response_id_fkey"
+            columns: ["response_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_bid_responses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "carrier_route_rates_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
             referencedColumns: ["id"]
           },
         ]
@@ -539,7 +735,14 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      currency_type: "USD" | "MXN" | "CAD"
+      delivery_channel: "email" | "sms" | "whatsapp"
+      invitation_status:
+        | "pending"
+        | "delivered"
+        | "opened"
+        | "responded"
+        | "revoked"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -654,6 +857,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      currency_type: ["USD", "MXN", "CAD"],
+      delivery_channel: ["email", "sms", "whatsapp"],
+      invitation_status: [
+        "pending",
+        "delivered",
+        "opened",
+        "responded",
+        "revoked",
+      ],
+    },
   },
 } as const

@@ -25,7 +25,7 @@ export function InvitationStatusBadge({ status, className }: InvitationStatusBad
     }
   };
 
-  const getLabel = () => {
+  const getLabel = (): string => {
     switch (status) {
       case "pending":
         return "Pending";
@@ -38,7 +38,9 @@ export function InvitationStatusBadge({ status, className }: InvitationStatusBad
       case "revoked":
         return "Revoked";
       default:
-        return status.charAt(0).toUpperCase() + status.slice(1);
+        return typeof status === "string"
+          ? status.charAt(0).toUpperCase() + status.slice(1)
+          : "Status";
     }
   };
 

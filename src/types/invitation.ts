@@ -2,17 +2,18 @@
 import { Carrier } from "@/services/carriersService";
 
 export type InvitationStatus = 
-  | 'pending' 
-  | 'delivered' 
-  | 'opened' 
-  | 'responded' 
+  | 'pending'
+  | 'delivered'
+  | 'opened'
+  | 'responded'
   | 'revoked';
 
 export type DeliveryChannel = 'email' | 'sms' | 'whatsapp';
 
-export interface DeliveryStatus {
-  [contactId: string]: 'pending' | 'success' | 'failed';
-}
+export type CurrencyType = 'USD' | 'MXN' | 'CAD';
+
+export type DeliveryStatus =
+  Record<string, 'pending' | 'delivery-success' | 'delivery-failed' | 'opened' | 'responded' | 'revoked'>;
 
 export interface CarrierInvitation {
   id: string;
@@ -49,7 +50,7 @@ export interface CarrierRouteRate {
   route_id: string;
   response_id: string;
   value: number;
-  currency: 'USD' | 'MXN' | 'CAD';
+  currency: CurrencyType;
   comment?: string;
   version: number;
   submitted_at: string;
