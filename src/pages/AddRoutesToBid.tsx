@@ -107,10 +107,14 @@ const AddRoutesToBid = () => {
       if (newRoute && bidId) {
         console.log("Associating new route with bid:", bidId);
         await associateRouteWithBid(newRoute.id, bidId);
+        
+        // Specific success toast for route creation and bid association
         toast({
-          title: "Success",
-          description: "Route created and added to bid successfully",
+          title: "Route Added Successfully", 
+          description: `This new route has been added to the bid`, 
+          variant: "success"  // Use the success variant if available
         });
+
         refetchRoutes(); // Refresh the routes list
         refetchBidRoutes(); // Refresh the bid routes list
       }
@@ -263,3 +267,4 @@ const AddRoutesToBid = () => {
 };
 
 export default AddRoutesToBid;
+
