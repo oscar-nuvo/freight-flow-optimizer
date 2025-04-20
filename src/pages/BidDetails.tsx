@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
@@ -45,6 +46,13 @@ const BidDetails = () => {
   const { organization } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Define permission variables for bid actions
+  const canEdit = bid?.status === "draft";
+  const canPublish = bid?.status === "draft" && (bid?.lanes || 0) > 0;
+  const canPause = bid?.status === "active" || bid?.status === "published";
+  const canResume = bid?.status === "paused";
+  const canClose = bid?.status !== "closed" && bid?.status !== "draft";
 
   useEffect(() => {
     if (id && organization) {

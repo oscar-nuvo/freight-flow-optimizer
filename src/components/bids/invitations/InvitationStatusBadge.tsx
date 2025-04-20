@@ -38,9 +38,10 @@ export function InvitationStatusBadge({ status, className }: InvitationStatusBad
       case "revoked":
         return "Revoked";
       default:
+        // Fixed the type error by ensuring status is treated as a string
         return typeof status === "string"
           ? status.charAt(0).toUpperCase() + status.slice(1)
-          : "Status";
+          : "Unknown Status";
     }
   };
 
