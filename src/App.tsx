@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,7 +22,6 @@ import Pricing from "./pages/Pricing";
 import CarrierOnboarding from "./pages/CarrierOnboarding";
 import AddRoutesToBid from "./pages/AddRoutesToBid";
 import AuditLogs from "./pages/AuditLogs";
-import CarrierBidResponsePage from "./pages/CarrierBidResponsePage";
 
 const queryClient = new QueryClient();
 
@@ -51,7 +49,6 @@ const App = () => (
             <Route path="/analysis" element={<ProtectedRoute><Analysis /></ProtectedRoute>} />
             <Route path="/audit-logs" element={<ProtectedRoute><AuditLogs /></ProtectedRoute>} />
             <Route path="/carrier-onboarding/:token" element={<CarrierOnboarding />} />
-            <Route path="/invite/:token" element={<CarrierBidResponsePage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
