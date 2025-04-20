@@ -1,4 +1,3 @@
-
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
@@ -10,11 +9,18 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const countryCodes = [
   { code: "+1", country: "USA" },
   { code: "+1", country: "Canada" },
   { code: "+52", country: "Mexico" },
+];
+
+const countryCodeOptions = [
+  { code: "+1", country: "USA", label: "+1 (USA)" },
+  { code: "+1", country: "Canada", label: "+1 (Canada)" },
+  { code: "+52", country: "Mexico", label: "+52 (Mexico)" },
 ];
 
 const notificationChannels = [
@@ -66,6 +72,7 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
   const [primaryChannels, setPrimaryChannels] = useState<string[]>(() =>
     form.getValues("primary_notification_channels") || []
   );
+  const [primaryCountry, setPrimaryCountry] = useState<"USA" | "Canada" | "Mexico">("USA");
   const [primaryCountryCode, setPrimaryCountryCode] = useState("+1");
 
   const [primaryContactTouched, setPrimaryContactTouched] = useState(false);
@@ -73,9 +80,13 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
 
   useEffect(() => {
     const contactPhone = form.getValues("contact_phone") || "";
-    if (contactPhone.startsWith("+52")) setPrimaryCountryCode("+52");
-    else setPrimaryCountryCode("+1");
-
+    if (contactPhone.startsWith("+52")) {
+      setPrimaryCountry("Mexico");
+      setPrimaryCountryCode("+52");
+    } else {
+      setPrimaryCountry("USA");
+      setPrimaryCountryCode("+1");
+    }
     setPrimaryChannels(form.getValues("primary_notification_channels") || []);
   }, [form]);
 
@@ -156,6 +167,12 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
     setPrimaryChannels(updated);
     form.setValue("primary_notification_channels", updated, { shouldValidate: false });
     if (primaryContactTouched) setPrimaryContactErrors(validatePrimaryContact());
+  };
+
+  const handlePrimaryCountryChange = (country: "USA" | "Canada" | "Mexico") => {
+    setPrimaryCountry(country);
+    setPrimaryCountryCode(country === "Mexico" ? "+52" : "+1");
+    setPrimaryContactErrors(validatePrimaryContact());
   };
 
   const addContact = () => {
@@ -242,37 +259,27 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
             <FormItem>
               <FormLabel>Primary Contact Phone</FormLabel>
               <FormControl>
-                <div className="flex gap-2">
-                  <div className="w-1/3">
-                    <Select
-                      value={primaryCountryCode}
-                      onValueChange={(value) => {
-                        setPrimaryCountryCode(value);
-                        setPrimaryContactErrors(validatePrimaryContact());
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Code" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {countryCodes.map((country) => (
-                          <SelectItem key={country.code + country.country} value={country.code}>
-                            {country.code} ({country.country})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex-1">
-                    <Input 
-                      type="tel"
-                      {...field}
-                      onBlur={() => { field.onBlur(); handlePrimaryBlur(); setPrimaryContactTouched(true); setPrimaryContactErrors(validatePrimaryContact()); }}
-                      onChange={e => { field.onChange(e); setPrimaryContactTouched(true); setPrimaryContactErrors(validatePrimaryContact()); }}
-                      className={cn(primaryContactTouched && primaryContactErrors.phone && "border-red-500")}
-                      placeholder="Phone number"
-                    />
-                  </div>
+                <div>
+                  <RadioGroup
+                    value={primaryCountry}
+                    onValueChange={val => handlePrimaryCountryChange(val as "USA" | "Canada" | "Mexico")}
+                    className="flex gap-4 mb-2"
+                  >
+                    {countryCodeOptions.map(opt => (
+                      <div key={opt.country} className="flex items-center gap-1">
+                        <RadioGroupItem value={opt.country} id={`primary-int-country-${opt.country}`} />
+                        <label htmlFor={`primary-int-country-${opt.country}`} className="text-xs">{opt.label}</label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                  <Input 
+                    type="tel"
+                    {...field}
+                    onBlur={() => { field.onBlur(); handlePrimaryBlur(); setPrimaryContactTouched(true); setPrimaryContactErrors(validatePrimaryContact()); }}
+                    onChange={e => { field.onChange(e); setPrimaryContactTouched(true); setPrimaryContactErrors(validatePrimaryContact()); }}
+                    className={cn(primaryContactTouched && primaryContactErrors.phone && "border-red-500")}
+                    placeholder="Phone number"
+                  />
                 </div>
               </FormControl>
               {primaryContactTouched && primaryContactErrors.phone && (
@@ -459,39 +466,39 @@ export function ContactInfoForm({ form }: ContactInfoFormProps) {
                 
                 <div>
                   <label className="text-sm font-medium">Phone</label>
-                  <div className="flex mt-1 gap-2">
-                    <div className="w-1/3">
-                      <Select
-                        value={newContact.country_code}
-                        onValueChange={(value) => setNewContact({...newContact, country_code: value})}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Code" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {countryCodes.map((country) => (
-                            <SelectItem key={country.code + country.country} value={country.code}>
-                              {country.code} ({country.country})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex-1">
-                      <Input 
-                        type="tel"
-                        value={newContact.phone}
-                        onChange={(e) => {
-                          setNewContact({...newContact, phone: e.target.value});
-                          if (formErrors.phone) {
-                            const { phone, ...rest } = formErrors;
-                            setFormErrors(rest);
-                          }
-                        }}
-                        className={cn(formErrors.phone && "border-red-500")}
-                        placeholder="Phone number"
-                      />
-                    </div>
+                  <div className="flex flex-col gap-1 mt-1">
+                    <RadioGroup
+                      value={newContact.country}
+                      onValueChange={(val) => {
+                        const found = countryCodeOptions.find(opt => opt.country === val);
+                        setNewContact({
+                          ...newContact,
+                          country: found?.country || "USA",
+                          country_code: found?.code || "+1",
+                        });
+                      }}
+                      className="flex gap-4 mb-2"
+                    >
+                      {countryCodeOptions.map(opt => (
+                        <div key={opt.country} className="flex items-center gap-1">
+                          <RadioGroupItem value={opt.country} id={`new-int-contact-country-${opt.country}`} />
+                          <label htmlFor={`new-int-contact-country-${opt.country}`} className="text-xs">{opt.label}</label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                    <Input 
+                      type="tel"
+                      value={newContact.phone}
+                      onChange={(e) => {
+                        setNewContact({...newContact, phone: e.target.value});
+                        if (formErrors.phone) {
+                          const { phone, ...rest } = formErrors;
+                          setFormErrors(rest);
+                        }
+                      }}
+                      className={cn(formErrors.phone && "border-red-500")}
+                      placeholder="Phone number"
+                    />
                   </div>
                   {formErrors.phone && <p className="text-sm text-red-500 mt-1">{formErrors.phone}</p>}
                 </div>

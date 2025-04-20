@@ -1,20 +1,19 @@
-
 import { useState, useEffect } from "react";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Trash2, Mail, Phone, MessageSquare } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
 import { type CarrierFormValues } from "../CarrierOnboardingForm";
 import { cn } from "@/lib/utils";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
-const countryCodes = [
-  { code: "+1", country: "USA" },
-  { code: "+1", country: "Canada" },
-  { code: "+52", country: "Mexico" },
+const countryCodeOptions = [
+  { code: "+1", country: "USA", label: "+1 (USA)" },
+  { code: "+1", country: "Canada", label: "+1 (Canada)" },
+  { code: "+52", country: "Mexico", label: "+52 (Mexico)" },
 ];
 
 const notificationChannels = [
@@ -31,17 +30,20 @@ interface AdditionalContact {
   receives_rate_inquiries: boolean;
   notification_channels: string[];
   country_code: string;
+  country: string;
 }
 
-interface ContactInfoFormExternalProps {
-  form: UseFormReturn<CarrierFormValues>;
+function getCountryFromCode(code: string, country: string | undefined) {
+  if (code === "+1" && country === "Canada") return "Canada";
+  if (code === "+1" && country === "USA") return "USA";
+  if (code === "+52") return "Mexico";
+  return "USA";
 }
 
 function validatePhoneWithCountryCode(phone: string, countryCode: string) {
-  // Allow empty phone for optional field
   if (!phone) return true;
-  const cleanPhone = phone.replace(/[\s\-()]/g, '');
-  switch(countryCode) {
+  const cleanPhone = phone.replace(/[\s\-()]/g, "");
+  switch (countryCode) {
     case "+1":
       return /^\+?1?\d{10}$/.test(cleanPhone);
     case "+52":
@@ -51,17 +53,14 @@ function validatePhoneWithCountryCode(phone: string, countryCode: string) {
   }
 }
 
-export function ContactInfoFormExternal({ form }: ContactInfoFormExternalProps) {
-  // Primary Contact State
+export function ContactInfoFormExternal({ form }: {form: UseFormReturn<CarrierFormValues>}) {
+  const [primaryCountry, setPrimaryCountry] = useState<"USA" | "Canada" | "Mexico">("USA");
   const [primaryCountryCode, setPrimaryCountryCode] = useState("+1");
   const [primaryChannels, setPrimaryChannels] = useState<string[]>(() => {
-    // Access using type-safe bracket notation instead of getValues for array fields
-    return form.getValues()["primary_notification_channels"] || [];
+    return form.getValues().primary_notification_channels || [];
   });
   const [primaryContactTouched, setPrimaryContactTouched] = useState(false);
-  const [primaryContactErrors, setPrimaryContactErrors] = useState<{[key: string]: string}>({});
-
-  // Additional Contacts State
+  const [primaryContactErrors, setPrimaryContactErrors] = useState<{ [key: string]: string }>({});
   const [newContact, setNewContact] = useState<AdditionalContact>({
     name: "",
     phone: "",
@@ -70,26 +69,27 @@ export function ContactInfoFormExternal({ form }: ContactInfoFormExternalProps) 
     receives_rate_inquiries: false,
     notification_channels: [],
     country_code: "+1",
+    country: "USA",
   });
   const [showAddContact, setShowAddContact] = useState(false);
-  const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
+  const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
-    // Infer code from prefilled phone or keep default
-    const contactPhone = form.getValues("contact_phone") || "";
-    if (contactPhone.startsWith("+52")) setPrimaryCountryCode("+52");
-    else setPrimaryCountryCode("+1");
-    
-    // Safely access the primary_notification_channels field
-    const channels = form.getValues()["primary_notification_channels"] || [];
-    setPrimaryChannels(channels);
+    const phone = form.getValues("contact_phone") || "";
+    if (phone.startsWith("+52")) {
+      setPrimaryCountry("Mexico");
+      setPrimaryCountryCode("+52");
+    } else {
+      setPrimaryCountry("USA"); // default
+      setPrimaryCountryCode("+1");
+    }
+    setPrimaryChannels(form.getValues().primary_notification_channels || []);
   }, [form]);
 
-  const additionalContacts = form.watch('additional_contacts') || [];
+  const additionalContacts = form.watch("additional_contacts") || [];
 
-  // -- Validation logic
   function validatePrimaryContact() {
-    const errors: {[key: string]: string} = {};
+    const errors: { [key: string]: string } = {};
     const name = form.getValues("contact_name") || "";
     const email = form.getValues("contact_email") || "";
     const phone = form.getValues("contact_phone") || "";
@@ -119,47 +119,37 @@ export function ContactInfoFormExternal({ form }: ContactInfoFormExternalProps) 
       updated.push(channel);
     }
     setPrimaryChannels(updated);
-    // Set the form value with the updated array using bracket notation
-    form.setValue("primary_notification_channels" as keyof CarrierFormValues, updated, { shouldValidate: false });
+    form.setValue("primary_notification_channels", updated, { shouldValidate: false });
     if (primaryContactTouched) setPrimaryContactErrors(validatePrimaryContact());
-    console.log("[PrimaryChannels] Changed:", updated);
+  };
+
+  const handlePrimaryCountryChange = (country: "USA" | "Canada" | "Mexico") => {
+    setPrimaryCountry(country);
+    setPrimaryCountryCode(country === "Mexico" ? "+52" : "+1");
+    setPrimaryContactErrors(validatePrimaryContact());
   };
 
   const handlePrimaryBlur = () => {
-    // Auto-format phone with country code
     const phone = form.getValues("contact_phone") || "";
     let formattedPhone = phone;
     if (phone && !phone.startsWith("+")) {
       formattedPhone = `${primaryCountryCode} ${phone}`;
     }
     form.setValue("contact_phone", formattedPhone);
-    // Set notification channels
     if (primaryChannels.length > 0) {
-      // Use the bracket notation with type assertion
-      form.setValue("primary_notification_channels" as keyof CarrierFormValues, primaryChannels, { shouldValidate: false });
+      form.setValue("primary_notification_channels", primaryChannels, { shouldValidate: false });
     }
     setPrimaryContactErrors(validatePrimaryContact());
     setPrimaryContactTouched(true);
-    console.log("[PrimaryBlur] Formatted phone to:", formattedPhone);
   };
 
-  // --- Additional contact validation
   const validateContact = (contact: AdditionalContact) => {
-    const errors: {[key: string]: string} = {};
-    if (!contact.name.trim()) {
-      errors.name = "Name is required";
-    }
-    if (!contact.email.trim()) {
-      errors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email)) {
-      errors.email = "Invalid email format";
-    }
-    if (contact.phone && !validatePhoneWithCountryCode(contact.phone, contact.country_code)) {
-      errors.phone = "Invalid phone number for selected country";
-    }
-    if (contact.receives_rate_inquiries && contact.notification_channels.length === 0) {
-      errors.notification_channels = "At least one notification channel is required";
-    }
+    const errors: { [key: string]: string } = {};
+    if (!contact.name.trim()) errors.name = "Name is required";
+    if (!contact.email.trim()) errors.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email)) errors.email = "Invalid email format";
+    if (contact.phone && !validatePhoneWithCountryCode(contact.phone, contact.country_code)) errors.phone = "Invalid phone number for selected country";
+    if (contact.receives_rate_inquiries && contact.notification_channels.length === 0) errors.notification_channels = "At least one notification channel is required";
     return errors;
   };
 
@@ -167,7 +157,6 @@ export function ContactInfoFormExternal({ form }: ContactInfoFormExternalProps) 
     const errors = validateContact(newContact);
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
-      console.log("[AddContact] Validation failed:", errors);
       return;
     }
     let formattedPhone = newContact.phone;
@@ -178,8 +167,7 @@ export function ContactInfoFormExternal({ form }: ContactInfoFormExternalProps) 
       ...newContact,
       phone: formattedPhone,
     };
-    const updatedContacts = [...additionalContacts, contactToAdd];
-    form.setValue('additional_contacts', updatedContacts);
+    form.setValue("additional_contacts", [...additionalContacts, contactToAdd]);
     setNewContact({
       name: "",
       phone: "",
@@ -188,17 +176,16 @@ export function ContactInfoFormExternal({ form }: ContactInfoFormExternalProps) 
       receives_rate_inquiries: false,
       notification_channels: [],
       country_code: "+1",
+      country: "USA",
     });
     setFormErrors({});
     setShowAddContact(false);
-    console.log("[AddContact] Contact added:", contactToAdd);
   };
 
   const removeContact = (idx: number) => {
     const updated = [...additionalContacts];
     updated.splice(idx, 1);
-    form.setValue('additional_contacts', updated);
-    console.log("[RemoveContact] Contact at index", idx, "removed.");
+    form.setValue("additional_contacts", updated);
   };
 
   const toggleNotificationChannel = (channel: string) => {
@@ -209,17 +196,15 @@ export function ContactInfoFormExternal({ form }: ContactInfoFormExternalProps) 
     } else {
       updatedChannels.splice(index, 1);
     }
-    setNewContact({...newContact, notification_channels: updatedChannels});
+    setNewContact({ ...newContact, notification_channels: updatedChannels });
     if (updatedChannels.length > 0 && formErrors.notification_channels) {
       const { notification_channels, ...rest } = formErrors;
       setFormErrors(rest);
     }
   };
 
-  // --- UI
   return (
     <div className="space-y-6">
-      {/* PRIMARY CONTACT */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
           control={form.control}
@@ -244,37 +229,27 @@ export function ContactInfoFormExternal({ form }: ContactInfoFormExternalProps) 
             <FormItem>
               <FormLabel>Primary Contact Phone</FormLabel>
               <FormControl>
-                <div className="flex gap-2">
-                  <div className="w-1/3">
-                    <Select
-                      value={primaryCountryCode}
-                      onValueChange={val => {
-                        setPrimaryCountryCode(val);
-                        setPrimaryContactErrors(validatePrimaryContact());
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Code" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {countryCodes.map((country) => (
-                          <SelectItem key={country.code + country.country} value={country.code}>
-                            {country.code} ({country.country})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex-1">
-                    <Input 
-                      type="tel"
-                      {...field}
-                      onBlur={() => { field.onBlur(); handlePrimaryBlur(); }}
-                      onChange={e => { field.onChange(e); setPrimaryContactTouched(true); setPrimaryContactErrors(validatePrimaryContact()); }}
-                      className={primaryContactTouched && primaryContactErrors.phone ? "border-red-500" : ""}
-                      placeholder="Phone number"
-                    />
-                  </div>
+                <div>
+                  <RadioGroup
+                    value={primaryCountry}
+                    onValueChange={(val) => handlePrimaryCountryChange(val as "USA" | "Canada" | "Mexico")}
+                    className="flex gap-4 mb-2"
+                  >
+                    {countryCodeOptions.map(opt => (
+                      <div key={opt.country} className="flex items-center gap-1">
+                        <RadioGroupItem value={opt.country} id={`primary-phone-country-${opt.country}`} />
+                        <label htmlFor={`primary-phone-country-${opt.country}`} className="text-xs">{opt.label}</label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                  <Input
+                    type="tel"
+                    {...field}
+                    onBlur={() => { field.onBlur(); handlePrimaryBlur(); }}
+                    onChange={e => { field.onChange(e); setPrimaryContactTouched(true); setPrimaryContactErrors(validatePrimaryContact()); }}
+                    className={primaryContactTouched && primaryContactErrors.phone ? "border-red-500" : ""}
+                    placeholder="Phone number"
+                  />
                 </div>
               </FormControl>
               {primaryContactTouched && primaryContactErrors.phone && (
@@ -336,7 +311,6 @@ export function ContactInfoFormExternal({ form }: ContactInfoFormExternalProps) 
         </div>
       </div>
 
-      {/* ADDITIONAL CONTACTS */}
       <div className="mt-8">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-medium">Additional Contacts</h3>
@@ -413,7 +387,6 @@ export function ContactInfoFormExternal({ form }: ContactInfoFormExternalProps) 
           <p className="text-sm text-muted-foreground">No additional contacts added yet.</p>
         )}
 
-        {/* ADD CONTACT DRAWER */}
         {showAddContact && (
           <Card className="mt-4">
             <CardContent className="pt-4">
@@ -454,36 +427,36 @@ export function ContactInfoFormExternal({ form }: ContactInfoFormExternalProps) 
                 </div>
                 <div>
                   <label className="text-sm font-medium">Phone</label>
-                  <div className="flex mt-1 gap-2">
-                    <div className="w-1/3">
-                      <Select
-                        value={newContact.country_code}
-                        onValueChange={(val) => setNewContact({...newContact, country_code: val})}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Code" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {countryCodes.map((country) => (
-                            <SelectItem key={country.code + country.country} value={country.code}>
-                              {country.code} ({country.country})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex-1">
-                      <Input 
-                        type="tel"
-                        value={newContact.phone}
-                        onChange={(e) => {
-                          setNewContact({...newContact, phone: e.target.value});
-                          if (formErrors.phone) setFormErrors((err) => ({ ...err, phone: undefined }));
-                        }}
-                        className={formErrors.phone ? "border-red-500" : ""}
-                        placeholder="Phone number"
-                      />
-                    </div>
+                  <div className="flex flex-col gap-1 mt-1">
+                    <RadioGroup
+                      value={newContact.country}
+                      onValueChange={(val) => {
+                        const found = countryCodeOptions.find(opt => opt.country === val);
+                        setNewContact({
+                          ...newContact,
+                          country: found?.country || "USA",
+                          country_code: found?.code || "+1",
+                        });
+                      }}
+                      className="flex gap-4 mb-2"
+                    >
+                      {countryCodeOptions.map(opt => (
+                        <div key={opt.country} className="flex items-center gap-1">
+                          <RadioGroupItem value={opt.country} id={`new-contact-country-${opt.country}`} />
+                          <label htmlFor={`new-contact-country-${opt.country}`} className="text-xs">{opt.label}</label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                    <Input 
+                      type="tel"
+                      value={newContact.phone}
+                      onChange={(e) => {
+                        setNewContact({...newContact, phone: e.target.value});
+                        if (formErrors.phone) setFormErrors((err) => ({ ...err, phone: undefined }));
+                      }}
+                      className={formErrors.phone ? "border-red-500" : ""}
+                      placeholder="Phone number"
+                    />
                   </div>
                   {formErrors.phone && <p className="text-sm text-red-500 mt-1">{formErrors.phone}</p>}
                 </div>
