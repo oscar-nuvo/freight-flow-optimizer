@@ -39,7 +39,7 @@ export function useRouteSearch() {
   });
 
   // Process routes data and apply client-side filtering
-  const processedRoutes: Route[] | undefined = useCallback(() => {
+  const processRoutes = useCallback((): Route[] => {
     if (!routesData) return [];
 
     // Cast equipment_type to EquipmentType enum
@@ -59,6 +59,9 @@ export function useRouteSearch() {
     );
   }, [routesData, debouncedSearchTerm]);
 
+  // Get the processed routes
+  const processedRoutes = processRoutes();
+
   // Handle error notifications
   useEffect(() => {
     if (isError && error) {
@@ -76,7 +79,7 @@ export function useRouteSearch() {
   }, [routesData]);
 
   return {
-    routes: processedRoutes(),
+    routes: processedRoutes,
     isLoading,
     isSearching,
     isError,
@@ -85,6 +88,6 @@ export function useRouteSearch() {
     filters,
     setFilters,
     refetch,
-    resultsCount: processedRoutes()?.length || 0
+    resultsCount: processedRoutes?.length || 0
   };
 }
