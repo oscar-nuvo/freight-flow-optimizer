@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
@@ -21,6 +20,7 @@ import { Route } from "@/types/route";
 import { BidResponseFormValues } from "@/types/bidResponse";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 export function CarrierBidResponsePage() {
   const { token } = useParams<{ token: string }>();
@@ -38,7 +38,6 @@ export function CarrierBidResponsePage() {
   const [existingResponse, setExistingResponse] = useState<any | null>(null);
   const [bidDetails, setBidDetails] = useState<any | null>(null);
   
-  // Form state
   const [formValues, setFormValues] = useState<BidResponseFormValues>({
     responderName: "",
     responderEmail: "",
@@ -54,7 +53,6 @@ export function CarrierBidResponsePage() {
       }
 
       try {
-        // Fetch invitation details
         const invitationData = await getInvitationByToken(token);
         
         if (!invitationData) {
@@ -63,7 +61,6 @@ export function CarrierBidResponsePage() {
           return;
         }
 
-        // Mark invitation as opened if it's in pending or delivered state
         if (invitationData.status === 'pending' || invitationData.status === 'delivered') {
           await updateInvitationStatus(invitationData.id, 'opened');
           invitationData.status = 'opened';
@@ -71,11 +68,9 @@ export function CarrierBidResponsePage() {
 
         setInvitation(invitationData);
         
-        // Check if invitation has already been responded to
         const bidId = invitationData.bid_id;
         const carrierId = invitationData.carrier_id;
         
-        // Fetch bid details
         try {
           const { data: bidData } = await supabase
             .from("bids")
@@ -88,17 +83,14 @@ export function CarrierBidResponsePage() {
           console.error("Error fetching bid details:", err);
         }
         
-        // Load routes for this bid
         const routesData = await getRoutesByBid(bidId);
         setRoutes(routesData);
         
-        // Check for existing response
         try {
           const existingResponseData = await getExistingResponse(bidId, carrierId);
           if (existingResponseData) {
             setExistingResponse(existingResponseData);
             
-            // Pre-fill form with existing data
             setFormValues({
               responderName: existingResponseData.responder_name,
               responderEmail: existingResponseData.responder_email,
@@ -146,7 +138,7 @@ export function CarrierBidResponsePage() {
         invitation.carrier_id,
         invitation.id,
         formValues,
-        true // isDraft
+        true
       );
       
       toast({
@@ -170,7 +162,6 @@ export function CarrierBidResponsePage() {
   const handleSubmit = async () => {
     if (!invitation) return;
     
-    // Validate form
     if (!formValues.responderName || !formValues.responderEmail) {
       setError("Please provide your name and email");
       toast({
@@ -181,7 +172,6 @@ export function CarrierBidResponsePage() {
       return;
     }
     
-    // Check if at least one route has a rate
     const hasRouteRates = Object.values(formValues.routeRates).some(
       rate => rate.value !== null && rate.value !== undefined
     );
@@ -205,10 +195,9 @@ export function CarrierBidResponsePage() {
         invitation.carrier_id,
         invitation.id,
         formValues,
-        false // not a draft
+        false
       );
       
-      // Update invitation status to responded
       await updateInvitationStatus(invitation.id, 'responded');
       
       setSuccessMessage("Your bid response has been submitted successfully!");
@@ -228,7 +217,6 @@ export function CarrierBidResponsePage() {
     }
   };
 
-  // Format date for display
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "Not specified";
     try {
@@ -238,7 +226,6 @@ export function CarrierBidResponsePage() {
     }
   };
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
@@ -252,7 +239,6 @@ export function CarrierBidResponsePage() {
     );
   }
 
-  // Error state
   if (error && !invitation) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
@@ -272,7 +258,6 @@ export function CarrierBidResponsePage() {
     );
   }
 
-  // Success state after submission
   if (successMessage) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
@@ -293,7 +278,6 @@ export function CarrierBidResponsePage() {
     );
   }
 
-  // Render form if invitation exists
   return (
     <div className="min-h-screen bg-gray-50 pt-10 pb-20">
       <div className="container mx-auto px-4 max-w-6xl">
@@ -315,7 +299,6 @@ export function CarrierBidResponsePage() {
               </Alert>
             )}
             
-            {/* Bid Details Section */}
             <div className="mb-8">
               <h3 className="text-lg font-medium mb-4">Bid Information</h3>
               
