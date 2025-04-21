@@ -11,6 +11,15 @@ export const submitBidResponse = async (
   isDraft: boolean = false
 ): Promise<BidResponseWithRates> => {
   try {
+    // Get org_id for scoping
+    const { data: bidOrg } = await supabase
+      .from("bids")
+      .select("org_id")
+      .eq("id", bidId)
+      .single();
+    const orgId = bidOrg?.org_id;
+    if (!orgId) throw new Error("Organization ID not found for this bid.");
+
     // First, check for an existing response to get the current version
     let currentVersion = 1;
     const { data: existingResponse } = await supabase
@@ -18,6 +27,7 @@ export const submitBidResponse = async (
       .select("version")
       .eq("bid_id", bidId)
       .eq("carrier_id", carrierId)
+      .eq("organization_id", orgId)
       .order("version", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -42,7 +52,8 @@ export const submitBidResponse = async (
         responder_email: formValues.responderEmail,
         version: currentVersion,
         routes_submitted: routesWithRates,
-        // Add is_draft flag when this feature is needed
+        organization_id: orgId, // ENFORCE ORG SCOPE
+        // Add is_draft flag if needed later
       })
       .select()
       .single();
@@ -61,9 +72,10 @@ export const submitBidResponse = async (
         route_id: routeId,
         response_id: responseData.id,
         value: value.value,
-        currency: "USD" as CurrencyType, // Fixed: Explicitly type as CurrencyType
+        currency: "USD" as CurrencyType,
         comment: value.comment,
-        version: currentVersion
+        version: currentVersion,
+        organization_id: orgId // ENFORCE ORG SCOPE
       }));
 
     if (rateInserts.length > 0) {
@@ -93,7 +105,7 @@ export const submitBidResponse = async (
           acc[routeId] = {
             id: routeId,
             value: value.value,
-            currency: "USD", // Default currency
+            currency: "USD",
             comment: value.comment
           };
         }
@@ -112,12 +124,21 @@ export const getExistingResponse = async (
   carrierId: string
 ): Promise<BidResponseWithRates | null> => {
   try {
+    // Get the bid/org to enforce org filter
+    const { data: bidOrg } = await supabase
+      .from("bids")
+      .select("org_id")
+      .eq("id", bidId)
+      .single();
+    const orgId = bidOrg?.org_id;
+
     // Get the latest response version
     const { data: responseData, error: responseError } = await supabase
       .from("carrier_bid_responses")
       .select("*")
       .eq("bid_id", bidId)
       .eq("carrier_id", carrierId)
+      .eq("organization_id", orgId)
       .order("version", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -135,7 +156,8 @@ export const getExistingResponse = async (
     const { data: ratesData, error: ratesError } = await supabase
       .from("carrier_route_rates")
       .select("*")
-      .eq("response_id", responseData.id);
+      .eq("response_id", responseData.id)
+      .eq("organization_id", orgId);
 
     if (ratesError) {
       console.error("Error fetching route rates:", ratesError);
@@ -163,10 +185,18 @@ export const getExistingResponse = async (
   }
 };
 
-// Get all responses for a specific bid
+// Get all responses for a specific bid and organization
 export const getBidResponses = async (bidId: string) => {
   try {
-    // Get all responses for this bid
+    // Get bid for org_id scoping
+    const { data: bidOrg } = await supabase
+      .from("bids")
+      .select("org_id")
+      .eq("id", bidId)
+      .single();
+    const orgId = bidOrg?.org_id;
+
+    // Get all responses for this bid and org
     const { data: responses, error: responsesError } = await supabase
       .from("carrier_bid_responses")
       .select(`
@@ -182,6 +212,7 @@ export const getBidResponses = async (bidId: string) => {
         carriers(name)
       `)
       .eq("bid_id", bidId)
+      .eq("organization_id", orgId)
       .order("submitted_at", { ascending: false });
 
     if (responsesError) {
@@ -196,10 +227,10 @@ export const getBidResponses = async (bidId: string) => {
   }
 };
 
-// Get full response details including rates for a specific response
+// Get full response details including rates for a specific response, with org filter
 export const getBidResponseDetails = async (responseId: string) => {
   try {
-    // Get the response
+    // Get the response (pull org from parent bid)
     const { data: response, error: responseError } = await supabase
       .from("carrier_bid_responses")
       .select(`
@@ -218,7 +249,8 @@ export const getBidResponseDetails = async (responseId: string) => {
     const { data: rates, error: ratesError } = await supabase
       .from("carrier_route_rates")
       .select("*")
-      .eq("response_id", responseId);
+      .eq("response_id", responseId)
+      .eq("organization_id", response.organization_id);
 
     if (ratesError) {
       console.error("Error fetching route rates:", ratesError);
@@ -235,10 +267,18 @@ export const getBidResponseDetails = async (responseId: string) => {
   }
 };
 
-// Export all responses for a bid to CSV format
+// Export all responses for a bid to CSV format (org scoped, all columns)
 export const exportBidResponses = async (bidId: string, routes: any[]) => {
   try {
-    // Get all responses with carrier info
+    // Get bid for org_id scoping
+    const { data: bidOrg } = await supabase
+      .from("bids")
+      .select("org_id")
+      .eq("id", bidId)
+      .single();
+    const orgId = bidOrg?.org_id;
+
+    // Get all responses with carrier info, org scoped
     const { data: responses, error: responsesError } = await supabase
       .from("carrier_bid_responses")
       .select(`
@@ -248,9 +288,12 @@ export const exportBidResponses = async (bidId: string, routes: any[]) => {
         responder_name,
         responder_email,
         submitted_at,
+        version,
+        routes_submitted,
         carriers(name)
       `)
-      .eq("bid_id", bidId);
+      .eq("bid_id", bidId)
+      .eq("organization_id", orgId);
 
     if (responsesError) {
       console.error("Error fetching responses for export:", responsesError);
@@ -261,7 +304,7 @@ export const exportBidResponses = async (bidId: string, routes: any[]) => {
       return null; // No responses to export
     }
 
-    // Get all rates for all responses
+    // Get all rates for all responses (org scoped)
     const { data: allRates, error: ratesError } = await supabase
       .from("carrier_route_rates")
       .select(`
@@ -275,6 +318,7 @@ export const exportBidResponses = async (bidId: string, routes: any[]) => {
         comment
       `)
       .eq("bid_id", bidId)
+      .eq("organization_id", orgId)
       .in("response_id", responses.map(r => r.id));
 
     if (ratesError) {
@@ -284,30 +328,31 @@ export const exportBidResponses = async (bidId: string, routes: any[]) => {
 
     // Create a flat structure for CSV export
     const exportData = [];
-    
+
     for (const response of responses) {
       const responseRates = allRates?.filter(r => r.response_id === response.id) || [];
-      
+
       // For each route, add a row
       for (const route of routes) {
         const rate = responseRates.find(r => r.route_id === route.id);
-        
+
         exportData.push({
           "Carrier Name": response.carriers?.name || 'Unknown Carrier',
           "Responder Name": response.responder_name,
           "Responder Email": response.responder_email,
-          "Submitted At": new Date(response.submitted_at).toLocaleString(),
+          "Submitted At": response.submitted_at ? new Date(response.submitted_at).toLocaleString() : "",
+          "Version": response.version,
+          "Routes Submitted": response.routes_submitted,
           "Origin": route.origin_city,
           "Destination": route.destination_city,
           "Equipment": route.equipment_type,
           "Commodity": route.commodity,
-          "Rate": rate?.value || "Not provided",
+          "Rate": rate?.value !== undefined && rate?.value !== null ? rate.value : "Not provided",
           "Currency": rate?.currency || "USD",
           "Comments": rate?.comment || ""
         });
       }
     }
-
     return exportData;
   } catch (error: any) {
     console.error("Error in exportBidResponses:", error);

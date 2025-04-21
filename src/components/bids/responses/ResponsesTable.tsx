@@ -35,6 +35,21 @@ export function ResponsesTable({
     setLoading(false);
   };
 
+  if (!responses || responses.length === 0) {
+    return (
+      <div className="w-full">
+        <div className="text-center py-12 text-muted-foreground">
+          <div className="mb-4 text-lg font-medium">No responses have been submitted yet.</div>
+          <div className="mb-2">
+            {routes.length === 0
+              ? "There are currently no routes available for this bid."
+              : "This page will show responses as they are submitted by carriers."}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full overflow-x-auto">
       <Table>
@@ -64,6 +79,9 @@ export function ResponsesTable({
               </TableCell>
               <TableCell>
                 {resp.routes_submitted} / {routes.length}
+                {resp.routes_submitted < routes.length && (
+                  <span className="ml-2 text-xs text-yellow-600 font-medium">(Partial)</span>
+                )}
               </TableCell>
               <TableCell>
                 <Button variant="outline" size="sm" onClick={() => handleViewDetails(resp)}>

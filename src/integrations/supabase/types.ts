@@ -189,6 +189,7 @@ export type Database = {
           carrier_id: string
           id: string
           invitation_id: string
+          organization_id: string
           raw_response_json: Json | null
           responder_email: string
           responder_name: string
@@ -201,6 +202,7 @@ export type Database = {
           carrier_id: string
           id?: string
           invitation_id: string
+          organization_id: string
           raw_response_json?: Json | null
           responder_email: string
           responder_name: string
@@ -213,6 +215,7 @@ export type Database = {
           carrier_id?: string
           id?: string
           invitation_id?: string
+          organization_id?: string
           raw_response_json?: Json | null
           responder_email?: string
           responder_name?: string
@@ -251,6 +254,7 @@ export type Database = {
           comment: string | null
           currency: Database["public"]["Enums"]["currency_type"]
           id: string
+          organization_id: string
           response_id: string
           route_id: string
           submitted_at: string
@@ -263,6 +267,7 @@ export type Database = {
           comment?: string | null
           currency?: Database["public"]["Enums"]["currency_type"]
           id?: string
+          organization_id: string
           response_id: string
           route_id: string
           submitted_at?: string
@@ -275,6 +280,7 @@ export type Database = {
           comment?: string | null
           currency?: Database["public"]["Enums"]["currency_type"]
           id?: string
+          organization_id?: string
           response_id?: string
           route_id?: string
           submitted_at?: string
