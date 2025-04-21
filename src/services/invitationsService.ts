@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { CarrierInvitation, InvitationFormData, CarrierBidResponse, CarrierRouteRate } from "@/types/invitation";
 import { v4 as uuidv4 } from "uuid";
@@ -64,15 +65,26 @@ export const getActiveCarriersForInvitation = async (): Promise<Carrier[]> => {
   }
 };
 
-// Create invitations for carriers
+// Create invitations for carriers (UPDATED: ensures organization_id is set)
 export const createBidInvitations = async (
   bidId: string, 
   invitationData: InvitationFormData
 ): Promise<CarrierInvitation[]> => {
   try {
+    // Get bid details to obtain org_id
+    const { data: bidData, error: bidError } = await supabase
+      .from("bids")
+      .select("org_id")
+      .eq("id", bidId)
+      .single();
+
+    if (bidError || !bidData?.org_id) {
+      throw new Error("Failed to fetch bid or organization for invitation.");
+    }
+    const organization_id = bidData.org_id;
+
     // Get user information
     const { data: userData } = await supabase.auth.getUser();
-    
     if (!userData?.user) {
       throw new Error("You must be logged in to create invitations");
     }
@@ -86,7 +98,8 @@ export const createBidInvitations = async (
       custom_message: invitationData.custom_message,
       delivery_channels: invitationData.delivery_channels,
       delivery_status: {}, // Will be populated after delivery attempts
-      created_by: userData.user.id
+      created_by: userData.user.id,
+      organization_id // Ensure organization_id is set
     }));
     
     const { data, error } = await supabase

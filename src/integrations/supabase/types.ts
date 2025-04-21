@@ -58,6 +58,7 @@ export type Database = {
           delivery_status: Json
           id: string
           invited_at: string
+          organization_id: string
           responded_at: string | null
           revoked_at: string | null
           status: Database["public"]["Enums"]["invitation_status"]
@@ -72,6 +73,7 @@ export type Database = {
           delivery_status?: Json
           id?: string
           invited_at?: string
+          organization_id: string
           responded_at?: string | null
           revoked_at?: string | null
           status?: Database["public"]["Enums"]["invitation_status"]
@@ -86,6 +88,7 @@ export type Database = {
           delivery_status?: Json
           id?: string
           invited_at?: string
+          organization_id?: string
           responded_at?: string | null
           revoked_at?: string | null
           status?: Database["public"]["Enums"]["invitation_status"]
@@ -111,6 +114,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bid_carrier_invitations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]

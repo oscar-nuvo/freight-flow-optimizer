@@ -62,6 +62,11 @@ export function CarrierBidResponsePage() {
           return;
         }
 
+        // Debug: Log the invitation including organization_id
+        // prettier-ignore
+        // eslint-disable-next-line
+        console.log("Loaded invitation:", invitationData);
+
         if (invitationData.status === 'pending' || invitationData.status === 'delivered') {
           await updateInvitationStatus(invitationData.id, 'opened');
           invitationData.status = 'opened';
@@ -72,8 +77,12 @@ export function CarrierBidResponsePage() {
         const bidId = invitationData.bid_id;
         const carrierId = invitationData.carrier_id;
 
+        // Debug: Output ids and org check
+        // prettier-ignore
+        // eslint-disable-next-line
+        console.log("Fetching bid details for id:", bidId, "for invitation:", invitationData.id, "organization_id:", invitationData.organization_id);
+
         try {
-          // Get bid details - we need this first for the org_id
           const { data: bidData, error: bidError } = await supabase
             .from("bids")
             .select("*")
@@ -92,7 +101,14 @@ export function CarrierBidResponsePage() {
             setIsLoading(false);
             return;
           }
-          
+
+          // Debug: Organization consistency check
+          if (invitationData.organization_id !== bidData.org_id) {
+            console.error("Invitation/bid org mismatch!",
+              invitationData.organization_id, "!=", bidData.org_id
+            );
+          }
+
           setBidDetails(bidData);
           
           // Now fetch routes with the validated bid ID

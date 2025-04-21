@@ -28,6 +28,7 @@ export interface CarrierInvitation {
   delivery_channels: DeliveryChannel[];
   delivery_status: DeliveryStatus;
   created_by: string;
+  organization_id: string; // NEW: reflects DB schema and migration
 }
 
 export interface CarrierBidResponse {
