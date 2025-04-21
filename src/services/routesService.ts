@@ -1,4 +1,19 @@
 
+/**
+ * @file Routes Service
+ * 
+ * TODO: [PRIORITY HIGH] Fix RLS policy configuration for routes display
+ * When RLS is enabled on route_bids and carrier_bid_responses tables, routes are not 
+ * displaying correctly. This is likely due to a policy configuration issue that's 
+ * preventing proper data access. Need to review RLS policies for routes, route_bids,
+ * and carrier_bid_responses tables to ensure they work together correctly.
+ * 
+ * Specific issues:
+ * - Routes not showing when route_bids table has RLS enabled
+ * - Carrier response pages may not display correct routes
+ * - Potential policy conflict between tables
+ */
+
 import { supabase } from "@/integrations/supabase/client";
 import { Route, RouteFormValues, RouteFilters, EquipmentType } from "@/types/route";
 
