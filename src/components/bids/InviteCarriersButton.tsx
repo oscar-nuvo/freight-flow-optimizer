@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { BidInvitationModal } from "./invitations/BidInvitationModal";
@@ -24,8 +23,8 @@ export function InviteCarriersButton({
 }: InviteCarriersButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Only published bids with routes can have carriers invited
-  const canInvite = status === "published" && hasRoutes;
+  // Enable for published or active bids with at least one route
+  const canInvite = (status === "published" || status === "active") && hasRoutes;
 
   return (
     <>
@@ -52,7 +51,7 @@ export function InviteCarriersButton({
           <TooltipContent>
             {!canInvite && (
               <>
-                {status !== "published" && "Bid must be published. "}
+                {(status !== "published" && status !== "active") && "Bid must be published or active. "}
                 {!hasRoutes && "Bid must have at least one route. "}
               </>
             )}
