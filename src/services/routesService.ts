@@ -61,14 +61,22 @@ export const getRoutesByBid = async (bidId: string) => {
     }
 
     // Only return associated routes that are not soft deleted (is_deleted: false)
-    const routes = data
+    const rawRoutes = data
       .map(item => item.routes)
       .filter(route => !!route && route.is_deleted === false);
 
     // Defensive log and cast
-    if (!Array.isArray(routes)) {
+    if (!Array.isArray(rawRoutes)) {
       throw new Error("[getRoutesByBid] Non-array routes result!");
     }
+
+    // Map the API response to properly typed Route objects
+    const routes: Route[] = rawRoutes.map(route => ({
+      ...route,
+      // Cast the equipment_type to a valid EquipmentType enum
+      equipment_type: mapToEquipmentType(route.equipment_type)
+    }));
+    
     console.log(`[getRoutesByBid] Returning ${routes.length} route(s) for bid`, bidId);
     return routes;
   } catch (err) {
@@ -76,6 +84,24 @@ export const getRoutesByBid = async (bidId: string) => {
     throw err;
   }
 };
+
+// Helper function to map string equipment types to the EquipmentType enum
+function mapToEquipmentType(equipmentType: string): EquipmentType {
+  // Normalize the string for comparison
+  const normalizedType = equipmentType.toLowerCase().trim();
+  
+  if (normalizedType.includes('dry') || normalizedType.includes('van')) {
+    return 'Dry Van';
+  } else if (normalizedType.includes('reefer')) {
+    return 'Reefer';
+  } else if (normalizedType.includes('flat') || normalizedType.includes('bed')) {
+    return 'Flatbed';
+  }
+  
+  // Default to Dry Van if no match is found
+  console.warn(`[mapToEquipmentType] Unknown equipment type: ${equipmentType}, defaulting to 'Dry Van'`);
+  return 'Dry Van';
+}
 
 export const createRoute = async (values: RouteFormValues) => {
   // Get the user's organization ID and add it to the route data
