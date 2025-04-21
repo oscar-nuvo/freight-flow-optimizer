@@ -118,7 +118,7 @@ export const getInvitationByToken = async (token: string): Promise<CarrierInvita
       .from("bid_carrier_invitations")
       .select(`
         *,
-        bids(org_id)
+        bids!bid_id(id, org_id)
       `)
       .eq("token", token)
       .maybeSingle();
@@ -132,14 +132,19 @@ export const getInvitationByToken = async (token: string): Promise<CarrierInvita
       console.warn("[getInvitationByToken] No invitation found for token:", token);
       return null;
     }
-    
-    // Validate that the related bid exists and is valid
-    if (!data.bids?.org_id) {
-      console.error("[getInvitationByToken] Invalid related bid (no org_id):", data.bid_id);
+
+    // Defensive: If 'bids' is null, that means the related bid was deleted or is missing
+    if (!data.bids || !data.bids.org_id) {
+      console.error(
+        "[getInvitationByToken] No valid related bid found for bid_id:",
+        data.bid_id,
+        "in invitation with id:",
+        data.id
+      );
       return null;
     }
     
-    // Return only the invitation data without the bids relation
+    // Remove the joined 'bids' data when returning
     const { bids, ...invitationData } = data;
     return invitationData as CarrierInvitation;
   } catch (error) {
