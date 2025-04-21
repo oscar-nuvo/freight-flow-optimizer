@@ -39,7 +39,7 @@ describe("CarrierBidResponsePage", () => {
       organization_id: "org-123"  // Added field
     };
 
-    // Mock routes data
+    // Mock routes data with mandatory route_bids array included
     const mockRoutes: RouteType[] = [
       {
         id: "route-1",
@@ -123,7 +123,7 @@ describe("CarrierBidResponsePage", () => {
       organization_id: "org-123"  // Added field
     };
 
-    // Mock routes data
+    // Mock routes data with mandatory route_bids included
     const mockRoutes: RouteType[] = [
       {
         id: "route-1",
@@ -184,4 +184,3 @@ describe("CarrierBidResponsePage", () => {
     expect(screen.getByDisplayValue("John Doe")).toBeInTheDocument();
   });
 });
-
