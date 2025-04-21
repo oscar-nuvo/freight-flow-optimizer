@@ -13,7 +13,7 @@ export interface Route {
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
-  route_bids?: { bid_id: string }[];
+  route_bids: { bid_id: string }[]; // Changed from optional to required
 }
 
 export interface RouteFormValues {

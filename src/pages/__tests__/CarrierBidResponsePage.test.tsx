@@ -36,7 +36,7 @@ describe("CarrierBidResponsePage", () => {
       delivery_channels: ['email'],
       delivery_status: {},
       created_by: "user-123",
-      organization_id: "org-123"  // Added field
+      organization_id: "org-123"
     };
 
     // Mock routes data with mandatory route_bids array included
@@ -120,7 +120,7 @@ describe("CarrierBidResponsePage", () => {
       delivery_channels: ['email'],
       delivery_status: {},
       created_by: "user-123",
-      organization_id: "org-123"  // Added field
+      organization_id: "org-123"
     };
 
     // Mock routes data with mandatory route_bids included
