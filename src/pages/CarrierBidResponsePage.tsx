@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
@@ -62,24 +61,13 @@ export function CarrierBidResponsePage() {
           return;
         }
 
-        // Debug: Log the invitation including organization_id
-        // prettier-ignore
-        // eslint-disable-next-line
         console.log("Loaded invitation:", invitationData);
-
-        if (invitationData.status === 'pending' || invitationData.status === 'delivered') {
-          await updateInvitationStatus(invitationData.id, 'opened');
-          invitationData.status = 'opened';
-        }
 
         setInvitation(invitationData);
 
         const bidId = invitationData.bid_id;
         const carrierId = invitationData.carrier_id;
 
-        // Debug: Output ids and org check
-        // prettier-ignore
-        // eslint-disable-next-line
         console.log("Fetching bid details for id:", bidId, "for invitation:", invitationData.id, "organization_id:", invitationData.organization_id);
 
         try {
@@ -102,16 +90,18 @@ export function CarrierBidResponsePage() {
             return;
           }
 
-          // Debug: Organization consistency check
-          if (invitationData.organization_id !== bidData.org_id) {
-            console.error("Invitation/bid org mismatch!",
-              invitationData.organization_id, "!=", bidData.org_id
-            );
+          if (invitationData.status === 'pending' || invitationData.status === 'delivered') {
+            await updateInvitationStatus(invitationData.id, 'opened');
+            setInvitation(prev => {
+              if (prev) {
+                return { ...prev, status: 'opened' };
+              }
+              return prev;
+            });
           }
 
           setBidDetails(bidData);
           
-          // Now fetch routes with the validated bid ID
           const routesData = await getRoutesByBid(bidId);
           
           if (!Array.isArray(routesData)) {
@@ -128,7 +118,6 @@ export function CarrierBidResponsePage() {
           }
 
           try {
-            // With valid bid_id and carrier_id, try to get existing response
             if (bidData.org_id) {
               const existingResponseData = await getExistingResponse(bidId, carrierId);
               if (existingResponseData) {
@@ -238,7 +227,7 @@ export function CarrierBidResponsePage() {
     setError(null);
     
     try {
-      await submitBidResponse(
+      const response = await submitBidResponse(
         invitation.bid_id,
         invitation.carrier_id,
         invitation.id,
@@ -246,7 +235,12 @@ export function CarrierBidResponsePage() {
         false
       );
       
-      await updateInvitationStatus(invitation.id, 'responded');
+      try {
+        await updateInvitationStatus(invitation.id, 'responded');
+        setInvitation(prev => prev ? { ...prev, status: 'responded' } : null);
+      } catch (statusError: any) {
+        console.warn("Could not update invitation status, but the response was saved:", statusError.message);
+      }
       
       setSuccessMessage("Your bid response has been submitted successfully!");
       toast({

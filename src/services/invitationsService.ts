@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { CarrierInvitation, InvitationFormData, CarrierBidResponse, CarrierRouteRate } from "@/types/invitation";
 import { v4 as uuidv4 } from "uuid";
@@ -182,13 +183,15 @@ export const getInvitationByToken = async (token: string): Promise<CarrierInvita
   }
 };
 
-// Update invitation status
+// Update invitation status - FIXED for public access
 export const updateInvitationStatus = async (
   invitationId: string,
   status: 'delivered' | 'opened' | 'responded' | 'revoked',
   additionalData?: Partial<CarrierInvitation>
 ): Promise<CarrierInvitation> => {
   try {
+    console.log(`[updateInvitationStatus] Updating invitation ${invitationId} to status: ${status}`);
+    
     const updates: any = { status };
     
     if (status === 'responded') {
@@ -200,18 +203,27 @@ export const updateInvitationStatus = async (
     if (additionalData) {
       Object.assign(updates, additionalData);
     }
-    
+
+    // Don't use .single() as it causes errors when no rows match
+    // Instead use maybeSingle() which doesn't throw when no rows found
     const { data, error } = await supabase
       .from("bid_carrier_invitations")
       .update(updates)
       .eq("id", invitationId)
       .select()
-      .single();
+      .maybeSingle();
       
     if (error) {
       console.error("[updateInvitationStatus] Error updating invitation:", error);
       throw error;
     }
+    
+    if (!data) {
+      console.error(`[updateInvitationStatus] No invitation found with ID: ${invitationId}`);
+      throw new Error(`Invitation not found or cannot be updated: ${invitationId}`);
+    }
+
+    console.log(`[updateInvitationStatus] Successfully updated invitation:`, data);
     
     return data as CarrierInvitation;
   } catch (error) {
