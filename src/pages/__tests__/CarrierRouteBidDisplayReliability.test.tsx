@@ -35,7 +35,8 @@ describe("Carrier Bid Response route display reliability", () => {
       invited_at: "2024-06-05T00:00:00.000Z",
       delivery_channels: ['email'],
       delivery_status: {},
-      created_by: "user-x"
+      created_by: "user-x",
+      organization_id: "org-xyz"  // Added missing field
     };
     // Mix: 2 associated, 1 soft-deleted, 1 orphaned
     const mockRoutes: RouteType[] = [
@@ -103,6 +104,7 @@ describe("Carrier Bid Response route display reliability", () => {
       delivery_channels: ['email'],
       delivery_status: {},
       created_by: "user-z",
+      organization_id: "org-empty"  // Added missing field
     };
     vi.mocked(invitationsService.getInvitationByToken).mockResolvedValue(mockInvitation);
     vi.mocked(routesService.getRoutesByBid).mockResolvedValue([]);

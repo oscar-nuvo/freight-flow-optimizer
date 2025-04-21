@@ -25,7 +25,7 @@ describe("CarrierBidResponsePage", () => {
   });
 
   it("should display routes and form when invitation is valid", async () => {
-    // Mock invitation data
+    // Mock invitation data - Added missing organization_id field for type compliance
     const mockInvitation: CarrierInvitation = {
       id: "inv-123",
       bid_id: "bid-123",
@@ -35,7 +35,8 @@ describe("CarrierBidResponsePage", () => {
       invited_at: "2023-06-01T00:00:00.000Z",
       delivery_channels: ['email'],
       delivery_status: {},
-      created_by: "user-123"
+      created_by: "user-123",
+      organization_id: "org-123"  // Added field
     };
 
     // Mock routes data
@@ -108,7 +109,7 @@ describe("CarrierBidResponsePage", () => {
   });
 
   it("should pre-fill form when there's an existing response", async () => {
-    // Mock invitation data
+    // Mock invitation data - Added missing organization_id field for type compliance
     const mockInvitation: CarrierInvitation = {
       id: "inv-123",
       bid_id: "bid-123",
@@ -118,7 +119,8 @@ describe("CarrierBidResponsePage", () => {
       invited_at: "2023-06-01T00:00:00.000Z",
       delivery_channels: ['email'],
       delivery_status: {},
-      created_by: "user-123"
+      created_by: "user-123",
+      organization_id: "org-123"  // Added field
     };
 
     // Mock routes data
@@ -182,3 +184,4 @@ describe("CarrierBidResponsePage", () => {
     expect(screen.getByDisplayValue("John Doe")).toBeInTheDocument();
   });
 });
+
