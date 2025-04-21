@@ -1,16 +1,19 @@
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { ResponseDetailsDrawer } from "./ResponseDetailsDrawer";
 import { getBidResponseDetails } from "@/services/bidResponsesService";
 import { Route } from "@/types/route";
+import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext, PaginationLink } from "@/components/ui/pagination";
 
 interface ResponsesTableProps {
   responses: any[];
   routes: Route[];
   currency: string;
 }
+
+const PAGE_SIZE = 10;
 
 export function ResponsesTable({
   responses,
@@ -21,6 +24,18 @@ export function ResponsesTable({
   const [selectedResponse, setSelectedResponse] = useState<any | null>(null);
   const [details, setDetails] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Calculate page count
+  const pageCount = Math.max(1, Math.ceil(responses.length / PAGE_SIZE));
+
+  // Paginated responses for current page
+  const paginatedResponses = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return responses.slice(start, start + PAGE_SIZE);
+  }, [responses, currentPage]);
 
   const handleViewDetails = async (response: any) => {
     setSelectedResponse(response);
@@ -63,7 +78,7 @@ export function ResponsesTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {responses.map((resp) => (
+          {paginatedResponses.map((resp) => (
             <TableRow key={resp.id}>
               <TableCell>{resp.carriers?.name ?? "Unknown Carrier"}</TableCell>
               <TableCell>
@@ -92,6 +107,48 @@ export function ResponsesTable({
           ))}
         </TableBody>
       </Table>
+
+      {/* Pagination */}
+      <div className="flex justify-end mt-4">
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href="#"
+                onClick={e => {
+                  e.preventDefault();
+                  setCurrentPage(prev => Math.max(1, prev - 1));
+                }}
+                className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+              />
+            </PaginationItem>
+            {Array.from({ length: pageCount }, (_, i) => (
+              <PaginationItem key={i}>
+                <PaginationLink
+                  href="#"
+                  isActive={currentPage === i + 1}
+                  onClick={e => {
+                    e.preventDefault();
+                    setCurrentPage(i + 1);
+                  }}
+                >
+                  {i + 1}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationNext
+                href="#"
+                onClick={e => {
+                  e.preventDefault();
+                  setCurrentPage(prev => Math.min(pageCount, prev + 1));
+                }}
+                className={currentPage === pageCount ? "pointer-events-none opacity-50" : ""}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </div>
 
       <ResponseDetailsDrawer
         open={openDrawer}
