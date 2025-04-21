@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
@@ -72,41 +73,64 @@ export function CarrierBidResponsePage() {
         const carrierId = invitationData.carrier_id;
 
         try {
-          const { data: bidData } = await supabase
+          // Get bid details - we need this first for the org_id
+          const { data: bidData, error: bidError } = await supabase
             .from("bids")
             .select("*")
             .eq("id", bidId)
             .single();
-          setBidDetails(bidData);
-        } catch (err) {
-          console.error("Error fetching bid details:", err);
-        }
-
-        const routesData = await getRoutesByBid(bidId);
-        setRoutes(routesData);
-
-        if (!Array.isArray(routesData)) {
-          setError("Failed to load bid routes (invalid result)");
-          setRoutes([]);
-          setIsLoading(false);
-          return;
-        }
-        if (routesData.length === 0) {
-          setError("No routes are currently associated with this bid.");
-        }
-
-        try {
-          const existingResponseData = await getExistingResponse(bidId, carrierId);
-          if (existingResponseData) {
-            setExistingResponse(existingResponseData);
-            setFormValues({
-              responderName: existingResponseData.responder_name,
-              responderEmail: existingResponseData.responder_email,
-              routeRates: existingResponseData.rates || {}
-            });
+            
+          if (bidError) {
+            console.error("Error fetching bid details:", bidError);
+            setError(`Failed to retrieve bid information: ${bidError.message}`);
+            setIsLoading(false);
+            return;
           }
-        } catch (err) {
-          console.log("No existing response found, starting fresh");
+          
+          if (!bidData) {
+            setError("Bid not found");
+            setIsLoading(false);
+            return;
+          }
+          
+          setBidDetails(bidData);
+          
+          // Now fetch routes with the validated bid ID
+          const routesData = await getRoutesByBid(bidId);
+          
+          if (!Array.isArray(routesData)) {
+            setError("Failed to load bid routes (invalid result)");
+            setRoutes([]);
+            setIsLoading(false);
+            return;
+          }
+          
+          setRoutes(routesData);
+          
+          if (routesData.length === 0) {
+            setError("No routes are currently associated with this bid.");
+          }
+
+          try {
+            // With valid bid_id and carrier_id, try to get existing response
+            if (bidData.org_id) {
+              const existingResponseData = await getExistingResponse(bidId, carrierId);
+              if (existingResponseData) {
+                setExistingResponse(existingResponseData);
+                setFormValues({
+                  responderName: existingResponseData.responder_name,
+                  responderEmail: existingResponseData.responder_email,
+                  routeRates: existingResponseData.rates || {}
+                });
+              }
+            }
+          } catch (err) {
+            console.log("No existing response found, starting fresh");
+          }
+        } catch (err: any) {
+          console.error("Error loading bid data:", err);
+          setError(err.message || "Failed to load bid details");
+          setIsLoading(false);
         }
       } catch (err: any) {
         console.error("Error loading invitation data:", err);

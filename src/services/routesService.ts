@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Route, RouteFormValues, RouteFilters, EquipmentType } from "@/types/route";
 
@@ -41,7 +42,24 @@ export const getRoutesByBid = async (bidId: string) => {
   console.log("[getRoutesByBid] Fetching routes for bid:", bidId);
 
   try {
-    // Get all route-bid associations for this bid, along with joined route data
+    // First, get the bid's organization ID for security filtering
+    const { data: bidData, error: bidError } = await supabase
+      .from("bids")
+      .select("org_id")
+      .eq("id", bidId)
+      .single();
+
+    if (bidError) {
+      console.error("[getRoutesByBid] Error fetching bid info:", bidError);
+      throw new Error(`Failed to validate bid: ${bidError.message}`);
+    }
+
+    if (!bidData || !bidData.org_id) {
+      console.error("[getRoutesByBid] Invalid bid or missing organization_id");
+      throw new Error("Invalid bid reference");
+    }
+
+    // With org_id in hand, get all route-bid associations for this bid
     const { data, error } = await supabase
       .from("route_bids")
       .select(`
@@ -57,7 +75,7 @@ export const getRoutesByBid = async (bidId: string) => {
 
     if (error) {
       console.error("[getRoutesByBid] Error fetching route_bids:", error);
-      throw error;
+      throw new Error(`Failed to retrieve routes: ${error.message}`);
     }
 
     if (!data || data.length === 0) {

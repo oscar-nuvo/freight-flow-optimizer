@@ -12,6 +12,16 @@ describe("getRoutesByBid", () => {
   });
 
   it("returns filtered, mapped, not-deleted routes for a bid", async () => {
+    // Mock the bid org_id lookup first
+    vi.spyOn(supabase, "from").mockImplementationOnce(() => ({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: { org_id: "orgA" },
+        error: null
+      })
+    } as any));
+    
     const mockData = [
       {
         routes: {
@@ -46,97 +56,77 @@ describe("getRoutesByBid", () => {
         }
       }
     ];
-    vi.mocked(supabase.from as any).mockReturnValue({
+
+    // Mock the route_bids query
+    vi.spyOn(supabase, "from").mockImplementationOnce(() => ({
       select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      // Only the first is not-deleted
-      then: undefined,
-      data: mockData,
-      error: null
-    });
-    // Patch supabase.from().select().eq().data, error return
-    (supabase.from as any).mockReturnValueOnce({
-      select: () => ({
-        eq: () => ({
-          data: mockData,
-          error: null,
-        }),
-      }),
-    });
-    // Override select().eq() directly for test logic
-    (supabase.from as any) = () => ({
-      select: () => ({
-        eq: () => ({
-          data: mockData,
-          error: null
-        })
+      eq: vi.fn().mockResolvedValue({
+        data: mockData,
+        error: null
       })
-    });
-    // Instead, just mock out the actual function
-    vi.spyOn(supabase, "from").mockReturnValue({
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      data: mockData,
-      error: null
-    } as any);
+    } as any));
 
     // Now call the function and check output
     const bidId = "bid1";
-    // Instead of relying on .then/.data, use mockResolvedValue for full control
-    vi.spyOn(routesService, "getRoutesByBid").mockResolvedValue([
-      {
-        id: "route-1",
-        is_deleted: false,
-        origin_city: "Dallas",
-        destination_city: "Houston",
-        equipment_type: "Reefer",
-        commodity: "Flowers",
-        weekly_volume: 4,
-        distance: 240,
-        organization_id: "orgA",
-        created_at: "2024-06-12T12:10:00Z",
-        updated_at: "2024-06-12T12:10:00Z",
-        route_bids: [{ bid_id: "bid1" }]
-      }
-    ] as Route[]);
-
     const routes = await routesService.getRoutesByBid(bidId);
+    
     expect(Array.isArray(routes)).toBe(true);
     expect(routes.length).toBe(1);
+    expect(routes[0].id).toBe("route-1");
     expect(routes[0].equipment_type).toBe("Reefer");
     expect(routes[0].origin_city).toBe("Dallas");
     expect(routes[0].route_bids?.length).toBe(1);
   });
 
   it("returns empty array if no data present", async () => {
-    vi.spyOn(supabase, "from").mockReturnValue({
+    // Mock the bid org_id lookup
+    vi.spyOn(supabase, "from").mockImplementationOnce(() => ({
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      data: [],
-      error: null
-    } as any);
-
-    vi.spyOn(routesService, "getRoutesByBid").mockResolvedValue([]);
+      single: vi.fn().mockResolvedValue({
+        data: { org_id: "orgA" },
+        error: null
+      })
+    } as any));
+    
+    // Mock empty route_bids response
+    vi.spyOn(supabase, "from").mockImplementationOnce(() => ({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockResolvedValue({
+        data: [],
+        error: null
+      })
+    } as any));
 
     const routes = await routesService.getRoutesByBid("non-existent");
     expect(routes).toEqual([]);
   });
 
   it("throws with error if supabase returns error", async () => {
-    const fakeError = { message: "Supabase error", code: "400" };
-    vi.spyOn(supabase, "from").mockReturnValue({
+    // Mock bid org_id lookup error
+    vi.spyOn(supabase, "from").mockImplementationOnce(() => ({
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      error: fakeError,
-      data: null
-    } as any);
+      single: vi.fn().mockResolvedValue({
+        data: null,
+        error: { message: "Supabase error", code: "400" }
+      })
+    } as any));
 
-    // remove mockResolvedValue so it will throw as expected
-    vi.restoreAllMocks();
-    await expect(routesService.getRoutesByBid("fail-bid")).rejects.toThrow("Supabase error");
+    await expect(routesService.getRoutesByBid("fail-bid")).rejects.toThrow("Failed to validate bid");
   });
 
   it("handles and logs invalid or unknown equipment_type gracefully", async () => {
+    // Mock the bid org_id lookup
+    vi.spyOn(supabase, "from").mockImplementationOnce(() => ({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: { org_id: "orgA" },
+        error: null
+      })
+    } as any));
+    
     const mockData = [
       {
         routes: {
@@ -155,29 +145,15 @@ describe("getRoutesByBid", () => {
         }
       }
     ];
-    vi.spyOn(supabase, "from").mockReturnValue({
+    
+    // Mock route_bids with unknown equipment_type
+    vi.spyOn(supabase, "from").mockImplementationOnce(() => ({
       select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      data: mockData,
-      error: null
-    } as any);
-
-    vi.spyOn(routesService, "getRoutesByBid").mockResolvedValue([
-      {
-        id: "r-unknown",
-        is_deleted: false,
-        equipment_type: "Dry Van",
-        origin_city: "X",
-        destination_city: "Y",
-        commodity: "frozen pizza",
-        weekly_volume: 1,
-        distance: 999,
-        organization_id: "org-unknown",
-        created_at: "",
-        updated_at: "",
-        route_bids: [{ bid_id: "b" }]
-      }
-    ] as Route[]);
+      eq: vi.fn().mockResolvedValue({
+        data: mockData,
+        error: null
+      })
+    } as any));
 
     const routes = await routesService.getRoutesByBid("b");
     expect(routes.length).toBe(1);

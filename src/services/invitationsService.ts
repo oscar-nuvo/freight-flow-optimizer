@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { CarrierInvitation, InvitationFormData, CarrierBidResponse, CarrierRouteRate } from "@/types/invitation";
 import { v4 as uuidv4 } from "uuid";
@@ -110,20 +109,41 @@ export const createBidInvitations = async (
 // Get invitation by token
 export const getInvitationByToken = async (token: string): Promise<CarrierInvitation | null> => {
   try {
+    if (!token || typeof token !== 'string') {
+      console.error("[getInvitationByToken] Invalid token format:", token);
+      return null;
+    }
+    
     const { data, error } = await supabase
       .from("bid_carrier_invitations")
-      .select("*")
+      .select(`
+        *,
+        bids(org_id)
+      `)
       .eq("token", token)
       .maybeSingle();
       
     if (error) {
-      console.error("Error fetching invitation by token:", error);
+      console.error("[getInvitationByToken] Error fetching invitation:", error);
       throw error;
     }
     
-    return data as CarrierInvitation;
+    if (!data) {
+      console.warn("[getInvitationByToken] No invitation found for token:", token);
+      return null;
+    }
+    
+    // Validate that the related bid exists and is valid
+    if (!data.bids?.org_id) {
+      console.error("[getInvitationByToken] Invalid related bid (no org_id):", data.bid_id);
+      return null;
+    }
+    
+    // Return only the invitation data without the bids relation
+    const { bids, ...invitationData } = data;
+    return invitationData as CarrierInvitation;
   } catch (error) {
-    console.error("Error in getInvitationByToken:", error);
+    console.error("[getInvitationByToken] Exception:", error);
     return null;
   }
 };
@@ -155,13 +175,13 @@ export const updateInvitationStatus = async (
       .single();
       
     if (error) {
-      console.error("Error updating invitation status:", error);
+      console.error("[updateInvitationStatus] Error updating invitation:", error);
       throw error;
     }
     
     return data as CarrierInvitation;
   } catch (error) {
-    console.error("Error in updateInvitationStatus:", error);
+    console.error("[updateInvitationStatus] Exception:", error);
     throw error;
   }
 };

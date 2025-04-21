@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { BidResponseFormValues, BidResponseSubmission, BidResponseWithRates, RouteRateSubmission } from "@/types/bidResponse";
 import { CurrencyType } from "@/types/invitation";
@@ -125,12 +126,23 @@ export const getExistingResponse = async (
 ): Promise<BidResponseWithRates | null> => {
   try {
     // Get the bid/org to enforce org filter
-    const { data: bidOrg } = await supabase
+    const { data: bidOrg, error: bidOrgError } = await supabase
       .from("bids")
       .select("org_id")
       .eq("id", bidId)
       .single();
+      
+    if (bidOrgError) {
+      console.error("Error fetching bid organization:", bidOrgError);
+      throw new Error(`Unable to validate bid: ${bidOrgError.message}`);
+    }
+    
     const orgId = bidOrg?.org_id;
+    
+    if (!orgId) {
+      console.error("No organization ID found for bid:", bidId);
+      throw new Error("Invalid bid reference");
+    }
 
     // Get the latest response version
     const { data: responseData, error: responseError } = await supabase
