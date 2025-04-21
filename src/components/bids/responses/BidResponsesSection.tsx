@@ -6,6 +6,7 @@ import { Download } from "lucide-react";
 import { BidResponsesHeader } from './BidResponsesHeader';
 import { ResponsesTable } from './ResponsesTable';
 import { getBidResponses, exportBidResponses } from '@/services/bidResponsesService';
+import { getBidInvitationsCount } from '@/services/bidCarriersService';
 import { Route } from "@/types/route";
 import { useToast } from "@/hooks/use-toast";
 
@@ -25,6 +26,7 @@ export function BidResponsesSection({
   const [responses, setResponses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [actualInvitationsCount, setActualInvitationsCount] = useState(invitationsCount);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -45,8 +47,18 @@ export function BidResponsesSection({
       }
     };
 
+    const fetchInvitationsCount = async () => {
+      try {
+        const count = await getBidInvitationsCount(bidId);
+        setActualInvitationsCount(count);
+      } catch (error) {
+        console.error("Error fetching invitations count:", error);
+      }
+    };
+
     if (bidId) {
       fetchResponses();
+      fetchInvitationsCount();
     }
   }, [bidId, toast]);
 
@@ -120,7 +132,7 @@ export function BidResponsesSection({
       
       <BidResponsesHeader 
         respondedCount={responses.length} 
-        totalInvited={invitationsCount} 
+        totalInvited={actualInvitationsCount} 
       />
       
       <Card>
@@ -138,7 +150,7 @@ export function BidResponsesSection({
           ) : (
             <ResponsesTable 
               responses={responses} 
-              totalInvited={invitationsCount}
+              totalInvited={actualInvitationsCount}
               routes={routes}
               currency={currency}
             />
@@ -148,4 +160,3 @@ export function BidResponsesSection({
     </div>
   );
 }
-
