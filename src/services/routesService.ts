@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Route, RouteFormValues, RouteFilters, EquipmentType } from "@/types/route";
 
@@ -38,36 +37,42 @@ export const getRoutes = async (filters?: RouteFilters) => {
 };
 
 export const getRoutesByBid = async (bidId: string) => {
-  console.log("Fetching routes for bid:", bidId);
+  // Enhanced reliability: Always fetch all associated and not-deleted routes for this bid
+  console.log("[getRoutesByBid] Fetching routes for bid:", bidId);
   
   try {
+    // Get all route-bid associations for this bid
     const { data, error } = await supabase
       .from("route_bids")
       .select(`
         route_id,
-        routes (*)
+        routes!route_id (*)
       `)
-      .eq('bid_id', bidId);
+      .eq("bid_id", bidId);
 
     if (error) {
-      console.error("Error fetching routes by bid:", error);
+      console.error("[getRoutesByBid] Error fetching route_bids:", error);
       throw error;
     }
 
     if (!data || data.length === 0) {
-      console.log("No routes found for bid:", bidId);
+      console.log("[getRoutesByBid] No routes associated with bid:", bidId);
       return [];
     }
 
-    // Extract ONLY routes that are not soft deleted
+    // Only return associated routes that are not soft deleted (is_deleted: false)
     const routes = data
       .map(item => item.routes)
-      .filter(route => route && route.is_deleted === false) as Route[];
+      .filter(route => !!route && route.is_deleted === false);
 
-    console.log("Routes fetched for bid (not deleted):", routes);
+    // Defensive log and cast
+    if (!Array.isArray(routes)) {
+      throw new Error("[getRoutesByBid] Non-array routes result!");
+    }
+    console.log(`[getRoutesByBid] Returning ${routes.length} route(s) for bid`, bidId);
     return routes;
   } catch (err) {
-    console.error("Exception fetching routes by bid:", err);
+    console.error("[getRoutesByBid] Exception:", err);
     throw err;
   }
 };

@@ -54,7 +54,7 @@ export function CarrierBidResponsePage() {
 
       try {
         const invitationData = await getInvitationByToken(token);
-        
+
         if (!invitationData) {
           setError("Invalid or expired invitation token");
           setIsLoading(false);
@@ -67,30 +67,38 @@ export function CarrierBidResponsePage() {
         }
 
         setInvitation(invitationData);
-        
+
         const bidId = invitationData.bid_id;
         const carrierId = invitationData.carrier_id;
-        
+
         try {
           const { data: bidData } = await supabase
             .from("bids")
             .select("*")
             .eq("id", bidId)
             .single();
-          
           setBidDetails(bidData);
         } catch (err) {
           console.error("Error fetching bid details:", err);
         }
-        
+
         const routesData = await getRoutesByBid(bidId);
         setRoutes(routesData);
-        
+
+        if (!Array.isArray(routesData)) {
+          setError("Failed to load bid routes (invalid result)");
+          setRoutes([]);
+          setIsLoading(false);
+          return;
+        }
+        if (routesData.length === 0) {
+          setError("No routes are currently associated with this bid.");
+        }
+
         try {
           const existingResponseData = await getExistingResponse(bidId, carrierId);
           if (existingResponseData) {
             setExistingResponse(existingResponseData);
-            
             setFormValues({
               responderName: existingResponseData.responder_name,
               responderEmail: existingResponseData.responder_email,
@@ -251,6 +259,25 @@ export function CarrierBidResponsePage() {
           </CardHeader>
           <CardContent>
             <p className="mb-4">{error}</p>
+            <Button onClick={() => navigate("/")}>Return Home</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!isLoading && routes.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+        <Card className="w-full max-w-5xl">
+          <CardHeader>
+            <CardTitle className="text-xl text-yellow-600 flex items-center">
+              <AlertCircle className="mr-2 h-6 w-6" />
+              No Routes Available
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-6">There are currently no routes available for this bid.</p>
             <Button onClick={() => navigate("/")}>Return Home</Button>
           </CardContent>
         </Card>
