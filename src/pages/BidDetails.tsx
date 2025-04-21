@@ -35,6 +35,7 @@ interface Bid {
   equipment_type?: string;
   instructions?: string;
   contract_file?: string;
+  currency?: string;
 }
 
 const BidDetails = () => {

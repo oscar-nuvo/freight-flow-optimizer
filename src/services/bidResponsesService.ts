@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { BidResponseFormValues, BidResponseSubmission, BidResponseWithRates, RouteRateSubmission } from "@/types/bidResponse";
 import { CurrencyType } from "@/types/invitation";
@@ -160,6 +159,158 @@ export const getExistingResponse = async (
     };
   } catch (error: any) {
     console.error("Error in getExistingResponse:", error);
+    throw error;
+  }
+};
+
+// Get all responses for a specific bid
+export const getBidResponses = async (bidId: string) => {
+  try {
+    // Get all responses for this bid
+    const { data: responses, error: responsesError } = await supabase
+      .from("carrier_bid_responses")
+      .select(`
+        id,
+        bid_id,
+        carrier_id,
+        invitation_id,
+        responder_name,
+        responder_email,
+        submitted_at,
+        version,
+        routes_submitted,
+        carriers(name)
+      `)
+      .eq("bid_id", bidId)
+      .order("submitted_at", { ascending: false });
+
+    if (responsesError) {
+      console.error("Error fetching bid responses:", responsesError);
+      throw new Error(responsesError.message);
+    }
+
+    return responses || [];
+  } catch (error: any) {
+    console.error("Error in getBidResponses:", error);
+    throw error;
+  }
+};
+
+// Get full response details including rates for a specific response
+export const getBidResponseDetails = async (responseId: string) => {
+  try {
+    // Get the response
+    const { data: response, error: responseError } = await supabase
+      .from("carrier_bid_responses")
+      .select(`
+        *,
+        carriers(name)
+      `)
+      .eq("id", responseId)
+      .single();
+
+    if (responseError) {
+      console.error("Error fetching response details:", responseError);
+      throw new Error(responseError.message);
+    }
+
+    // Get all rates for this response
+    const { data: rates, error: ratesError } = await supabase
+      .from("carrier_route_rates")
+      .select("*")
+      .eq("response_id", responseId);
+
+    if (ratesError) {
+      console.error("Error fetching route rates:", ratesError);
+      throw new Error(ratesError.message);
+    }
+
+    return {
+      ...response,
+      rates: rates || []
+    };
+  } catch (error: any) {
+    console.error("Error in getBidResponseDetails:", error);
+    throw error;
+  }
+};
+
+// Export all responses for a bid to CSV format
+export const exportBidResponses = async (bidId: string, routes: any[]) => {
+  try {
+    // Get all responses with carrier info
+    const { data: responses, error: responsesError } = await supabase
+      .from("carrier_bid_responses")
+      .select(`
+        id,
+        bid_id,
+        carrier_id,
+        responder_name,
+        responder_email,
+        submitted_at,
+        carriers(name)
+      `)
+      .eq("bid_id", bidId);
+
+    if (responsesError) {
+      console.error("Error fetching responses for export:", responsesError);
+      throw new Error(responsesError.message);
+    }
+
+    if (!responses || responses.length === 0) {
+      return null; // No responses to export
+    }
+
+    // Get all rates for all responses
+    const { data: allRates, error: ratesError } = await supabase
+      .from("carrier_route_rates")
+      .select(`
+        id,
+        bid_id,
+        carrier_id,
+        route_id,
+        response_id,
+        value,
+        currency,
+        comment
+      `)
+      .eq("bid_id", bidId)
+      .in("response_id", responses.map(r => r.id));
+
+    if (ratesError) {
+      console.error("Error fetching rates for export:", ratesError);
+      throw new Error(ratesError.message);
+    }
+
+    // Create a flat structure for CSV export
+    const exportData = [];
+    
+    for (const response of responses) {
+      const responseRates = allRates?.filter(r => r.response_id === response.id) || [];
+      
+      // For each route, add a row
+      for (const route of routes) {
+        const rate = responseRates.find(r => r.route_id === route.id);
+        
+        exportData.push({
+          "Carrier Name": response.carriers?.name || 'Unknown Carrier',
+          "Responder Name": response.responder_name,
+          "Responder Email": response.responder_email,
+          "Submitted At": new Date(response.submitted_at).toLocaleString(),
+          "Origin": route.origin_city,
+          "Destination": route.destination_city,
+          "Equipment": route.equipment_type,
+          "Commodity": route.commodity,
+          "Rate": rate?.value || "Not provided",
+          "Currency": rate?.currency || "USD",
+          "Comments": rate?.comment || ""
+        });
+      }
+    }
+
+    return exportData;
+  } catch (error: any) {
+    console.error("Error in exportBidResponses:", error);
     throw error;
   }
 };

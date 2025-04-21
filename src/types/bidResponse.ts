@@ -46,3 +46,26 @@ export interface BidResponseWithRates {
     comment?: string;
   }>;
 }
+
+export interface BidResponseSummary {
+  id: string;
+  bid_id: string;
+  carrier_id: string;
+  invitation_id: string;
+  responder_name: string;
+  responder_email: string;
+  submitted_at: string;
+  version: number;
+  routes_submitted: number;
+  carrier_name?: string;
+}
+
+export interface BidResponseDetail extends BidResponseSummary {
+  rates: Array<{
+    id: string;
+    route_id: string;
+    value: number;
+    currency: CurrencyType;
+    comment?: string;
+  }>;
+}
