@@ -39,14 +39,19 @@ export const getRoutes = async (filters?: RouteFilters) => {
 export const getRoutesByBid = async (bidId: string) => {
   // Enhanced reliability: Always fetch all associated and not-deleted routes for this bid
   console.log("[getRoutesByBid] Fetching routes for bid:", bidId);
-  
+
   try {
-    // Get all route-bid associations for this bid
+    // Get all route-bid associations for this bid, along with joined route data
     const { data, error } = await supabase
       .from("route_bids")
       .select(`
         route_id,
-        routes!route_id (*)
+        routes!route_id (
+          *,
+          route_bids (
+            bid_id
+          )
+        )
       `)
       .eq("bid_id", bidId);
 
@@ -60,24 +65,41 @@ export const getRoutesByBid = async (bidId: string) => {
       return [];
     }
 
-    // Only return associated routes that are not soft deleted (is_deleted: false)
+    // Defensive: Ensure we only extract well-formed routes that are not deleted
     const rawRoutes = data
       .map(item => item.routes)
-      .filter(route => !!route && route.is_deleted === false);
+      .filter(
+        route =>
+          !!route &&
+          route.is_deleted === false
+      );
 
-    // Defensive log and cast
     if (!Array.isArray(rawRoutes)) {
-      throw new Error("[getRoutesByBid] Non-array routes result!");
+      const errMsg = "[getRoutesByBid] Non-array routes result!";
+      console.error(errMsg);
+      throw new Error(errMsg);
     }
 
-    // Map the API response to properly typed Route objects
-    const routes: Route[] = rawRoutes.map(route => ({
-      ...route,
-      // Cast the equipment_type to a valid EquipmentType enum
-      equipment_type: mapToEquipmentType(route.equipment_type)
-    }));
-    
-    console.log(`[getRoutesByBid] Returning ${routes.length} route(s) for bid`, bidId);
+    // Check if all routes have a valid equipment_type
+    const routes: Route[] = rawRoutes.map(route => {
+      const mappedEquipmentType = mapToEquipmentType(route.equipment_type);
+      if (typeof mappedEquipmentType !== "string") {
+        // This should never happen per types
+        console.warn("[getRoutesByBid] Invalid equipment_type for route:", route.id, route.equipment_type);
+      }
+      return {
+        ...route,
+        equipment_type: mappedEquipmentType
+      };
+    });
+
+    // Extra logging if empty result so error can be tracked
+    if (routes.length === 0) {
+      console.warn(`[getRoutesByBid] No valid, not-deleted routes returned for bid ${bidId}.`);
+    } else {
+      console.log(`[getRoutesByBid] Returning ${routes.length} route(s) for bid`, bidId);
+    }
+
     return routes;
   } catch (err) {
     console.error("[getRoutesByBid] Exception:", err);
@@ -87,9 +109,13 @@ export const getRoutesByBid = async (bidId: string) => {
 
 // Helper function to map string equipment types to the EquipmentType enum
 function mapToEquipmentType(equipmentType: string): EquipmentType {
-  // Normalize the string for comparison
+  // Defensive: treat empty or undefined as "Dry Van"
+  if (typeof equipmentType !== "string" || equipmentType.trim() === "") {
+    console.warn(`[mapToEquipmentType] Missing or invalid equipment type input: ${equipmentType}, defaulting to 'Dry Van'`);
+    return 'Dry Van';
+  }
+  // Normalize for matching
   const normalizedType = equipmentType.toLowerCase().trim();
-  
   if (normalizedType.includes('dry') || normalizedType.includes('van')) {
     return 'Dry Van';
   } else if (normalizedType.includes('reefer')) {
@@ -97,8 +123,7 @@ function mapToEquipmentType(equipmentType: string): EquipmentType {
   } else if (normalizedType.includes('flat') || normalizedType.includes('bed')) {
     return 'Flatbed';
   }
-  
-  // Default to Dry Van if no match is found
+  // Fallback to 'Dry Van'
   console.warn(`[mapToEquipmentType] Unknown equipment type: ${equipmentType}, defaulting to 'Dry Van'`);
   return 'Dry Van';
 }
