@@ -64,7 +64,7 @@ export const getActiveCarriersForInvitation = async (): Promise<Carrier[]> => {
   }
 };
 
-// Create invitations for carriers (UPDATED: ensures organization_id is set)
+// Create invitations for carriers (UPDATED: ensures organization_id is set, ADD DEBUGGING)
 export const createBidInvitations = async (
   bidId: string, 
   invitationData: InvitationFormData
@@ -87,29 +87,38 @@ export const createBidInvitations = async (
     if (!userData?.user) {
       throw new Error("You must be logged in to create invitations");
     }
-    
-    const invitations = invitationData.carrier_ids.map(carrierId => ({
-      bid_id: bidId,
-      carrier_id: carrierId,
-      token: uuidv4(),
-      status: 'pending' as const,
-      invited_at: new Date().toISOString(),
-      custom_message: invitationData.custom_message,
-      delivery_channels: invitationData.delivery_channels,
-      delivery_status: {}, // Will be populated after delivery attempts
-      created_by: userData.user.id,
-      organization_id // Ensure organization_id is set
-    }));
-    
+
+    // LOG: Confirm tokens generated for every invitation
+    const invitations = invitationData.carrier_ids.map(carrierId => {
+      const invitation = {
+        bid_id: bidId,
+        carrier_id: carrierId,
+        token: uuidv4(),
+        status: 'pending' as const,
+        invited_at: new Date().toISOString(),
+        custom_message: invitationData.custom_message,
+        delivery_channels: invitationData.delivery_channels,
+        delivery_status: {}, // Will be populated after delivery attempts
+        created_by: userData.user.id,
+        organization_id // Ensure organization_id is set
+      };
+      // Log each invitation for diagnostics
+      console.log("[createBidInvitations] Will create invitation:", invitation);
+      return invitation;
+    });
+
     const { data, error } = await supabase
       .from("bid_carrier_invitations")
       .insert(invitations)
       .select();
-      
+
     if (error) {
       console.error("Error creating bid invitations:", error);
       throw error;
     }
+
+    // Log saved invitations
+    console.log("[createBidInvitations] Invitations saved in DB:", data ?? []);
     
     return (data ?? []) as CarrierInvitation[];
   } catch (error: any) {
@@ -118,41 +127,54 @@ export const createBidInvitations = async (
   }
 };
 
-// Get invitation by token - IMPROVED: more robust handling with better error reporting
+// Get invitation by token - SUPER DEBUG LOGGING/VALIDATION
 export const getInvitationByToken = async (token: string): Promise<CarrierInvitation | null> => {
   try {
     if (!token || typeof token !== 'string') {
       console.error("[getInvitationByToken] Invalid token format:", token);
       return null;
     }
-    
-    // Simplified query - no longer dependent on join to bids table
-    // since organization_id is now stored directly on the invitation
+
+    console.log("[getInvitationByToken] Looking up invitation with token:", token);
+
     const { data, error } = await supabase
       .from("bid_carrier_invitations")
       .select("*")
       .eq("token", token)
       .maybeSingle();
-      
+
     if (error) {
-      console.error("[getInvitationByToken] Error fetching invitation:", error);
+      console.error("[getInvitationByToken] Supabase error:", error);
       throw error;
     }
-    
+
     if (!data) {
       console.warn("[getInvitationByToken] No invitation found for token:", token);
       return null;
     }
-    
-    // Validate that essential fields exist in the invitation
+
+    // Log the fetched invitation object
+    console.log("[getInvitationByToken] Fetched invitation:", data);
+
     if (!data.bid_id || !data.organization_id) {
       console.error(
         "[getInvitationByToken] Invalid invitation data. Missing bid_id or organization_id:",
-        data.id
+        data.id,
+        "| Data:", data
       );
       return null;
     }
-    
+
+    // IF THE TOKEN DOESN'T MATCH, surface for debug
+    if (data.token !== token) {
+      console.error(
+        "[getInvitationByToken] Mismatch: looked up token", token,
+        "but fetched row has token", data.token
+      );
+      return null;
+    }
+
+    // Success
     return data as CarrierInvitation;
   } catch (error) {
     console.error("[getInvitationByToken] Exception:", error);
