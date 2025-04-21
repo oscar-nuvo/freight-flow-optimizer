@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { CarrierInvitation, InvitationFormData, CarrierBidResponse, CarrierRouteRate } from "@/types/invitation";
 import { v4 as uuidv4 } from "uuid";
@@ -119,7 +118,7 @@ export const createBidInvitations = async (
   }
 };
 
-// Get invitation by token
+// Get invitation by token - IMPROVED: more robust handling with better error reporting
 export const getInvitationByToken = async (token: string): Promise<CarrierInvitation | null> => {
   try {
     if (!token || typeof token !== 'string') {
@@ -127,12 +126,11 @@ export const getInvitationByToken = async (token: string): Promise<CarrierInvita
       return null;
     }
     
+    // Simplified query - no longer dependent on join to bids table
+    // since organization_id is now stored directly on the invitation
     const { data, error } = await supabase
       .from("bid_carrier_invitations")
-      .select(`
-        *,
-        bids!bid_id(id, org_id)
-      `)
+      .select("*")
       .eq("token", token)
       .maybeSingle();
       
@@ -145,21 +143,17 @@ export const getInvitationByToken = async (token: string): Promise<CarrierInvita
       console.warn("[getInvitationByToken] No invitation found for token:", token);
       return null;
     }
-
-    // Defensive: If 'bids' is null, that means the related bid was deleted or is missing
-    if (!data.bids || !data.bids.org_id) {
+    
+    // Validate that essential fields exist in the invitation
+    if (!data.bid_id || !data.organization_id) {
       console.error(
-        "[getInvitationByToken] No valid related bid found for bid_id:",
-        data.bid_id,
-        "in invitation with id:",
+        "[getInvitationByToken] Invalid invitation data. Missing bid_id or organization_id:",
         data.id
       );
       return null;
     }
     
-    // Remove the joined 'bids' data when returning
-    const { bids, ...invitationData } = data;
-    return invitationData as CarrierInvitation;
+    return data as CarrierInvitation;
   } catch (error) {
     console.error("[getInvitationByToken] Exception:", error);
     return null;
