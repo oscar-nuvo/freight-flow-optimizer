@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Route, RouteFormValues, RouteFilters, EquipmentType } from "@/types/route";
 
@@ -89,7 +90,9 @@ export const getRoutesByBid = async (bidId: string) => {
       }
       return {
         ...route,
-        equipment_type: mappedEquipmentType
+        equipment_type: mappedEquipmentType,
+        // Ensure route_bids exists, even if it's empty
+        route_bids: route.route_bids || [{ bid_id: bidId }]
       };
     });
 
