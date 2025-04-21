@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,6 +8,7 @@ import { getBidResponses, exportBidResponses } from '@/services/bidResponsesServ
 import { getBidInvitationsCount } from '@/services/bidCarriersService';
 import { Route } from "@/types/route";
 import { useToast } from "@/hooks/use-toast";
+import { filterLatestCarrierResponses } from "./bidResponsesUtils";
 
 interface BidResponsesSectionProps {
   bidId: string;
@@ -116,6 +116,8 @@ export function BidResponsesSection({
     }
   };
 
+  const uniqueCarrierResponses = filterLatestCarrierResponses(responses);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -123,7 +125,7 @@ export function BidResponsesSection({
         <Button 
           variant="outline" 
           onClick={handleExportResponses}
-          disabled={isExporting || responses.length === 0}
+          disabled={isExporting || uniqueCarrierResponses.length === 0}
         >
           <Download className="h-4 w-4 mr-2" />
           Export All Responses
@@ -131,7 +133,7 @@ export function BidResponsesSection({
       </div>
       
       <BidResponsesHeader 
-        respondedCount={responses.length} 
+        respondedCount={uniqueCarrierResponses.length} 
         totalInvited={actualInvitationsCount} 
       />
       
@@ -149,7 +151,7 @@ export function BidResponsesSection({
             </div>
           ) : (
             <ResponsesTable 
-              responses={responses} 
+              responses={uniqueCarrierResponses} 
               totalInvited={actualInvitationsCount}
               routes={routes}
               currency={currency}

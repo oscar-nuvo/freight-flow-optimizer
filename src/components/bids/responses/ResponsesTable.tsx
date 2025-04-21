@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,6 @@ import { Route } from "@/types/route";
 
 interface ResponsesTableProps {
   responses: any[];
-  totalInvited: number;
   routes: Route[];
   currency: string;
 }
