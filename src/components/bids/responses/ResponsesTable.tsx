@@ -1,10 +1,8 @@
 
-import { useState } from 'react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useState } from "react";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Eye } from "lucide-react";
-import { format } from 'date-fns';
-import { ResponseDetailsDrawer } from './ResponseDetailsDrawer';
+import { ResponseDetailsDrawer } from "./ResponseDetailsDrawer";
 import { getBidResponseDetails } from "@/services/bidResponsesService";
 import { Route } from "@/types/route";
 
@@ -15,91 +13,82 @@ interface ResponsesTableProps {
   currency: string;
 }
 
-export function ResponsesTable({ responses, totalInvited, routes, currency }: ResponsesTableProps) {
+export function ResponsesTable({
+  responses,
+  routes,
+  currency,
+}: ResponsesTableProps) {
+  const [openDrawer, setOpenDrawer] = useState(false);
   const [selectedResponse, setSelectedResponse] = useState<any | null>(null);
-  const [responseDetails, setResponseDetails] = useState<any | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [details, setDetails] = useState<any | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleViewDetails = async (response: any) => {
+    setSelectedResponse(response);
+    setOpenDrawer(true);
+    setLoading(true);
     try {
-      setIsLoading(true);
-      setSelectedResponse(response);
-      
-      const details = await getBidResponseDetails(response.id);
-      setResponseDetails(details);
-      setIsDrawerOpen(true);
-    } catch (error) {
-      console.error("Error fetching response details:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleCloseDrawer = () => {
-    setIsDrawerOpen(false);
-    setResponseDetails(null);
-  };
-
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), "MMM d, yyyy 'at' h:mm a");
+      const detail = await getBidResponseDetails(response.id);
+      setDetails(detail);
     } catch (e) {
-      return dateString;
+      setDetails(null);
     }
+    setLoading(false);
   };
 
   return (
-    <div>
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Carrier</TableHead>
-              <TableHead>Submitted By</TableHead>
-              <TableHead>Submitted At</TableHead>
-              <TableHead>Routes With Rates</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+    <div className="w-full overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Carrier Name</TableHead>
+            <TableHead>Submitted By</TableHead>
+            <TableHead>Submitted At</TableHead>
+            <TableHead>Routes With Rates</TableHead>
+            <TableHead></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {responses.map((resp) => (
+            <TableRow key={resp.id}>
+              <TableCell>{resp.carriers?.name ?? "Unknown Carrier"}</TableCell>
+              <TableCell>
+                <div>
+                  <div>{resp.responder_name}</div>
+                  <div className="text-xs text-muted-foreground">{resp.responder_email}</div>
+                </div>
+              </TableCell>
+              <TableCell>
+                {resp.submitted_at
+                  ? new Date(resp.submitted_at).toLocaleString()
+                  : ""}
+              </TableCell>
+              <TableCell>
+                {resp.routes_submitted} / {routes.length}
+              </TableCell>
+              <TableCell>
+                <Button variant="outline" size="sm" onClick={() => handleViewDetails(resp)}>
+                  View Details
+                </Button>
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {responses.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
-                  No responses received yet
-                </TableCell>
-              </TableRow>
-            ) : (
-              responses.map((response) => (
-                <TableRow key={response.id}>
-                  <TableCell className="font-medium">{response.carriers?.name || 'Unknown'}</TableCell>
-                  <TableCell>{response.responder_name}</TableCell>
-                  <TableCell>{formatDate(response.submitted_at)}</TableCell>
-                  <TableCell>{response.routes_submitted}/{routes.length}</TableCell>
-                  <TableCell className="text-right">
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={() => handleViewDetails(response)}
-                      disabled={isLoading && selectedResponse?.id === response.id}
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      View Details
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+          ))}
+        </TableBody>
+      </Table>
 
-      <ResponseDetailsDrawer 
-        open={isDrawerOpen}
-        onClose={handleCloseDrawer}
-        response={responseDetails}
+      <ResponseDetailsDrawer
+        open={openDrawer}
+        onClose={() => {
+          setOpenDrawer(false);
+          setTimeout(() => {
+            setSelectedResponse(null);
+            setDetails(null);
+          }, 200);
+        }}
+        response={details}
         routes={routes}
         currency={currency}
+        loading={loading}
       />
     </div>
   );

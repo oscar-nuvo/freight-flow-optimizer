@@ -16,6 +16,7 @@ import { getRoutesByBid, removeRouteFromBid } from "@/services/routesService";
 import { toast as sonnerToast } from "sonner";
 import { BidInvitationsTable } from "@/components/bids/invitations/BidInvitationsTable";
 import { InviteCarriersButton } from "@/components/bids/InviteCarriersButton";
+import { BidResponsesSection } from "@/components/bids/responses/BidResponsesSection";
 
 interface Bid {
   id: string;
@@ -595,21 +596,12 @@ const BidDetails = () => {
             </TabsContent>
 
             <TabsContent value="responses">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Responses</CardTitle>
-                  <CardDescription>
-                    Track carrier responses to your bid
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-12">
-                    <p className="text-muted-foreground mb-4">
-                      No responses have been received yet
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              <BidResponsesSection
+                bidId={bid.id}
+                routes={routes}
+                invitationsCount={bid.carriers || 0}
+                currency={bid.currency || "USD"}
+              />
             </TabsContent>
 
             <TabsContent value="analytics">

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from "react";
 import { 
   Drawer, 
   DrawerContent, 
@@ -21,6 +21,7 @@ interface ResponseDetailsDrawerProps {
   response: any;
   routes: Route[];
   currency: string;
+  loading?: boolean;
 }
 
 export function ResponseDetailsDrawer({ 
@@ -28,7 +29,8 @@ export function ResponseDetailsDrawer({
   onClose, 
   response, 
   routes,
-  currency
+  currency,
+  loading = false
 }: ResponseDetailsDrawerProps) {
   const [routesWithRates, setRoutesWithRates] = useState<any[]>([]);
 
