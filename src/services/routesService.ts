@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Route, RouteFormValues, RouteFilters, EquipmentType } from "@/types/route";
 
@@ -42,24 +41,9 @@ export const getRoutesByBid = async (bidId: string) => {
   console.log("[getRoutesByBid] Fetching routes for bid:", bidId);
 
   try {
-    // First, get the bid's organization ID for security filtering
-    const { data: bidData, error: bidError } = await supabase
-      .from("bids")
-      .select("org_id")
-      .eq("id", bidId)
-      .single();
+    // This function is now made to work without requiring authentication/org match!
 
-    if (bidError) {
-      console.error("[getRoutesByBid] Error fetching bid info:", bidError);
-      throw new Error(`Failed to validate bid: ${bidError.message}`);
-    }
-
-    if (!bidData || !bidData.org_id) {
-      console.error("[getRoutesByBid] Invalid bid or missing organization_id");
-      throw new Error("Invalid bid reference");
-    }
-
-    // With org_id in hand, get all route-bid associations for this bid
+    // Get all route-bid associations for this bid, plus the route details, even if called publicly
     const { data, error } = await supabase
       .from("route_bids")
       .select(`
@@ -83,7 +67,7 @@ export const getRoutesByBid = async (bidId: string) => {
       return [];
     }
 
-    // Defensive: Ensure we only extract well-formed routes that are not deleted
+    // Only return not-deleted valid routes
     const rawRoutes = data
       .map(item => item.routes)
       .filter(
@@ -98,11 +82,9 @@ export const getRoutesByBid = async (bidId: string) => {
       throw new Error(errMsg);
     }
 
-    // Check if all routes have a valid equipment_type
-    const routes: Route[] = rawRoutes.map(route => {
+    const routes = rawRoutes.map(route => {
       const mappedEquipmentType = mapToEquipmentType(route.equipment_type);
       if (typeof mappedEquipmentType !== "string") {
-        // This should never happen per types
         console.warn("[getRoutesByBid] Invalid equipment_type for route:", route.id, route.equipment_type);
       }
       return {
@@ -125,7 +107,6 @@ export const getRoutesByBid = async (bidId: string) => {
   }
 };
 
-// Helper function to map string equipment types to the EquipmentType enum
 function mapToEquipmentType(equipmentType: string): EquipmentType {
   // Defensive: treat empty or undefined as "Dry Van"
   if (typeof equipmentType !== "string" || equipmentType.trim() === "") {

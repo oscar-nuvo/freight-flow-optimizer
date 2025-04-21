@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { BidResponseFormValues, BidResponseSubmission, BidResponseWithRates, RouteRateSubmission } from "@/types/bidResponse";
 import { CurrencyType } from "@/types/invitation";
@@ -12,16 +11,15 @@ export const submitBidResponse = async (
   isDraft: boolean = false
 ): Promise<BidResponseWithRates> => {
   try {
-    // Get org_id for scoping
+    // Get bid org (still needed for org_id on write for integrity, but not enforced by RLS for public route)
     const { data: bidOrg } = await supabase
       .from("bids")
       .select("org_id")
       .eq("id", bidId)
-      .single();
+      .maybeSingle(); // Allow for no org_id on public route
     const orgId = bidOrg?.org_id;
-    if (!orgId) throw new Error("Organization ID not found for this bid.");
 
-    // First, check for an existing response to get the current version
+    // First, check for an existing response (optional for public flow)
     let currentVersion = 1;
     const { data: existingResponse } = await supabase
       .from("carrier_bid_responses")
@@ -42,7 +40,6 @@ export const submitBidResponse = async (
       ([_, value]) => value.value !== null && value.value !== undefined
     ).length;
 
-    // Insert the new response
     const { data: responseData, error: responseError } = await supabase
       .from("carrier_bid_responses")
       .insert({
@@ -53,8 +50,7 @@ export const submitBidResponse = async (
         responder_email: formValues.responderEmail,
         version: currentVersion,
         routes_submitted: routesWithRates,
-        organization_id: orgId, // ENFORCE ORG SCOPE
-        // Add is_draft flag if needed later
+        organization_id: orgId, // ENFORCE ORG SCOPE IF PRESENT
       })
       .select()
       .single();
@@ -76,7 +72,7 @@ export const submitBidResponse = async (
         currency: "USD" as CurrencyType,
         comment: value.comment,
         version: currentVersion,
-        organization_id: orgId // ENFORCE ORG SCOPE
+        organization_id: orgId
       }));
 
     if (rateInserts.length > 0) {
@@ -261,7 +257,7 @@ export const getBidResponseDetails = async (responseId: string) => {
     const { data: rates, error: ratesError } = await supabase
       .from("carrier_route_rates")
       .select("*")
-      .eq("response_id", responseId)
+      .eq("response_id", response.id)
       .eq("organization_id", response.organization_id);
 
     if (ratesError) {

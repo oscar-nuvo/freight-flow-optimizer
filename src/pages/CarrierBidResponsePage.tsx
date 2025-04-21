@@ -75,8 +75,8 @@ export function CarrierBidResponsePage() {
             .from("bids")
             .select("*")
             .eq("id", bidId)
-            .single();
-            
+            .maybeSingle();
+
           if (bidError) {
             console.error("Error fetching bid details:", bidError);
             setError(`Failed to retrieve bid information: ${bidError.message}`);
@@ -101,21 +101,17 @@ export function CarrierBidResponsePage() {
           }
 
           setBidDetails(bidData);
-          
+
           const routesData = await getRoutesByBid(bidId);
-          
-          if (!Array.isArray(routesData)) {
-            setError("Failed to load bid routes (invalid result)");
+
+          if (!Array.isArray(routesData) || routesData.length === 0) {
+            setError("No routes are currently available for this bid. The bid manager may not have added any, or you may lack access.");
             setRoutes([]);
             setIsLoading(false);
             return;
           }
-          
+
           setRoutes(routesData);
-          
-          if (routesData.length === 0) {
-            setError("No routes are currently associated with this bid.");
-          }
 
           try {
             if (bidData.org_id) {
