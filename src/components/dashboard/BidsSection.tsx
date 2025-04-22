@@ -1,14 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, FileUp, Filter, AlertTriangle } from "lucide-react";
+import { Plus, Search, FileUp, Filter } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useDebounce } from "@/hooks/useDebounce";
+import { BidsTable } from "@/components/bids/BidsTable";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +43,9 @@ export function BidsSection() {
   const [bids, setBids] = useState<Bid[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery, 300);
+  
   const { user, organization } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -74,6 +78,22 @@ export function BidsSection() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const filterBids = (bids: Bid[], status?: string) => {
+    return bids.filter(bid => {
+      const matchesSearch = bid.name.toLowerCase().includes(debouncedSearch.toLowerCase());
+      
+      if (!matchesSearch) return false;
+      
+      if (!status || status === "all") return true;
+      
+      if (status === "active") {
+        return bid.status === "active" || bid.status === "published";
+      }
+      
+      return bid.status === status;
+    });
   };
 
   const handleCreateBid = () => {
@@ -174,6 +194,8 @@ export function BidsSection() {
             <Input
               placeholder="Search bids..."
               className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
         </div>
@@ -189,87 +211,11 @@ export function BidsSection() {
                 </Button>
               </div>
               <CardDescription>
-                {loading ? "Loading bids..." : `${bids.length} bids found`}
+                {loading ? "Loading bids..." : `${filterBids(bids).length} bids found`}
               </CardDescription>
             </CardHeader>
             <CardContent className="px-6">
-              {loading ? (
-                <div className="py-8 flex justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-forest"></div>
-                </div>
-              ) : bids.length === 0 ? (
-                <div className="py-12 text-center">
-                  <p className="text-muted-foreground mb-4">You haven't created any bids yet</p>
-                  <Button 
-                    className="bg-forest hover:bg-forest-600"
-                    onClick={handleCreateBid}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create your first bid
-                  </Button>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="py-3 px-2 text-left font-medium text-muted-foreground">Name</th>
-                        <th className="py-3 px-2 text-left font-medium text-muted-foreground">Status</th>
-                        <th className="py-3 px-2 text-left font-medium text-muted-foreground">Carriers</th>
-                        <th className="py-3 px-2 text-left font-medium text-muted-foreground">Lanes</th>
-                        <th className="py-3 px-2 text-left font-medium text-muted-foreground">Submission Date</th>
-                        <th className="py-3 px-2 text-left font-medium text-muted-foreground">Start Date</th>
-                        <th className="py-3 px-2 text-left font-medium text-muted-foreground">Equipment</th>
-                        <th className="py-3 px-2 text-left font-medium text-muted-foreground">Progress</th>
-                        <th className="py-3 px-2 text-left font-medium text-muted-foreground"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {bids.map((bid) => (
-                        <tr key={bid.id} className="border-b hover:bg-muted/50">
-                          <td className="py-3 px-2">
-                            <div className="font-medium">{bid.name}</div>
-                          </td>
-                          <td className="py-3 px-2">
-                            <Badge variant={getStatusBadgeVariant(bid.status)}>
-                              {bid.status.charAt(0).toUpperCase() + bid.status.slice(1)}
-                            </Badge>
-                          </td>
-                          <td className="py-3 px-2">{bid.carriers || 0}</td>
-                          <td className="py-3 px-2">{bid.lanes || 0}</td>
-                          <td className="py-3 px-2">{bid.submission_date ? new Date(bid.submission_date).toLocaleDateString() : "Not set"}</td>
-                          <td className="py-3 px-2">{bid.start_date ? new Date(bid.start_date).toLocaleDateString() : "Not set"}</td>
-                          <td className="py-3 px-2">
-                            {bid.equipment_type ? (
-                              bid.equipment_type === "dry_van" ? "53' Dry Van" :
-                              bid.equipment_type === "reefer" ? "Reefer" :
-                              bid.equipment_type === "flatbed" ? "Flatbed" : ""
-                            ) : "Not set"}
-                          </td>
-                          <td className="py-3 px-2">
-                            <div className="w-full bg-gray-200 rounded-full h-2.5">
-                              <div 
-                                className="bg-forest h-2.5 rounded-full" 
-                                style={{ width: `${bid.progress || 0}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-xs text-gray-500 mt-1">{bid.progress || 0}%</span>
-                          </td>
-                          <td className="py-3 px-2 text-right">
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => navigate(`/bids/${bid.id}`)}
-                            >
-                              View
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              <BidsTable bids={filterBids(bids)} loading={loading} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -281,17 +227,7 @@ export function BidsSection() {
               <CardDescription>Bids that are currently in progress</CardDescription>
             </CardHeader>
             <CardContent>
-              {loading ? (
-                <div className="py-8 flex justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-forest"></div>
-                </div>
-              ) : (
-                <p className="text-muted-foreground">
-                  {bids.filter(bid => bid.status === "active").length === 0 
-                    ? "No active bids found." 
-                    : "This tab would display only the active bids in a similar table layout."}
-                </p>
-              )}
+              <BidsTable bids={filterBids(bids, "active")} loading={loading} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -303,17 +239,7 @@ export function BidsSection() {
               <CardDescription>Bids that are still being prepared</CardDescription>
             </CardHeader>
             <CardContent>
-              {loading ? (
-                <div className="py-8 flex justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-forest"></div>
-                </div>
-              ) : (
-                <p className="text-muted-foreground">
-                  {bids.filter(bid => bid.status === "draft").length === 0 
-                    ? "No draft bids found." 
-                    : "This tab would display only the draft bids in a similar table layout."}
-                </p>
-              )}
+              <BidsTable bids={filterBids(bids, "draft")} loading={loading} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -325,17 +251,7 @@ export function BidsSection() {
               <CardDescription>Bids that have been finalized</CardDescription>
             </CardHeader>
             <CardContent>
-              {loading ? (
-                <div className="py-8 flex justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-forest"></div>
-                </div>
-              ) : (
-                <p className="text-muted-foreground">
-                  {bids.filter(bid => bid.status === "completed").length === 0 
-                    ? "No completed bids found." 
-                    : "This tab would display only the completed bids in a similar table layout."}
-                </p>
-              )}
+              <BidsTable bids={filterBids(bids, "completed")} loading={loading} />
             </CardContent>
           </Card>
         </TabsContent>
