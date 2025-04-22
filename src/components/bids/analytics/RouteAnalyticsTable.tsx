@@ -35,8 +35,8 @@ export function RouteAnalyticsTable({ data }: RouteAnalyticsTableProps) {
             <TableHead>Origin</TableHead>
             <TableHead>Destination</TableHead>
             <TableHead>Equipment</TableHead>
-            <TableHead>Best Rate (per mile)</TableHead>
-            <TableHead>Average Rate (per mile)</TableHead>
+            <TableHead>Best Rate</TableHead>
+            <TableHead>Average Rate</TableHead>
             <TableHead>Responses</TableHead>
           </TableRow>
         </TableHeader>
@@ -53,7 +53,7 @@ export function RouteAnalyticsTable({ data }: RouteAnalyticsTableProps) {
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger>
-                            ${route.bestRate.toFixed(2)}/mile
+                            ${route.bestRate.toFixed(2)}
                           </TooltipTrigger>
                           <TooltipContent>
                             Best rate by: {route.bestRateCarriers.map(c => c.name).join(', ')}
@@ -70,7 +70,7 @@ export function RouteAnalyticsTable({ data }: RouteAnalyticsTableProps) {
                   {route.averageRate 
                     ? (
                       <>
-                        ${route.averageRate.toFixed(2)}/mile
+                        ${route.averageRate.toFixed(2)}
                         {route.isOutlier && (
                           <TooltipProvider>
                             <Tooltip>
