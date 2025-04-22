@@ -17,6 +17,7 @@ import { toast as sonnerToast } from "sonner";
 import { BidInvitationsTable } from "@/components/bids/invitations/BidInvitationsTable";
 import { InviteCarriersButton } from "@/components/bids/InviteCarriersButton";
 import { BidResponsesSection } from "@/components/bids/responses/BidResponsesSection";
+import { BidAnalyticsSection } from "@/components/bids/analytics/BidAnalyticsSection";
 
 interface Bid {
   id: string;
@@ -605,21 +606,10 @@ const BidDetails = () => {
             </TabsContent>
 
             <TabsContent value="analytics">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Analytics</CardTitle>
-                  <CardDescription>
-                    Analyze bid responses and make data-driven decisions
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-12">
-                    <p className="text-muted-foreground mb-4">
-                      Analytics will be available once responses are received
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              <BidAnalyticsSection 
+                bidId={bid.id}
+                equipmentType={bid.equipment_type || undefined}
+              />
             </TabsContent>
           </Tabs>
         </div>

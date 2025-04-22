@@ -549,6 +549,41 @@ export type Database = {
           },
         ]
       }
+      national_route_averages: {
+        Row: {
+          bid_id: string | null
+          created_at: string
+          equipment_type: string
+          id: string
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          bid_id?: string | null
+          created_at?: string
+          equipment_type: string
+          id?: string
+          updated_at?: string
+          value: number
+        }
+        Update: {
+          bid_id?: string | null
+          created_at?: string
+          equipment_type?: string
+          id?: string
+          updated_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "national_route_averages_bid_id_fkey"
+            columns: ["bid_id"]
+            isOneToOne: false
+            referencedRelation: "bids"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string
