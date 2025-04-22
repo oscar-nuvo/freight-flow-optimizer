@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 interface BidParticipationStats {
@@ -84,61 +83,44 @@ export const getRouteAnalytics = async (bidId: string): Promise<RouteAnalytics[]
       carriers(id, name)
     `)
     .eq('bid_id', bidId)
-    .in('route_id', routeBids.map(rb => rb.route_id));
+    .is('value', null, true);
 
   if (ratesError) throw ratesError;
   
   const routeAnalytics: RouteAnalytics[] = routes.map(route => {
     // Filter rates for this specific route
     const routeRates = allRates ? allRates.filter(rate => 
-      rate.route_id === route.id && 
-      rate.value !== null && 
-      rate.value > 0
+      rate.route_id === route.id
     ) : [];
     
-    // Calculate statistics for this route
     const validRates = routeRates.map(r => r.value);
     
-    // Calculate per-mile rates if distance is available
-    const perMileRates = route.distance && route.distance > 0 
-      ? validRates.map(rate => rate / route.distance)
-      : validRates;
-
-    const average = perMileRates.length > 0 
-      ? perMileRates.reduce((a, b) => a + b, 0) / perMileRates.length 
+    const average = validRates.length > 0 
+      ? validRates.reduce((a, b) => a + b, 0) / validRates.length 
       : null;
 
-    const bestRate = perMileRates.length > 0 
-      ? Math.min(...perMileRates)
+    const bestRate = validRates.length > 0 
+      ? Math.min(...validRates)
       : null;
 
     const bestRateCarriers = bestRate !== null 
       ? routeRates
-          .filter(r => route.distance && route.distance > 0 
-            ? (r.value / route.distance) === bestRate
-            : r.value === bestRate)
-          .map(r => ({ id: r.carriers.id, name: r.carriers.name }))
+          .filter(r => r.value === bestRate)
+          .map(r => ({ id: r.carrier.id, name: r.carrier.name }))
       : [];
 
-    // Calculate if this route's average is an outlier
-    // Here we'll use a simple implementation - in a real system,
-    // you'd want a more sophisticated outlier detection
+    // Simplified outlier detection
     let isOutlier = false;
-    if (average !== null && perMileRates.length >= 3) {
-      // Calculate standard deviation
+    if (average !== null && validRates.length >= 3) {
       const mean = average;
-      const squareDiffs = perMileRates.map(value => {
+      const squareDiffs = validRates.map(value => {
         const diff = value - mean;
         return diff * diff;
       });
       const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / squareDiffs.length;
       const stdDev = Math.sqrt(avgSquareDiff);
       
-      // Consider a route an outlier if its average is more than 2 standard deviations from the overall mean
-      // We'd need overall mean across all routes for this calculation in a real implementation
-      // For now, we'll compare to the route's own standard deviation pattern
-      const allRoutesAverage = average; // This should ideally be the average across all routes
-      isOutlier = Math.abs(average - allRoutesAverage) > 2 * stdDev;
+      isOutlier = Math.abs(average - mean) > 2 * stdDev;
     }
 
     return {
