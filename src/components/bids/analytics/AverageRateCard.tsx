@@ -1,5 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { TrendingUp, TrendingDown } from "lucide-react";
 import type { AverageRateAnalytics } from "@/types/analytics";
 
 interface AverageRateCardProps {
@@ -25,7 +26,10 @@ export function AverageRateCard({ analytics, isLoading }: AverageRateCardProps) 
     );
   }
 
-  const { weightedAveragePerMile, nationalAverageComparison } = analytics;
+  const { weightedAveragePerMile, nationalAverageComparison, nationalAverage } = analytics;
+  
+  const isHigher = nationalAverageComparison && nationalAverageComparison > 0;
+  const comparisonColor = isHigher ? 'text-red-500' : 'text-green-500';
 
   return (
     <Card>
@@ -33,19 +37,32 @@ export function AverageRateCard({ analytics, isLoading }: AverageRateCardProps) 
         <CardTitle>Average Rate</CardTitle>
         <CardDescription>
           Average rate per mile across all routes
-          {analytics.nationalAverage && ` compared to national average`}
+          {nationalAverage && ` compared to national average`}
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2">
+        <div className="space-y-4">
           <div className="text-2xl font-bold">
             {weightedAveragePerMile 
               ? `$${weightedAveragePerMile.toFixed(2)}/mile` 
               : 'No rate data available'}
           </div>
-          {nationalAverageComparison !== null && (
-            <div className={`text-sm ${nationalAverageComparison > 0 ? 'text-red-500' : 'text-green-500'}`}>
-              {nationalAverageComparison > 0 ? '↑' : '↓'} {Math.abs(nationalAverageComparison).toFixed(1)}% vs national average
+          
+          {nationalAverageComparison !== null && nationalAverage && (
+            <div className="flex items-center gap-2">
+              <div className={`flex items-center gap-1 ${comparisonColor}`}>
+                {isHigher ? (
+                  <TrendingUp className="h-4 w-4" />
+                ) : (
+                  <TrendingDown className="h-4 w-4" />
+                )}
+                <span className="font-medium">
+                  {Math.abs(nationalAverageComparison).toFixed(1)}%
+                </span>
+              </div>
+              <span className="text-sm text-muted-foreground">
+                {isHigher ? 'above' : 'below'} national average (${nationalAverage.toFixed(2)}/mile)
+              </span>
             </div>
           )}
         </div>
