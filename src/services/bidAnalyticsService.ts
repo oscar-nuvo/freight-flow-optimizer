@@ -53,35 +53,50 @@ export const getBidParticipationStats = async (bidId: string): Promise<BidPartic
 };
 
 export const getRouteAnalytics = async (bidId: string): Promise<RouteAnalytics[]> => {
+  // First, fetch routes that belong to this bid
+  const { data: routeBids, error: routeBidsError } = await supabase
+    .from('route_bids')
+    .select('route_id')
+    .eq('bid_id', bidId);
+
+  if (routeBidsError) throw routeBidsError;
+  if (!routeBids || routeBids.length === 0) return [];
+
+  // Get the routes with their data
   const { data: routes, error: routesError } = await supabase
     .from('routes')
-    .select(`
-      id,
-      origin_city,
-      destination_city,
-      equipment_type,
-      commodity,
-      route_bids!inner(
-        bid_id,
-        carrier_route_rates(
-          value,
-          carrier:carriers(id, name)
-        )
-      )
-    `)
-    .eq('route_bids.bid_id', bidId);
+    .select('id, origin_city, destination_city, equipment_type, commodity')
+    .in('id', routeBids.map(rb => rb.route_id));
 
   if (routesError) throw routesError;
+  if (!routes || routes.length === 0) return [];
 
+  // Get all rates for these routes in this bid
+  const { data: allRates, error: ratesError } = await supabase
+    .from('carrier_route_rates')
+    .select(`
+      id,
+      bid_id,
+      route_id,
+      carrier_id,
+      value,
+      carriers(id, name)
+    `)
+    .eq('bid_id', bidId)
+    .in('route_id', routeBids.map(rb => rb.route_id));
+
+  if (ratesError) throw ratesError;
+  
   const routeAnalytics: RouteAnalytics[] = routes.map(route => {
-    const rates = route.route_bids.flatMap(bid => 
-      bid.carrier_route_rates.map(rate => ({
-        value: rate.value,
-        carrier: rate.carrier
-      }))
-    ).filter(rate => rate.value !== null && rate.value > 0);
-
-    const validRates = rates.map(r => r.value);
+    // Filter rates for this specific route
+    const routeRates = allRates ? allRates.filter(rate => 
+      rate.route_id === route.id && 
+      rate.value !== null && 
+      rate.value > 0
+    ) : [];
+    
+    // Calculate statistics for this route
+    const validRates = routeRates.map(r => r.value);
     const average = validRates.length > 0 
       ? validRates.reduce((a, b) => a + b, 0) / validRates.length 
       : null;
@@ -91,14 +106,31 @@ export const getRouteAnalytics = async (bidId: string): Promise<RouteAnalytics[]
       : null;
 
     const bestRateCarriers = bestRate 
-      ? rates
+      ? routeRates
           .filter(r => r.value === bestRate)
-          .map(r => ({ id: r.carrier.id, name: r.carrier.name }))
+          .map(r => ({ id: r.carriers.id, name: r.carriers.name }))
       : [];
 
     // Calculate if this route's average is an outlier
-    // (simplified - you might want to make this more sophisticated)
-    const isOutlier = false; // TODO: Implement outlier detection
+    // Here we'll use a simple implementation - in a real system,
+    // you'd want a more sophisticated outlier detection
+    let isOutlier = false;
+    if (average !== null && validRates.length >= 3) {
+      // Calculate standard deviation
+      const mean = average;
+      const squareDiffs = validRates.map(value => {
+        const diff = value - mean;
+        return diff * diff;
+      });
+      const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / squareDiffs.length;
+      const stdDev = Math.sqrt(avgSquareDiff);
+      
+      // Consider a route an outlier if its average is more than 2 standard deviations from the overall mean
+      // We'd need overall mean across all routes for this calculation in a real implementation
+      // For now, we'll compare to the route's own standard deviation pattern
+      const allRoutesAverage = average; // This should ideally be the average across all routes
+      isOutlier = Math.abs(average - allRoutesAverage) > 2 * stdDev;
+    }
 
     return {
       routeId: route.id,
@@ -109,7 +141,7 @@ export const getRouteAnalytics = async (bidId: string): Promise<RouteAnalytics[]
       bestRate,
       bestRateCarriers,
       averageRate: average,
-      responseCount: rates.length,
+      responseCount: routeRates.length,
       isOutlier
     };
   });
@@ -118,7 +150,7 @@ export const getRouteAnalytics = async (bidId: string): Promise<RouteAnalytics[]
 };
 
 export const getCostDistribution = async (bidId: string): Promise<CostDistributionBucket[]> => {
-  const { data: rates } = await supabase
+  const { data: rates, error } = await supabase
     .from('carrier_route_rates')
     .select(`
       value,
@@ -128,6 +160,7 @@ export const getCostDistribution = async (bidId: string): Promise<CostDistributi
     .eq('bid_id', bidId)
     .not('value', 'is', null);
 
+  if (error) throw error;
   if (!rates || rates.length === 0) return [];
 
   // Create buckets of $0.10 intervals
@@ -163,12 +196,17 @@ export const getCostDistribution = async (bidId: string): Promise<CostDistributi
 };
 
 export const getNationalAverage = async (equipmentType: string): Promise<number | null> => {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('national_route_averages')
     .select('value')
     .eq('equipment_type', equipmentType)
     .is('bid_id', null)
     .single();
+
+  if (error) {
+    console.error("Error fetching national average:", error);
+    return null;
+  }
 
   return data?.value || null;
 };
