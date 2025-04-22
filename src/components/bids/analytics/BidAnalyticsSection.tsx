@@ -6,13 +6,15 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { 
   getBidParticipationStats,
-  getRouteAnalytics,
   getCostDistribution,
-  getNationalAverage 
 } from '@/services/bidAnalyticsService';
+import { getRouteAnalytics } from '@/services/bidRouteAnalyticsService';
+import { getAverageRateAnalytics } from '@/services/bidAverageRateService';
 import { RouteAnalyticsTable } from './RouteAnalyticsTable';
 import { CostDistributionChart } from './CostDistributionChart';
+import { AverageRateCard } from './AverageRateCard';
 import { AlertTriangle } from 'lucide-react';
+import type { RouteAnalytics, AverageRateAnalytics } from '@/types/analytics';
 
 interface BidAnalyticsSectionProps {
   bidId: string;
@@ -22,29 +24,26 @@ interface BidAnalyticsSectionProps {
 export function BidAnalyticsSection({ bidId, equipmentType }: BidAnalyticsSectionProps) {
   const [loading, setLoading] = useState(true);
   const [participationStats, setParticipationStats] = useState<any>(null);
-  const [routeAnalytics, setRouteAnalytics] = useState<any[]>([]);
+  const [routeAnalytics, setRouteAnalytics] = useState<RouteAnalytics[]>([]);
+  const [averageRateAnalytics, setAverageRateAnalytics] = useState<AverageRateAnalytics | null>(null);
   const [costDistribution, setCostDistribution] = useState<any[]>([]);
-  const [nationalAverage, setNationalAverage] = useState<number | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     const loadAnalytics = async () => {
       try {
         setLoading(true);
-        const [stats, analytics, distribution] = await Promise.all([
+        const [stats, routeData, averageRate, distribution] = await Promise.all([
           getBidParticipationStats(bidId),
           getRouteAnalytics(bidId),
+          getAverageRateAnalytics(bidId),
           getCostDistribution(bidId)
         ]);
 
         setParticipationStats(stats);
-        setRouteAnalytics(analytics);
+        setRouteAnalytics(routeData);
+        setAverageRateAnalytics(averageRate);
         setCostDistribution(distribution);
-
-        if (equipmentType) {
-          const avgRate = await getNationalAverage(equipmentType);
-          setNationalAverage(avgRate);
-        }
       } catch (error) {
         console.error('Error loading analytics:', error);
         toast({
@@ -58,7 +57,7 @@ export function BidAnalyticsSection({ bidId, equipmentType }: BidAnalyticsSectio
     };
 
     loadAnalytics();
-  }, [bidId, equipmentType]);
+  }, [bidId, toast]);
 
   if (loading) {
     return (
@@ -83,19 +82,6 @@ export function BidAnalyticsSection({ bidId, equipmentType }: BidAnalyticsSectio
     );
   }
 
-  // Calculate weighted average rate (per mile) across all routes
-  const routesWithRates = routeAnalytics.filter(route => route.averageRate !== null);
-  const totalResponses = routesWithRates.reduce((sum, route) => sum + route.responseCount, 0);
-  
-  const weightedAverageRate = totalResponses > 0
-    ? routesWithRates.reduce((sum, route) => 
-        sum + (route.averageRate * route.responseCount), 0) / totalResponses
-    : null;
-
-  const nationalAverageComparison = nationalAverage && weightedAverageRate
-    ? ((weightedAverageRate - nationalAverage) / nationalAverage) * 100
-    : null;
-
   return (
     <div className="space-y-6">
       <div className="grid gap-6 md:grid-cols-2">
@@ -115,29 +101,15 @@ export function BidAnalyticsSection({ bidId, equipmentType }: BidAnalyticsSectio
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Average Rate</CardTitle>
-            <CardDescription>
-              Average rate per mile across all routes
-              {nationalAverage && ` compared to national average`}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="text-2xl font-bold">
-                {weightedAverageRate 
-                  ? `$${weightedAverageRate.toFixed(2)}/mile` 
-                  : 'No rate data available'}
-              </div>
-              {nationalAverageComparison !== null && (
-                <div className={`text-sm ${nationalAverageComparison > 0 ? 'text-red-500' : 'text-green-500'}`}>
-                  {nationalAverageComparison > 0 ? '↑' : '↓'} {Math.abs(nationalAverageComparison).toFixed(1)}% vs national average
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <AverageRateCard 
+          analytics={averageRateAnalytics || {
+            weightedAveragePerMile: null,
+            totalResponses: 0,
+            nationalAverageComparison: null,
+            nationalAverage: null
+          }}
+          isLoading={loading}
+        />
       </div>
 
       <Card>
@@ -146,7 +118,7 @@ export function BidAnalyticsSection({ bidId, equipmentType }: BidAnalyticsSectio
           <CardDescription>Distribution of rates per mile across all routes</CardDescription>
         </CardHeader>
         <CardContent>
-          <CostDistributionChart data={costDistribution} nationalAverage={nationalAverage} />
+          <CostDistributionChart data={costDistribution} nationalAverage={null} />
         </CardContent>
       </Card>
 
