@@ -18,6 +18,7 @@ interface RouteAnalytics {
   averageRate: number | null;
   responseCount: number;
   isOutlier: boolean;
+  distance: number | null;
 }
 
 interface CostDistributionBucket {
@@ -65,7 +66,7 @@ export const getRouteAnalytics = async (bidId: string): Promise<RouteAnalytics[]
   // Get the routes with their data
   const { data: routes, error: routesError } = await supabase
     .from('routes')
-    .select('id, origin_city, destination_city, equipment_type, commodity')
+    .select('id, origin_city, destination_city, equipment_type, commodity, distance')
     .in('id', routeBids.map(rb => rb.route_id));
 
   if (routesError) throw routesError;
@@ -97,17 +98,25 @@ export const getRouteAnalytics = async (bidId: string): Promise<RouteAnalytics[]
     
     // Calculate statistics for this route
     const validRates = routeRates.map(r => r.value);
-    const average = validRates.length > 0 
-      ? validRates.reduce((a, b) => a + b, 0) / validRates.length 
+    
+    // Calculate per-mile rates if distance is available
+    const perMileRates = route.distance && route.distance > 0 
+      ? validRates.map(rate => rate / route.distance)
+      : validRates;
+
+    const average = perMileRates.length > 0 
+      ? perMileRates.reduce((a, b) => a + b, 0) / perMileRates.length 
       : null;
 
-    const bestRate = validRates.length > 0 
-      ? Math.min(...validRates)
+    const bestRate = perMileRates.length > 0 
+      ? Math.min(...perMileRates)
       : null;
 
-    const bestRateCarriers = bestRate 
+    const bestRateCarriers = bestRate !== null 
       ? routeRates
-          .filter(r => r.value === bestRate)
+          .filter(r => route.distance && route.distance > 0 
+            ? (r.value / route.distance) === bestRate
+            : r.value === bestRate)
           .map(r => ({ id: r.carriers.id, name: r.carriers.name }))
       : [];
 
@@ -115,10 +124,10 @@ export const getRouteAnalytics = async (bidId: string): Promise<RouteAnalytics[]
     // Here we'll use a simple implementation - in a real system,
     // you'd want a more sophisticated outlier detection
     let isOutlier = false;
-    if (average !== null && validRates.length >= 3) {
+    if (average !== null && perMileRates.length >= 3) {
       // Calculate standard deviation
       const mean = average;
-      const squareDiffs = validRates.map(value => {
+      const squareDiffs = perMileRates.map(value => {
         const diff = value - mean;
         return diff * diff;
       });
@@ -142,7 +151,8 @@ export const getRouteAnalytics = async (bidId: string): Promise<RouteAnalytics[]
       bestRateCarriers,
       averageRate: average,
       responseCount: routeRates.length,
-      isOutlier
+      isOutlier,
+      distance: route.distance
     };
   });
 
@@ -150,10 +160,36 @@ export const getRouteAnalytics = async (bidId: string): Promise<RouteAnalytics[]
 };
 
 export const getCostDistribution = async (bidId: string): Promise<CostDistributionBucket[]> => {
+  // First, fetch routes that belong to this bid to get their distances
+  const { data: routeBids, error: routeBidsError } = await supabase
+    .from('route_bids')
+    .select('route_id')
+    .eq('bid_id', bidId);
+
+  if (routeBidsError) throw routeBidsError;
+  if (!routeBids || routeBids.length === 0) return [];
+
+  // Get the routes with their distances
+  const { data: routes, error: routesError } = await supabase
+    .from('routes')
+    .select('id, distance')
+    .in('id', routeBids.map(rb => rb.route_id));
+
+  if (routesError) throw routesError;
+  
+  // Create a map of route IDs to distances for easy lookup
+  const routeDistances = new Map<string, number | null>();
+  if (routes) {
+    routes.forEach(route => {
+      routeDistances.set(route.id, route.distance);
+    });
+  }
+
   const { data: rates, error } = await supabase
     .from('carrier_route_rates')
     .select(`
       value,
+      route_id,
       carrier:carriers(id, name),
       route_id
     `)
@@ -163,10 +199,20 @@ export const getCostDistribution = async (bidId: string): Promise<CostDistributi
   if (error) throw error;
   if (!rates || rates.length === 0) return [];
 
+  // Convert rates to per-mile rates if distance is available
+  const perMileRates = rates.map(r => {
+    const distance = routeDistances.get(r.route_id);
+    const perMileValue = distance && distance > 0 ? r.value / distance : r.value;
+    return {
+      ...r,
+      originalValue: r.value,
+      value: perMileValue
+    };
+  }).filter(r => r.value > 0);
+
   // Create buckets of $0.10 intervals
-  const validRates = rates.filter(r => r.value > 0);
-  const minRate = Math.floor(Math.min(...validRates.map(r => r.value)) * 10) / 10;
-  const maxRate = Math.ceil(Math.max(...validRates.map(r => r.value)) * 10) / 10;
+  const minRate = Math.floor(Math.min(...perMileRates.map(r => r.value)) * 10) / 10;
+  const maxRate = Math.ceil(Math.max(...perMileRates.map(r => r.value)) * 10) / 10;
   
   const buckets: CostDistributionBucket[] = [];
   for (let i = minRate; i <= maxRate; i += 0.1) {
@@ -179,7 +225,7 @@ export const getCostDistribution = async (bidId: string): Promise<CostDistributi
   }
 
   // Fill buckets
-  validRates.forEach(rate => {
+  perMileRates.forEach(rate => {
     const bucket = buckets.find(b => rate.value >= b.min && rate.value < b.max);
     if (bucket) {
       bucket.count++;

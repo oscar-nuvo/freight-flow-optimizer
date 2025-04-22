@@ -83,12 +83,17 @@ export function BidAnalyticsSection({ bidId, equipmentType }: BidAnalyticsSectio
     );
   }
 
-  const averageRate = routeAnalytics.reduce((sum, route) => 
-    route.averageRate ? sum + route.averageRate : sum, 0
-  ) / routeAnalytics.filter(route => route.averageRate).length;
+  // Calculate weighted average rate (per mile) across all routes
+  const routesWithRates = routeAnalytics.filter(route => route.averageRate !== null);
+  const totalResponses = routesWithRates.reduce((sum, route) => sum + route.responseCount, 0);
+  
+  const weightedAverageRate = totalResponses > 0
+    ? routesWithRates.reduce((sum, route) => 
+        sum + (route.averageRate * route.responseCount), 0) / totalResponses
+    : null;
 
-  const nationalAverageComparison = nationalAverage 
-    ? ((averageRate - nationalAverage) / nationalAverage) * 100
+  const nationalAverageComparison = nationalAverage && weightedAverageRate
+    ? ((weightedAverageRate - nationalAverage) / nationalAverage) * 100
     : null;
 
   return (
@@ -114,13 +119,17 @@ export function BidAnalyticsSection({ bidId, equipmentType }: BidAnalyticsSectio
           <CardHeader>
             <CardTitle>Average Rate</CardTitle>
             <CardDescription>
-              Average rate across all routes
+              Average rate per mile across all routes
               {nationalAverage && ` compared to national average`}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <div className="text-2xl font-bold">${averageRate.toFixed(2)}/mile</div>
+              <div className="text-2xl font-bold">
+                {weightedAverageRate 
+                  ? `$${weightedAverageRate.toFixed(2)}/mile` 
+                  : 'No rate data available'}
+              </div>
               {nationalAverageComparison !== null && (
                 <div className={`text-sm ${nationalAverageComparison > 0 ? 'text-red-500' : 'text-green-500'}`}>
                   {nationalAverageComparison > 0 ? '↑' : '↓'} {Math.abs(nationalAverageComparison).toFixed(1)}% vs national average
@@ -134,7 +143,7 @@ export function BidAnalyticsSection({ bidId, equipmentType }: BidAnalyticsSectio
       <Card>
         <CardHeader>
           <CardTitle>Cost Distribution</CardTitle>
-          <CardDescription>Distribution of rates across all routes</CardDescription>
+          <CardDescription>Distribution of rates per mile across all routes</CardDescription>
         </CardHeader>
         <CardContent>
           <CostDistributionChart data={costDistribution} nationalAverage={nationalAverage} />

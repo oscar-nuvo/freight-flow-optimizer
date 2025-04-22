@@ -22,6 +22,7 @@ interface RouteAnalyticsTableProps {
     averageRate: number | null;
     responseCount: number;
     isOutlier: boolean;
+    distance: number | null;
   }[];
 }
 
@@ -34,8 +35,8 @@ export function RouteAnalyticsTable({ data }: RouteAnalyticsTableProps) {
             <TableHead>Origin</TableHead>
             <TableHead>Destination</TableHead>
             <TableHead>Equipment</TableHead>
-            <TableHead>Best Rate</TableHead>
-            <TableHead>Average Rate</TableHead>
+            <TableHead>Best Rate (per mile)</TableHead>
+            <TableHead>Average Rate (per mile)</TableHead>
             <TableHead>Responses</TableHead>
           </TableRow>
         </TableHeader>
