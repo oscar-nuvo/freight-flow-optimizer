@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 interface BidParticipationStats {
@@ -83,7 +84,7 @@ export const getRouteAnalytics = async (bidId: string): Promise<RouteAnalytics[]
       carriers(id, name)
     `)
     .eq('bid_id', bidId)
-    .is('value', null, true);
+    .not('value', 'is', null);
 
   if (ratesError) throw ratesError;
   
@@ -106,7 +107,7 @@ export const getRouteAnalytics = async (bidId: string): Promise<RouteAnalytics[]
     const bestRateCarriers = bestRate !== null 
       ? routeRates
           .filter(r => r.value === bestRate)
-          .map(r => ({ id: r.carrier.id, name: r.carrier.name }))
+          .map(r => ({ id: r.carriers.id, name: r.carriers.name }))
       : [];
 
     // Simplified outlier detection
