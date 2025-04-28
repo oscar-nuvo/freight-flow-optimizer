@@ -68,8 +68,6 @@ export function CarrierBidResponsePage() {
         const bidId = invitationData.bid_id;
         const carrierId = invitationData.carrier_id;
 
-        console.log("Fetching bid details for id:", bidId, "for invitation:", invitationData.id, "organization_id:", invitationData.organization_id);
-
         try {
           const { data: bidData, error: bidError } = await supabase
             .from("bids")
@@ -102,10 +100,10 @@ export function CarrierBidResponsePage() {
 
           setBidDetails(bidData);
 
-          const routesData = await getRoutesByBid(bidId);
+          const routesData = await getRoutesByBid(bidId, invitationData.id);
 
           if (!Array.isArray(routesData) || routesData.length === 0) {
-            setError("No routes are currently available for this bid. The bid manager may not have added any, or you may lack access.");
+            setError("No routes are currently available for this bid.");
             setRoutes([]);
             setIsLoading(false);
             return;
@@ -114,16 +112,14 @@ export function CarrierBidResponsePage() {
           setRoutes(routesData);
 
           try {
-            if (bidData.org_id) {
-              const existingResponseData = await getExistingResponse(bidId, carrierId);
-              if (existingResponseData) {
-                setExistingResponse(existingResponseData);
-                setFormValues({
-                  responderName: existingResponseData.responder_name,
-                  responderEmail: existingResponseData.responder_email,
-                  routeRates: existingResponseData.rates || {}
-                });
-              }
+            const existingResponseData = await getExistingResponse(bidId, carrierId, invitationData.id);
+            if (existingResponseData) {
+              setExistingResponse(existingResponseData);
+              setFormValues({
+                responderName: existingResponseData.responder_name,
+                responderEmail: existingResponseData.responder_email,
+                routeRates: existingResponseData.rates || {}
+              });
             }
           } catch (err) {
             console.log("No existing response found, starting fresh");

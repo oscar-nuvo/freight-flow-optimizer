@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { BidResponseFormValues, BidResponseSubmission, BidResponseWithRates, RouteRateSubmission } from "@/types/bidResponse";
 import { CurrencyType } from "@/types/invitation";
@@ -11,17 +12,23 @@ export const submitBidResponse = async (
   isDraft: boolean = false
 ): Promise<BidResponseWithRates> => {
   try {
+    // Configure Supabase client with invitation token header
+    const supabaseWithToken = supabase.headers({
+      'invitation-token': invitationId
+    });
+
     // Get bid org (still needed for org_id on write for integrity, but not enforced by RLS for public route)
-    const { data: bidOrg } = await supabase
+    const { data: bidOrg } = await supabaseWithToken
       .from("bids")
       .select("org_id")
       .eq("id", bidId)
-      .maybeSingle(); // Allow for no org_id on public route
+      .maybeSingle();
+
     const orgId = bidOrg?.org_id;
 
     // First, check for an existing response (optional for public flow)
     let currentVersion = 1;
-    const { data: existingResponse } = await supabase
+    const { data: existingResponse } = await supabaseWithToken
       .from("carrier_bid_responses")
       .select("version")
       .eq("bid_id", bidId)
@@ -40,7 +47,7 @@ export const submitBidResponse = async (
       ([_, value]) => value.value !== null && value.value !== undefined
     ).length;
 
-    const { data: responseData, error: responseError } = await supabase
+    const { data: responseData, error: responseError } = await supabaseWithToken
       .from("carrier_bid_responses")
       .insert({
         bid_id: bidId,
@@ -50,7 +57,7 @@ export const submitBidResponse = async (
         responder_email: formValues.responderEmail,
         version: currentVersion,
         routes_submitted: routesWithRates,
-        organization_id: orgId, // ENFORCE ORG SCOPE IF PRESENT
+        organization_id: orgId,
       })
       .select()
       .single();
@@ -76,7 +83,7 @@ export const submitBidResponse = async (
       }));
 
     if (rateInserts.length > 0) {
-      const { error: ratesError } = await supabase
+      const { error: ratesError } = await supabaseWithToken
         .from("carrier_route_rates")
         .insert(rateInserts);
 
@@ -88,7 +95,7 @@ export const submitBidResponse = async (
 
     // If not a draft, update invitation status
     if (!isDraft) {
-      await supabase
+      await supabaseWithToken
         .from("bid_carrier_invitations")
         .update({ status: "responded", responded_at: new Date().toISOString() })
         .eq("id", invitationId);
@@ -118,11 +125,17 @@ export const submitBidResponse = async (
 // Get existing response with rates for a bid and carrier
 export const getExistingResponse = async (
   bidId: string,
-  carrierId: string
+  carrierId: string,
+  invitationId: string
 ): Promise<BidResponseWithRates | null> => {
   try {
+    // Configure Supabase client with invitation token header
+    const supabaseWithToken = supabase.headers({
+      'invitation-token': invitationId
+    });
+
     // Get the bid/org to enforce org filter
-    const { data: bidOrg, error: bidOrgError } = await supabase
+    const { data: bidOrg, error: bidOrgError } = await supabaseWithToken
       .from("bids")
       .select("org_id")
       .eq("id", bidId)
@@ -141,7 +154,7 @@ export const getExistingResponse = async (
     }
 
     // Get the latest response version
-    const { data: responseData, error: responseError } = await supabase
+    const { data: responseData, error: responseError } = await supabaseWithToken
       .from("carrier_bid_responses")
       .select("*")
       .eq("bid_id", bidId)
@@ -161,7 +174,7 @@ export const getExistingResponse = async (
     }
 
     // Get the rates for this response
-    const { data: ratesData, error: ratesError } = await supabase
+    const { data: ratesData, error: ratesError } = await supabaseWithToken
       .from("carrier_route_rates")
       .select("*")
       .eq("response_id", responseData.id)

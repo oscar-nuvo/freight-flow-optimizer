@@ -1,4 +1,3 @@
-
 /**
  * @file Routes Service
  * 
@@ -52,15 +51,17 @@ export const getRoutes = async (filters?: RouteFilters) => {
   return data;
 };
 
-export const getRoutesByBid = async (bidId: string) => {
-  // Enhanced reliability: Always fetch all associated and not-deleted routes for this bid
+export const getRoutesByBid = async (bidId: string, invitationId?: string) => {
   console.log("[getRoutesByBid] Fetching routes for bid:", bidId);
 
   try {
-    // This function is now made to work without requiring authentication/org match!
+    // Configure Supabase client with invitation token header if provided
+    const supabaseClient = invitationId ? 
+      supabase.headers({ 'invitation-token': invitationId }) : 
+      supabase;
 
-    // Get all route-bid associations for this bid, plus the route details, even if called publicly
-    const { data, error } = await supabase
+    // Get all route-bid associations for this bid, plus the route details
+    const { data, error } = await supabaseClient
       .from("route_bids")
       .select(`
         route_id,
