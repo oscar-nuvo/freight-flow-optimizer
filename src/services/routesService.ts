@@ -192,24 +192,93 @@ export const deleteRoute = async (id: string): Promise<void> => {
 };
 
 export const associateRouteWithBid = async (routeId: string, bidId: string) => {
-  const { error } = await supabase
-    .from("route_bids")
-    .insert({ route_id: routeId, bid_id: bidId });
+  try {
+    // First, get the organization ID from the bid
+    const { data: bidData, error: bidError } = await supabase
+      .from("bids")
+      .select("org_id")
+      .eq("id", bidId)
+      .single();
+      
+    if (bidError) {
+      console.error("Error fetching bid for organization ID:", bidError);
+      throw bidError;
+    }
+    
+    const organizationId = bidData.org_id;
+    
+    if (!organizationId) {
+      throw new Error("Could not determine organization ID for this bid");
+    }
+    
+    const { error } = await supabase
+      .from("route_bids")
+      .insert({ 
+        route_id: routeId, 
+        bid_id: bidId,
+        organization_id: organizationId
+      });
 
-  if (error) {
-    console.error("Error associating route with bid:", error);
-    throw error;
+    if (error) {
+      console.error("Error associating route with bid:", error);
+      throw error;
+    }
+    
+    // Update lane count in the bid
+    await updateBidLaneCount(bidId);
+  } catch (err) {
+    console.error("Error in associateRouteWithBid:", err);
+    throw err;
+  }
+};
+
+// Helper function to update the lane count in the bid
+const updateBidLaneCount = async (bidId: string) => {
+  try {
+    // Count the routes in this bid
+    const { count, error: countError } = await supabase
+      .from("route_bids")
+      .select("*", { count: 'exact', head: true })
+      .eq("bid_id", bidId);
+    
+    if (countError) {
+      console.error("Error counting routes in bid:", countError);
+      throw countError;
+    }
+    
+    // Update the bid's lanes count
+    const { error: updateError } = await supabase
+      .from("bids")
+      .update({ lanes: count || 0 })
+      .eq("id", bidId);
+    
+    if (updateError) {
+      console.error("Error updating bid lane count:", updateError);
+      throw updateError;
+    }
+  } catch (err) {
+    console.error("Error in updateBidLaneCount:", err);
+    // Don't throw here - we don't want to interrupt the main operation
+    // if this ancillary update fails
   }
 };
 
 export const removeRouteFromBid = async (routeId: string, bidId: string) => {
-  const { error } = await supabase
-    .from("route_bids")
-    .delete()
-    .match({ route_id: routeId, bid_id: bidId });
+  try {
+    const { error } = await supabase
+      .from("route_bids")
+      .delete()
+      .match({ route_id: routeId, bid_id: bidId });
 
-  if (error) {
-    console.error("Error removing route from bid:", error);
-    throw error;
+    if (error) {
+      console.error("Error removing route from bid:", error);
+      throw error;
+    }
+    
+    // Update lane count in the bid
+    await updateBidLaneCount(bidId);
+  } catch (err) {
+    console.error("Error in removeRouteFromBid:", err);
+    throw err;
   }
 };

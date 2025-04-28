@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Route } from "@/types/route";
 import { BidResponseFormValues, BidResponseSubmission, RouteRateSubmission } from "@/types/bidResponse";
@@ -262,7 +263,7 @@ export const submitBidResponse = async (
       .reduce<Record<string, RouteRateSubmission>>((acc, [routeId, rate]) => {
         acc[routeId] = {
           route_id: routeId,
-          value: rate.value,
+          value: rate.value as number, // TypeScript can't infer this is non-null at this point
           currency: "USD",
           comment: rate.comment
         };
@@ -271,7 +272,7 @@ export const submitBidResponse = async (
       
     const routesSubmitted = Object.keys(routeRates).length;
     
-    const requestData = {
+    const requestData: BidResponseSubmission = {
       bid_id: bidId,
       carrier_id: carrierId,
       invitation_id: invitationId,

@@ -648,6 +648,7 @@ export type Database = {
           bid_id: string
           created_at: string
           id: string
+          organization_id: string | null
           route_id: string
           updated_at: string
         }
@@ -655,6 +656,7 @@ export type Database = {
           bid_id: string
           created_at?: string
           id?: string
+          organization_id?: string | null
           route_id: string
           updated_at?: string
         }
@@ -662,6 +664,7 @@ export type Database = {
           bid_id?: string
           created_at?: string
           id?: string
+          organization_id?: string | null
           route_id?: string
           updated_at?: string
         }
@@ -761,6 +764,18 @@ export type Database = {
         Returns: {
           enum_value: string
         }[]
+      }
+      get_invitation_for_token: {
+        Args: { p_token: string }
+        Returns: {
+          bid_id: string
+          carrier_id: string
+          organization_id: string
+        }[]
+      }
+      get_route_bid_org_id: {
+        Args: { route_bid_id: string }
+        Returns: string
       }
       get_user_org_id: {
         Args: { user_id?: string }

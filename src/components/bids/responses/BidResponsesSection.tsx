@@ -40,6 +40,7 @@ export function BidResponsesSection({
     const fetchResponses = async () => {
       try {
         setIsLoading(true);
+        console.log("[BidResponsesSection] Fetching responses with token:", invitationToken ? "provided" : "none");
         const data = await getBidResponses(bidId, invitationToken);
         setResponses(data);
       } catch (error) {
@@ -72,7 +73,7 @@ export function BidResponsesSection({
   const handleExportResponses = async () => {
     try {
       setIsExporting(true);
-      const exportData = await exportBidResponses(bidId, routes);
+      const exportData = await exportBidResponses(bidId, routes, invitationToken);
       
       if (!exportData || exportData.length === 0) {
         toast({
