@@ -1,3 +1,4 @@
+
 /**
  * @file Routes Service
  * 
@@ -70,8 +71,7 @@ export const getRoutesByBid = async (bidId: string, invitationId?: string) => {
           )
         )
       `)
-      .eq("bid_id", bidId)
-      .select(options);
+      .eq("bid_id", bidId);
 
     if (error) {
       console.error("[getRoutesByBid] Error fetching route_bids:", error);
@@ -99,17 +99,23 @@ export const getRoutesByBid = async (bidId: string, invitationId?: string) => {
     }
 
     const routes = rawRoutes.map(route => {
+      if (!route) {
+        console.warn("[getRoutesByBid] Null route encountered");
+        return null;
+      }
+      
       const mappedEquipmentType = mapToEquipmentType(route.equipment_type);
       if (typeof mappedEquipmentType !== "string") {
         console.warn("[getRoutesByBid] Invalid equipment_type for route:", route.id, route.equipment_type);
       }
+      
       return {
         ...route,
         equipment_type: mappedEquipmentType,
         // Ensure route_bids exists, even if it's empty
         route_bids: route.route_bids || [{ bid_id: bidId }]
       };
-    });
+    }).filter(Boolean) as Route[]; // Filter out null values and cast to Route[]
 
     // Extra logging if empty result so error can be tracked
     if (routes.length === 0) {

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { BidResponseFormValues, BidResponseSubmission, BidResponseWithRates, RouteRateSubmission } from "@/types/bidResponse";
 import { CurrencyType } from "@/types/invitation";
@@ -18,17 +17,22 @@ export const submitBidResponse = async (
     };
 
     // Get bid org (still needed for org_id on write for integrity, but not enforced by RLS for public route)
-    const { data: bidOrg } = await supabase
+    const { data: bidOrg, error: bidOrgError } = await supabase
       .from("bids")
       .select("org_id")
       .eq("id", bidId)
       .maybeSingle();
 
+    if (bidOrgError) {
+      console.error("Error fetching bid organization:", bidOrgError);
+      throw new Error(`Unable to validate bid: ${bidOrgError.message}`);
+    }
+
     const orgId = bidOrg?.org_id;
 
     // First, check for an existing response (optional for public flow)
     let currentVersion = 1;
-    const { data: existingResponse } = await supabase
+    const { data: existingResponse, error: existingResponseError } = await supabase
       .from("carrier_bid_responses")
       .select("version")
       .eq("bid_id", bidId)
@@ -37,6 +41,10 @@ export const submitBidResponse = async (
       .order("version", { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    if (existingResponseError) {
+      console.error("Error checking existing responses:", existingResponseError);
+    }
 
     if (existingResponse) {
       currentVersion = existingResponse.version + 1;
@@ -86,13 +94,15 @@ export const submitBidResponse = async (
       }));
 
     if (rateInserts.length > 0) {
-      const { error: ratesError } = await supabase
-        .from("carrier_route_rates")
-        .insert(rateInserts, options);
+      for (const rateInsert of rateInserts) {
+        const { error: rateError } = await supabase
+          .from("carrier_route_rates")
+          .insert(rateInsert, options);
 
-      if (ratesError) {
-        console.error("Error inserting route rates:", ratesError);
-        throw new Error(ratesError.message);
+        if (rateError) {
+          console.error("Error inserting route rate:", rateError);
+          throw new Error(rateError.message);
+        }
       }
     }
 
@@ -101,9 +111,7 @@ export const submitBidResponse = async (
       await supabase
         .from("bid_carrier_invitations")
         .update({ status: "responded", responded_at: new Date().toISOString() })
-        .eq("id", invitationId)
-        .select(options); // Add select() to execute the query properly
-
+        .eq("id", invitationId);
     }
 
     // Return formatted response with rates
@@ -167,7 +175,7 @@ export const getExistingResponse = async (
       .eq("organization_id", orgId)
       .order("version", { ascending: false })
       .limit(1)
-      .maybeSingle(options);
+      .maybeSingle();
 
     if (responseError) {
       console.error("Error fetching bid response:", responseError);
@@ -183,8 +191,7 @@ export const getExistingResponse = async (
       .from("carrier_route_rates")
       .select("*")
       .eq("response_id", responseData.id)
-      .eq("organization_id", orgId)
-      .select(options);
+      .eq("organization_id", orgId);
 
     if (ratesError) {
       console.error("Error fetching route rates:", ratesError);
@@ -192,15 +199,17 @@ export const getExistingResponse = async (
     }
 
     // Format the response with rates
-    const rates = (ratesData || []).reduce((acc, rate) => {
-      acc[rate.route_id] = {
-        id: rate.id,
-        value: rate.value,
-        currency: rate.currency,
-        comment: rate.comment
-      };
+    const rates = ratesData?.reduce((acc, rate) => {
+      if (rate) {
+        acc[rate.route_id] = {
+          id: rate.id,
+          value: rate.value,
+          currency: rate.currency,
+          comment: rate.comment
+        };
+      }
       return acc;
-    }, {} as Record<string, any>);
+    }, {} as Record<string, any>) || {};
 
     return {
       ...responseData,
