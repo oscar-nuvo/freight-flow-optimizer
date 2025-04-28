@@ -1,4 +1,3 @@
-
 /**
  * @file Routes Service
  * 
@@ -47,49 +46,47 @@ export const getRoutesByBid = async (bidId: string) => {
   console.log("[getRoutesByBid] Fetching routes for bid:", bidId);
 
   try {
-    // Get all route-bid associations for this bid, plus the route details
-    // Fix ambiguous column reference by fully qualifying the bid_id column with table alias
-    const { data, error } = await supabase
+    // First, get the route IDs associated with this bid
+    const { data: routeBidData, error: routeBidError } = await supabase
       .from("route_bids")
-      .select(`
-        route_id,
-        routes:routes!route_id (
-          id,
-          origin_city,
-          destination_city,
-          commodity,
-          equipment_type,
-          weekly_volume,
-          distance,
-          is_deleted,
-          organization_id,
-          created_at,
-          updated_at,
-          route_bids!route_id (
-            bid_id
-          )
-        )
-      `)
-      .eq("route_bids.bid_id", bidId); // Explicitly qualify bid_id with the table name
+      .select("route_id")
+      .eq("bid_id", bidId);
 
-    if (error) {
-      console.error("[getRoutesByBid] Error fetching route_bids:", error);
-      throw new Error(`Failed to retrieve routes: ${error.message}`);
+    if (routeBidError) {
+      console.error("[getRoutesByBid] Error fetching route_bids:", routeBidError);
+      throw new Error(`Failed to retrieve routes: ${routeBidError.message}`);
     }
 
-    if (!data || data.length === 0) {
+    if (!routeBidData || routeBidData.length === 0) {
       console.log("[getRoutesByBid] No routes associated with bid:", bidId);
       return [];
     }
 
-    // Filter out deleted routes and transform the data structure
-    const routes = data
-      .filter(item => item.routes && !item.routes.is_deleted)
-      .map(item => ({
-        ...item.routes,
-        equipment_type: mapToEquipmentType(item.routes.equipment_type),
-        route_bids: item.routes.route_bids || []
-      })) as Route[]; // Explicitly cast to Route[]
+    // Get the routes themselves in a separate query
+    const routeIds = routeBidData.map(rb => rb.route_id);
+    
+    const { data: routesData, error: routesError } = await supabase
+      .from("routes")
+      .select(`
+        *,
+        route_bids!route_id (
+          bid_id
+        )
+      `)
+      .in('id', routeIds)
+      .eq('is_deleted', false);
+
+    if (routesError) {
+      console.error("[getRoutesByBid] Error fetching routes:", routesError);
+      throw new Error(`Failed to retrieve route details: ${routesError.message}`);
+    }
+
+    // Transform the data to match the Route type
+    const routes = (routesData || []).map(route => ({
+      ...route,
+      equipment_type: mapToEquipmentType(route.equipment_type),
+      route_bids: route.route_bids || []
+    })) as Route[]; // Explicitly cast to Route[]
 
     console.log(`[getRoutesByBid] Returning ${routes.length} route(s) for bid`, bidId);
     return routes;
