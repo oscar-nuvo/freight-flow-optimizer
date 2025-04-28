@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Route } from "@/types/route";
-import { BidResponseFormValues, BidResponseSubmission } from "@/types/bidResponse";
+import { BidResponseFormValues, BidResponseSubmission, RouteRateSubmission } from "@/types/bidResponse";
 import { Json } from "@/integrations/supabase/types";
 
 export const getBidResponses = async (bidId: string, invitationToken?: string) => {
@@ -259,7 +259,7 @@ export const submitBidResponse = async (
     
     const routeRates = Object.entries(formValues.routeRates)
       .filter(([_, rate]) => rate.value !== null && rate.value !== undefined)
-      .reduce((acc, [routeId, rate]) => {
+      .reduce<Record<string, RouteRateSubmission>>((acc, [routeId, rate]) => {
         acc[routeId] = {
           route_id: routeId,
           value: rate.value,
