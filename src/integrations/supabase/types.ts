@@ -199,6 +199,7 @@ export type Database = {
           carrier_id: string
           id: string
           invitation_id: string
+          is_draft: boolean
           organization_id: string
           raw_response_json: Json | null
           responder_email: string
@@ -212,6 +213,7 @@ export type Database = {
           carrier_id: string
           id?: string
           invitation_id: string
+          is_draft?: boolean
           organization_id: string
           raw_response_json?: Json | null
           responder_email: string
@@ -225,6 +227,7 @@ export type Database = {
           carrier_id?: string
           id?: string
           invitation_id?: string
+          is_draft?: boolean
           organization_id?: string
           raw_response_json?: Json | null
           responder_email?: string

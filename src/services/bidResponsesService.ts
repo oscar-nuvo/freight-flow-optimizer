@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Route } from "@/types/route";
 import { BidResponseFormValues, BidResponseSubmission, RouteRateSubmission } from "@/types/bidResponse";
@@ -263,7 +262,7 @@ export const submitBidResponse = async (
       .reduce<Record<string, RouteRateSubmission>>((acc, [routeId, rate]) => {
         acc[routeId] = {
           route_id: routeId,
-          value: rate.value as number, // TypeScript can't infer this is non-null at this point
+          value: rate.value as number,
           currency: "USD",
           comment: rate.comment
         };
@@ -302,7 +301,6 @@ export const submitBidResponse = async (
       const ratesForInsertion = Object.entries(routeRates).map(([routeId, rate]) => ({
         route_id: routeId,
         value: rate.value,
-        // Fix the currency type to match the expected enum values
         currency: "USD" as "USD" | "MXN" | "CAD",
         comment: rate.comment,
         bid_id: bidId,
@@ -312,7 +310,6 @@ export const submitBidResponse = async (
         version: version
       }));
       
-      // Use proper type for inserting multiple rows
       const { error: ratesError } = await supabase
         .from("carrier_route_rates")
         .insert(ratesForInsertion);
