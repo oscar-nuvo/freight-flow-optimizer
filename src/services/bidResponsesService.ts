@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Route } from "@/types/route";
 import { BidResponseFormValues, BidResponseSubmission } from "@/types/bidResponse";
+import { Json } from "@/integrations/supabase/types";
 
 export const getBidResponses = async (bidId: string, invitationToken?: string) => {
   console.log("[getBidResponses] Starting fetch for bid:", bidId, "token:", invitationToken ? "provided" : "not provided");
@@ -260,6 +261,20 @@ export const submitBidResponse = async (
     const existingResponse = await getExistingResponse(bidId, carrierId, invitationId);
     const version = existingResponse ? existingResponse.version + 1 : 1;
     
+    // Get organization ID from bid
+    const { data: bidData, error: bidError } = await supabase
+      .from("bids")
+      .select("org_id")
+      .eq("id", bidId)
+      .single();
+      
+    if (bidError) {
+      console.error("[submitBidResponse] Error fetching bid:", bidError);
+      throw bidError;
+    }
+    
+    const organizationId = bidData.org_id;
+    
     // Format route rates for submission
     const routeRates = Object.entries(formValues.routeRates)
       .filter(([_, rate]) => rate.value !== null && rate.value !== undefined)
@@ -277,10 +292,11 @@ export const submitBidResponse = async (
     const routesSubmitted = Object.keys(routeRates).length;
     
     // Prepare response data
-    const responseData = {
+    const requestData = {
       bid_id: bidId,
       carrier_id: carrierId,
       invitation_id: invitationId,
+      organization_id: organizationId,
       responder_name: formValues.responderName,
       responder_email: formValues.responderEmail,
       version,
@@ -289,9 +305,9 @@ export const submitBidResponse = async (
     };
     
     // Insert the response
-    const { data: responseData, error: responseError } = await supabase
+    const { data: insertedData, error: responseError } = await supabase
       .from("carrier_bid_responses")
-      .insert(responseData)
+      .insert(requestData)
       .select()
       .single();
       
@@ -300,14 +316,18 @@ export const submitBidResponse = async (
       throw responseError;
     }
     
-    const responseId = responseData.id;
+    const responseId = insertedData.id;
     console.log("[submitBidResponse] Response created with ID:", responseId);
     
     // Insert the rates
     if (routesSubmitted > 0) {
       const ratesForInsertion = Object.values(routeRates).map(rate => ({
         ...rate,
-        response_id: responseId
+        bid_id: bidId,
+        carrier_id: carrierId,
+        organization_id: organizationId,
+        response_id: responseId,
+        version: version
       }));
       
       const { error: ratesError } = await supabase
@@ -322,7 +342,7 @@ export const submitBidResponse = async (
     
     // Return the complete response with rates
     return {
-      ...responseData,
+      ...insertedData,
       rates: routeRates
     };
   } catch (err) {

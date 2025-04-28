@@ -141,17 +141,19 @@ describe("CarrierBidResponsePage", () => {
       }
     ];
 
-    // Mock existing response - Use CurrencyType for currency
+    // Mock existing response - Use CurrencyType for currency and include organization_id
     const mockExistingResponse = {
       id: "response-123",
       bid_id: "bid-123",
       carrier_id: "carrier-123",
       invitation_id: "inv-123",
+      organization_id: "org-123", // Added required field
       responder_name: "John Doe",
       responder_email: "john@example.com",
       submitted_at: "2023-06-01T00:00:00.000Z",
       version: 1,
       routes_submitted: 1,
+      raw_response_json: null, // Added required field
       rates: {
         "route-1": {
           id: "rate-1",
