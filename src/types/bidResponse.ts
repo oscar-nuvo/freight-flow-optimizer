@@ -12,6 +12,12 @@ export interface BidResponseFormValues {
   routeRates: Record<string, { value: number | null; comment?: string }>;
 }
 
+// Add this interface to fix the error in RouteRatesForm.tsx
+export interface RouteRateFormValue {
+  value: number | null;
+  comment?: string;
+}
+
 export interface BidResponseSubmission {
   bid_id: string;
   carrier_id: string;

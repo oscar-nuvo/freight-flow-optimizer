@@ -302,7 +302,8 @@ export const submitBidResponse = async (
       const ratesForInsertion = Object.entries(routeRates).map(([routeId, rate]) => ({
         route_id: routeId,
         value: rate.value,
-        currency: rate.currency,
+        // Fix the currency type to match the expected enum values
+        currency: "USD" as "USD" | "MXN" | "CAD",
         comment: rate.comment,
         bid_id: bidId,
         carrier_id: carrierId,
@@ -311,6 +312,7 @@ export const submitBidResponse = async (
         version: version
       }));
       
+      // Use proper type for inserting multiple rows
       const { error: ratesError } = await supabase
         .from("carrier_route_rates")
         .insert(ratesForInsertion);
