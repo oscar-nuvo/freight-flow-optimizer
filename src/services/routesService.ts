@@ -1,4 +1,3 @@
-
 /**
  * @file Routes Service
  * 
@@ -58,10 +57,8 @@ export const getRoutesByBid = async (bidId: string, invitationToken?: string) =>
 
     // Add invitation token header if provided
     if (invitationToken) {
-      // Use the correct method to set headers
-      query = query.headers({
-        'invitation-token': invitationToken
-      });
+      const headers = { 'invitation-token': invitationToken };
+      query = query.setHeader('invitation-token', invitationToken);
     }
 
     const { data: routeBidData, error: routeBidError } = await query;
@@ -82,10 +79,7 @@ export const getRoutesByBid = async (bidId: string, invitationToken?: string) =>
 
     // Add invitation token header if provided
     if (invitationToken) {
-      // Use the correct method to set headers
-      routesQuery = routesQuery.headers({
-        'invitation-token': invitationToken
-      });
+      routesQuery = routesQuery.setHeader('invitation-token', invitationToken);
     }
 
     const { data: routesData, error: routesError } = await routesQuery;
