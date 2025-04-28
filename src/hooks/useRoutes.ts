@@ -5,6 +5,6 @@ import { getRoutes } from "@/services/routesService";
 export function useRoutes() {
   return useQuery({
     queryKey: ['routes'],
-    queryFn: getRoutes
+    queryFn: () => getRoutes()
   });
 }
