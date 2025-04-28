@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { MapPin } from "lucide-react";
-import { createRoute, updateRoute, deleteRoute } from "@/services/routeService";
+import { createRoute, updateRoute, deleteRoute } from "@/services/routesService";
 import { Route, RouteFormValues } from "@/types/route";
 import { RouteForm } from "@/components/routes/RouteForm";
 import { EnhancedRoutesFilter } from "@/components/routes/EnhancedRoutesFilter";

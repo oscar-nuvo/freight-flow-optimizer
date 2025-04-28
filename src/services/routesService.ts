@@ -5,7 +5,7 @@
  * This service handles all route-related operations with proper RLS policies in place.
  */
 import { supabase } from "@/integrations/supabase/client";
-import { Route, RouteFormValues, RouteFilters } from "@/types/route";
+import { Route, RouteFormValues, RouteFilters, EquipmentType } from "@/types/route";
 
 export const getRoutes = async (filters?: RouteFilters) => {
   let query = supabase
@@ -38,7 +38,12 @@ export const getRoutes = async (filters?: RouteFilters) => {
     throw error;
   }
 
-  return data;
+  // Convert equipment_type to EquipmentType enum
+  return data?.map(route => ({
+    ...route,
+    equipment_type: route.equipment_type as EquipmentType,
+    route_bids: route.route_bids || []
+  })) || [];
 };
 
 export const getRoutesByBid = async (bidId: string) => {
@@ -67,9 +72,90 @@ export const getRoutesByBid = async (bidId: string) => {
 
     if (routesError) throw routesError;
 
-    return routesData || [];
+    // Convert equipment_type to EquipmentType enum
+    return routesData?.map(route => ({
+      ...route,
+      equipment_type: route.equipment_type as EquipmentType,
+      route_bids: route.route_bids || []
+    })) || [];
   } catch (err) {
     console.error("Error in getRoutesByBid:", err);
     throw err;
+  }
+};
+
+// Add the missing functions that were previously in routeService.ts
+export const createRoute = async (routeData: RouteFormValues): Promise<Route> => {
+  const { data, error } = await supabase
+    .from("routes")
+    .insert([routeData])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error creating route:", error);
+    throw error;
+  }
+
+  return {
+    ...data,
+    equipment_type: data.equipment_type as EquipmentType,
+    route_bids: []
+  };
+};
+
+export const updateRoute = async (id: string, routeData: RouteFormValues): Promise<Route> => {
+  const { data, error } = await supabase
+    .from("routes")
+    .update(routeData)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error updating route:", error);
+    throw error;
+  }
+
+  return {
+    ...data,
+    equipment_type: data.equipment_type as EquipmentType,
+    route_bids: []
+  };
+};
+
+export const deleteRoute = async (id: string): Promise<void> => {
+  // Soft delete by setting is_deleted to true
+  const { error } = await supabase
+    .from("routes")
+    .update({ is_deleted: true })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Error deleting route:", error);
+    throw error;
+  }
+};
+
+export const associateRouteWithBid = async (routeId: string, bidId: string) => {
+  const { error } = await supabase
+    .from("route_bids")
+    .insert({ route_id: routeId, bid_id: bidId });
+
+  if (error) {
+    console.error("Error associating route with bid:", error);
+    throw error;
+  }
+};
+
+export const removeRouteFromBid = async (routeId: string, bidId: string) => {
+  const { error } = await supabase
+    .from("route_bids")
+    .delete()
+    .match({ route_id: routeId, bid_id: bidId });
+
+  if (error) {
+    console.error("Error removing route from bid:", error);
+    throw error;
   }
 };

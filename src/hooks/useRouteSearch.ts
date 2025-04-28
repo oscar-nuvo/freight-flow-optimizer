@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getRoutes } from "@/services/routesService";
@@ -38,12 +37,8 @@ export function useRouteSearch() {
   const processRoutes = useCallback((): Route[] => {
     if (!routesData) return [];
 
-    const typedRoutes = routesData.map(route => ({
-      ...route,
-      equipment_type: route.equipment_type as EquipmentType,
-      // Add empty route_bids array if it doesn't exist
-      route_bids: route.route_bids || []
-    }));
+    // The server already converts equipment_type to EquipmentType enum
+    const typedRoutes = routesData;
 
     if (!debouncedSearchTerm) return typedRoutes;
     
