@@ -1,3 +1,4 @@
+
 /**
  * @file Routes Service
  * 
@@ -50,14 +51,15 @@ export const getRoutesByBid = async (bidId: string, invitationToken?: string) =>
 
   try {
     // First, get all route IDs associated with this bid from route_bids
-    const query = supabase
+    let query = supabase
       .from("route_bids")
       .select("route_id")
       .eq("bid_id", bidId);
 
     // Add invitation token header if provided
     if (invitationToken) {
-      query.headers({
+      // Use the correct method to set headers
+      query = query.headers({
         'invitation-token': invitationToken
       });
     }
@@ -72,7 +74,7 @@ export const getRoutesByBid = async (bidId: string, invitationToken?: string) =>
     const routeIds = routeBidData.map(rb => rb.route_id);
 
     // Fetch route details for the found IDs
-    const routesQuery = supabase
+    let routesQuery = supabase
       .from("routes")
       .select("*, route_bids(bid_id)")
       .in("id", routeIds)
@@ -80,7 +82,8 @@ export const getRoutesByBid = async (bidId: string, invitationToken?: string) =>
 
     // Add invitation token header if provided
     if (invitationToken) {
-      routesQuery.headers({
+      // Use the correct method to set headers
+      routesQuery = routesQuery.headers({
         'invitation-token': invitationToken
       });
     }
