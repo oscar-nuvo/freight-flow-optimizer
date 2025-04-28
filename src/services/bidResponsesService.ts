@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Route } from "@/types/route";
 import { BidResponseFormValues, BidResponseSubmission } from "@/types/bidResponse";
@@ -19,7 +18,6 @@ export const getBidResponses = async (bidId: string, invitationToken?: string) =
       .eq("bid_id", bidId)
       .order("submitted_at", { ascending: false });
     
-    // Add invitation token if provided
     if (invitationToken) {
       console.log("[getBidResponses] Adding invitation token to query");
       query = query.setHeader('invitation-token', invitationToken);
@@ -44,7 +42,6 @@ export const getBidResponseDetails = async (responseId: string, invitationToken?
   console.log("[getBidResponseDetails] Fetching details for response:", responseId, "token:", invitationToken ? "provided" : "not provided");
   
   try {
-    // First get the response
     let query = supabase
       .from("carrier_bid_responses")
       .select(`
@@ -58,7 +55,6 @@ export const getBidResponseDetails = async (responseId: string, invitationToken?
       .eq("id", responseId)
       .single();
     
-    // Add invitation token if provided
     if (invitationToken) {
       console.log("[getBidResponseDetails] Adding invitation token to response query");
       query = query.setHeader('invitation-token', invitationToken);
@@ -71,7 +67,6 @@ export const getBidResponseDetails = async (responseId: string, invitationToken?
       throw responseError;
     }
     
-    // Now get all rates for this response
     let ratesQuery = supabase
       .from("carrier_route_rates")
       .select(`
@@ -89,7 +84,6 @@ export const getBidResponseDetails = async (responseId: string, invitationToken?
       .eq("response_id", responseId)
       .order("submitted_at", { ascending: false });
     
-    // Add invitation token if provided
     if (invitationToken) {
       console.log("[getBidResponseDetails] Adding invitation token to rates query");
       ratesQuery = ratesQuery.setHeader('invitation-token', invitationToken);
@@ -116,14 +110,12 @@ export const getBidResponseDetails = async (responseId: string, invitationToken?
 
 export const exportBidResponses = async (bidId: string, routes: Route[], invitationToken?: string) => {
   try {
-    // First get all responses
     const responses = await getBidResponses(bidId, invitationToken);
     
     if (!responses || responses.length === 0) {
       return [];
     }
     
-    // For each response, get the details
     const responseDetails = await Promise.all(
       responses.map(async (response) => {
         try {
@@ -135,15 +127,12 @@ export const exportBidResponses = async (bidId: string, routes: Route[], invitat
       })
     );
     
-    // Filter out null responses and flatten the data
     const exportData = responseDetails
       .filter(Boolean)
       .flatMap(response => {
-        // Get rates for this response
         const rates = response?.rates || [];
         
         if (rates.length === 0) {
-          // If no rates, still include one row for the carrier
           return [{
             "Carrier Name": response?.carriers?.name || "Unknown",
             "Responder Name": response?.responder_name || "",
@@ -159,7 +148,6 @@ export const exportBidResponses = async (bidId: string, routes: Route[], invitat
           }];
         }
         
-        // Otherwise create a row for each rate
         return rates.map(rate => ({
           "Carrier Name": response?.carriers?.name || "Unknown",
           "Responder Name": response?.responder_name || "",
@@ -182,7 +170,6 @@ export const exportBidResponses = async (bidId: string, routes: Route[], invitat
   }
 };
 
-// Add the missing function getExistingResponse that's imported in CarrierBidResponsePage
 export const getExistingResponse = async (bidId: string, carrierId: string, invitationId?: string) => {
   console.log("[getExistingResponse] Checking for existing response for bid:", bidId, "carrier:", carrierId);
   
@@ -214,7 +201,6 @@ export const getExistingResponse = async (bidId: string, carrierId: string, invi
     const response = data[0];
     console.log("[getExistingResponse] Found existing response:", response.id);
     
-    // Now get the rates for this response
     const { data: ratesData, error: ratesError } = await supabase
       .from("carrier_route_rates")
       .select("*")
@@ -225,7 +211,6 @@ export const getExistingResponse = async (bidId: string, carrierId: string, invi
       throw ratesError;
     }
     
-    // Format rates as a map by route_id for easier access
     const rates = {};
     ratesData?.forEach(rate => {
       rates[rate.route_id] = {
@@ -246,7 +231,6 @@ export const getExistingResponse = async (bidId: string, carrierId: string, invi
   }
 };
 
-// Add the submitBidResponse function that's imported in CarrierBidResponsePage
 export const submitBidResponse = async (
   bidId: string,
   carrierId: string,
@@ -257,11 +241,9 @@ export const submitBidResponse = async (
   console.log("[submitBidResponse] Submitting response for bid:", bidId, "carrier:", carrierId, "isDraft:", isDraft);
   
   try {
-    // First, check for an existing response to increment version
     const existingResponse = await getExistingResponse(bidId, carrierId, invitationId);
     const version = existingResponse ? existingResponse.version + 1 : 1;
     
-    // Get organization ID from bid
     const { data: bidData, error: bidError } = await supabase
       .from("bids")
       .select("org_id")
@@ -275,23 +257,20 @@ export const submitBidResponse = async (
     
     const organizationId = bidData.org_id;
     
-    // Format route rates for submission
     const routeRates = Object.entries(formValues.routeRates)
       .filter(([_, rate]) => rate.value !== null && rate.value !== undefined)
       .reduce((acc, [routeId, rate]) => {
         acc[routeId] = {
           route_id: routeId,
           value: rate.value,
-          currency: "USD", // Default to USD or get from form
+          currency: "USD",
           comment: rate.comment
         };
         return acc;
       }, {});
       
-    // Count routes with non-null rates
     const routesSubmitted = Object.keys(routeRates).length;
     
-    // Prepare response data
     const requestData = {
       bid_id: bidId,
       carrier_id: carrierId,
@@ -304,7 +283,6 @@ export const submitBidResponse = async (
       is_draft: isDraft
     };
     
-    // Insert the response
     const { data: insertedData, error: responseError } = await supabase
       .from("carrier_bid_responses")
       .insert(requestData)
@@ -319,10 +297,12 @@ export const submitBidResponse = async (
     const responseId = insertedData.id;
     console.log("[submitBidResponse] Response created with ID:", responseId);
     
-    // Insert the rates
     if (routesSubmitted > 0) {
-      const ratesForInsertion = Object.values(routeRates).map(rate => ({
-        ...rate,
+      const ratesForInsertion = Object.entries(routeRates).map(([routeId, rate]) => ({
+        route_id: routeId,
+        value: rate.value,
+        currency: rate.currency,
+        comment: rate.comment,
         bid_id: bidId,
         carrier_id: carrierId,
         organization_id: organizationId,
@@ -340,7 +320,6 @@ export const submitBidResponse = async (
       }
     }
     
-    // Return the complete response with rates
     return {
       ...insertedData,
       rates: routeRates
