@@ -48,6 +48,7 @@ export const getRoutesByBid = async (bidId: string) => {
 
   try {
     // Get all route-bid associations for this bid, plus the route details
+    // Fix ambiguous column reference by fully qualifying the bid_id column with table alias
     const { data, error } = await supabase
       .from("route_bids")
       .select(`
@@ -69,7 +70,7 @@ export const getRoutesByBid = async (bidId: string) => {
           )
         )
       `)
-      .eq("bid_id", bidId);
+      .eq("route_bids.bid_id", bidId); // Explicitly qualify bid_id with the table name
 
     if (error) {
       console.error("[getRoutesByBid] Error fetching route_bids:", error);
@@ -83,12 +84,11 @@ export const getRoutesByBid = async (bidId: string) => {
 
     // Filter out deleted routes and transform the data structure
     const routes = data
-      .map(item => item.routes)
-      .filter(route => route && !route.is_deleted)
-      .map(route => ({
-        ...route,
-        equipment_type: mapToEquipmentType(route.equipment_type),
-        route_bids: route.route_bids || []
+      .filter(item => item.routes && !item.routes.is_deleted)
+      .map(item => ({
+        ...item.routes,
+        equipment_type: mapToEquipmentType(item.routes.equipment_type),
+        route_bids: item.routes.route_bids || []
       })) as Route[]; // Explicitly cast to Route[]
 
     console.log(`[getRoutesByBid] Returning ${routes.length} route(s) for bid`, bidId);
