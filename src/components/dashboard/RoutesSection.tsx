@@ -10,8 +10,8 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { MapPin, Plus } from "lucide-react";
-import { createRoute, updateRoute, deleteRoute } from "@/services/routesService";
+import { MapPin } from "lucide-react";
+import { createRoute, updateRoute, deleteRoute } from "@/services/routeService";
 import { Route, RouteFormValues } from "@/types/route";
 import { RouteForm } from "@/components/routes/RouteForm";
 import { EnhancedRoutesFilter } from "@/components/routes/EnhancedRoutesFilter";
