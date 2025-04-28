@@ -1,5 +1,7 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Route } from "@/types/route";
+import { BidResponseFormValues, BidResponseSubmission } from "@/types/bidResponse";
 
 export const getBidResponses = async (bidId: string, invitationToken?: string) => {
   console.log("[getBidResponses] Starting fetch for bid:", bidId, "token:", invitationToken ? "provided" : "not provided");
@@ -176,5 +178,155 @@ export const exportBidResponses = async (bidId: string, routes: Route[], invitat
   } catch (error) {
     console.error("Error in exportBidResponses:", error);
     throw error;
+  }
+};
+
+// Add the missing function getExistingResponse that's imported in CarrierBidResponsePage
+export const getExistingResponse = async (bidId: string, carrierId: string, invitationId?: string) => {
+  console.log("[getExistingResponse] Checking for existing response for bid:", bidId, "carrier:", carrierId);
+  
+  try {
+    let query = supabase
+      .from("carrier_bid_responses")
+      .select("*")
+      .eq("bid_id", bidId)
+      .eq("carrier_id", carrierId)
+      .order("version", { ascending: false })
+      .limit(1);
+      
+    if (invitationId) {
+      query = query.eq("invitation_id", invitationId);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error("[getExistingResponse] Error fetching response:", error);
+      throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      console.log("[getExistingResponse] No existing response found");
+      return null;
+    }
+    
+    const response = data[0];
+    console.log("[getExistingResponse] Found existing response:", response.id);
+    
+    // Now get the rates for this response
+    const { data: ratesData, error: ratesError } = await supabase
+      .from("carrier_route_rates")
+      .select("*")
+      .eq("response_id", response.id);
+      
+    if (ratesError) {
+      console.error("[getExistingResponse] Error fetching rates:", ratesError);
+      throw ratesError;
+    }
+    
+    // Format rates as a map by route_id for easier access
+    const rates = {};
+    ratesData?.forEach(rate => {
+      rates[rate.route_id] = {
+        id: rate.id,
+        value: rate.value,
+        currency: rate.currency,
+        comment: rate.comment
+      };
+    });
+    
+    return {
+      ...response,
+      rates
+    };
+  } catch (err) {
+    console.error("[getExistingResponse] Error:", err);
+    throw err;
+  }
+};
+
+// Add the submitBidResponse function that's imported in CarrierBidResponsePage
+export const submitBidResponse = async (
+  bidId: string,
+  carrierId: string,
+  invitationId: string,
+  formValues: BidResponseFormValues,
+  isDraft: boolean = false
+) => {
+  console.log("[submitBidResponse] Submitting response for bid:", bidId, "carrier:", carrierId, "isDraft:", isDraft);
+  
+  try {
+    // First, check for an existing response to increment version
+    const existingResponse = await getExistingResponse(bidId, carrierId, invitationId);
+    const version = existingResponse ? existingResponse.version + 1 : 1;
+    
+    // Format route rates for submission
+    const routeRates = Object.entries(formValues.routeRates)
+      .filter(([_, rate]) => rate.value !== null && rate.value !== undefined)
+      .reduce((acc, [routeId, rate]) => {
+        acc[routeId] = {
+          route_id: routeId,
+          value: rate.value,
+          currency: "USD", // Default to USD or get from form
+          comment: rate.comment
+        };
+        return acc;
+      }, {});
+      
+    // Count routes with non-null rates
+    const routesSubmitted = Object.keys(routeRates).length;
+    
+    // Prepare response data
+    const responseData = {
+      bid_id: bidId,
+      carrier_id: carrierId,
+      invitation_id: invitationId,
+      responder_name: formValues.responderName,
+      responder_email: formValues.responderEmail,
+      version,
+      routes_submitted: routesSubmitted,
+      is_draft: isDraft
+    };
+    
+    // Insert the response
+    const { data: responseData, error: responseError } = await supabase
+      .from("carrier_bid_responses")
+      .insert(responseData)
+      .select()
+      .single();
+      
+    if (responseError) {
+      console.error("[submitBidResponse] Error creating response:", responseError);
+      throw responseError;
+    }
+    
+    const responseId = responseData.id;
+    console.log("[submitBidResponse] Response created with ID:", responseId);
+    
+    // Insert the rates
+    if (routesSubmitted > 0) {
+      const ratesForInsertion = Object.values(routeRates).map(rate => ({
+        ...rate,
+        response_id: responseId
+      }));
+      
+      const { error: ratesError } = await supabase
+        .from("carrier_route_rates")
+        .insert(ratesForInsertion);
+        
+      if (ratesError) {
+        console.error("[submitBidResponse] Error creating rates:", ratesError);
+        throw ratesError;
+      }
+    }
+    
+    // Return the complete response with rates
+    return {
+      ...responseData,
+      rates: routeRates
+    };
+  } catch (err) {
+    console.error("[submitBidResponse] Error:", err);
+    throw err;
   }
 };
