@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
@@ -100,7 +101,8 @@ export default function CarrierBidResponsePage() {
 
           setBidDetails(bidData);
 
-          const routesData = await getRoutesByBid(bidId, invitationData.id);
+          // Fix: Remove the second parameter (invitationData.id) as getRoutesByBid only accepts one parameter (bidId)
+          const routesData = await getRoutesByBid(bidId);
 
           if (!Array.isArray(routesData) || routesData.length === 0) {
             setError("No routes are currently available for this bid.");
