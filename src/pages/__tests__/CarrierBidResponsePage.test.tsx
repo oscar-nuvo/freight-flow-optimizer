@@ -1,4 +1,3 @@
-
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -141,19 +140,20 @@ describe("CarrierBidResponsePage", () => {
       }
     ];
 
-    // Mock existing response - Use CurrencyType for currency and include organization_id
+    // Mock existing response - Use CurrencyType for currency and include is_draft
     const mockExistingResponse = {
       id: "response-123",
       bid_id: "bid-123",
       carrier_id: "carrier-123",
       invitation_id: "inv-123",
-      organization_id: "org-123", // Added required field
+      organization_id: "org-123",
       responder_name: "John Doe",
       responder_email: "john@example.com",
       submitted_at: "2023-06-01T00:00:00.000Z",
       version: 1,
       routes_submitted: 1,
-      raw_response_json: null, // Added required field
+      raw_response_json: null,
+      is_draft: false,
       rates: {
         "route-1": {
           id: "rate-1",
