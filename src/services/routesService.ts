@@ -55,13 +55,10 @@ export const getRoutesByBid = async (bidId: string, invitationId?: string) => {
   console.log("[getRoutesByBid] Fetching routes for bid:", bidId);
 
   try {
-    // Configure Supabase client with invitation token header if provided
-    const supabaseClient = invitationId ? 
-      supabase.headers({ 'invitation-token': invitationId }) : 
-      supabase;
+    const options = invitationId ? { headers: { 'invitation-token': invitationId } } : undefined;
 
     // Get all route-bid associations for this bid, plus the route details
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabase
       .from("route_bids")
       .select(`
         route_id,
@@ -72,7 +69,8 @@ export const getRoutesByBid = async (bidId: string, invitationId?: string) => {
           )
         )
       `)
-      .eq("bid_id", bidId);
+      .eq("bid_id", bidId)
+      .execute(options);
 
     if (error) {
       console.error("[getRoutesByBid] Error fetching route_bids:", error);

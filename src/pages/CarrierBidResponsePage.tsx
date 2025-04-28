@@ -69,11 +69,14 @@ export function CarrierBidResponsePage() {
         const carrierId = invitationData.carrier_id;
 
         try {
+          const options = { headers: { 'invitation-token': invitationData.id } };
+          
           const { data: bidData, error: bidError } = await supabase
             .from("bids")
             .select("*")
             .eq("id", bidId)
-            .maybeSingle();
+            .maybeSingle()
+            .execute(options);
 
           if (bidError) {
             console.error("Error fetching bid details:", bidError);
