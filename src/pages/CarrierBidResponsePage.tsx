@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
@@ -69,14 +70,14 @@ export function CarrierBidResponsePage() {
         const carrierId = invitationData.carrier_id;
 
         try {
-          const options = { headers: { 'invitation-token': invitationData.id } };
-          
+          // Set the invitation token in the header for this request
           const { data: bidData, error: bidError } = await supabase
             .from("bids")
             .select("*")
             .eq("id", bidId)
-            .maybeSingle()
-            .execute(options);
+            .maybeSingle({
+              headers: { 'invitation-token': invitationData.id }
+            });
 
           if (bidError) {
             console.error("Error fetching bid details:", bidError);

@@ -55,6 +55,7 @@ export const getRoutesByBid = async (bidId: string, invitationId?: string) => {
   console.log("[getRoutesByBid] Fetching routes for bid:", bidId);
 
   try {
+    // Configure options with invitation token header if provided
     const options = invitationId ? { headers: { 'invitation-token': invitationId } } : undefined;
 
     // Get all route-bid associations for this bid, plus the route details
@@ -70,7 +71,7 @@ export const getRoutesByBid = async (bidId: string, invitationId?: string) => {
         )
       `)
       .eq("bid_id", bidId)
-      .execute(options);
+      .select(options);
 
     if (error) {
       console.error("[getRoutesByBid] Error fetching route_bids:", error);
