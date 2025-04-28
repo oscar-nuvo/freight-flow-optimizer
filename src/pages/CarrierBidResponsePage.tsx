@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
@@ -63,13 +62,12 @@ export default function CarrierBidResponsePage() {
         }
 
         console.log("Loaded invitation:", invitationData);
-
         setInvitation(invitationData);
 
         const bidId = invitationData.bid_id;
         const carrierId = invitationData.carrier_id;
 
-        if (invitationData) {
+        try {
           const { data: bidData, error: bidError } = await supabase
             .from("bids")
             .select("*")
@@ -90,46 +88,65 @@ export default function CarrierBidResponsePage() {
           }
 
           if (invitationData.status === 'pending' || invitationData.status === 'delivered') {
-            await updateInvitationStatus(invitationData.id, 'opened');
-            setInvitation(prev => {
-              if (prev) {
-                return { ...prev, status: 'opened' };
-              }
-              return prev;
-            });
+            try {
+              await updateInvitationStatus(invitationData.id, 'opened');
+              setInvitation(prev => prev ? { ...prev, status: 'opened' } : prev);
+            } catch (statusError) {
+              console.error("Error updating invitation status:", statusError);
+            }
           }
 
           setBidDetails(bidData);
 
-          // Fix: Remove the second parameter (invitationData.id) as getRoutesByBid only accepts one parameter (bidId)
-          const routesData = await getRoutesByBid(bidId);
-
-          if (!Array.isArray(routesData) || routesData.length === 0) {
-            setError("No routes are currently available for this bid.");
-            setRoutes([]);
-            setIsLoading(false);
-            return;
-          }
-
-          setRoutes(routesData);
-
           try {
-            const existingResponseData = await getExistingResponse(bidId, carrierId, invitationData.id);
-            if (existingResponseData) {
-              setExistingResponse(existingResponseData);
-              setFormValues({
-                responderName: existingResponseData.responder_name,
-                responderEmail: existingResponseData.responder_email,
-                routeRates: existingResponseData.rates || {}
-              });
+            const routesData = await getRoutesByBid(bidId);
+            
+            if (!routesData) {
+              setError("Failed to load routes for this bid.");
+              setRoutes([]);
+              setIsLoading(false);
+              return;
             }
-          } catch (err) {
-            console.log("No existing response found, starting fresh");
+
+            if (!Array.isArray(routesData) || routesData.length === 0) {
+              setError("No routes are currently available for this bid.");
+              setRoutes([]);
+              setIsLoading(false);
+              return;
+            }
+
+            setRoutes(routesData);
+
+            try {
+              const existingResponseData = await getExistingResponse(bidId, carrierId, invitationData.id);
+              if (existingResponseData) {
+                setExistingResponse(existingResponseData);
+                setFormValues({
+                  responderName: existingResponseData.responder_name,
+                  responderEmail: existingResponseData.responder_email,
+                  routeRates: existingResponseData.rates || {}
+                });
+              }
+            } catch (responseError) {
+              console.log("No existing response found, starting fresh");
+            }
+
+          } catch (routesError: any) {
+            console.error("Error fetching routes:", routesError);
+            setError(`Failed to load routes: ${routesError.message}`);
+            setRoutes([]);
           }
+
+        } catch (error: any) {
+          console.error("Error in bid details fetch:", error);
+          setError(`Failed to load bid details: ${error.message}`);
         }
-      } catch (error) {
-        console.error("Error:", error);
-        setError("Failed to load invitation details");
+
+      } catch (error: any) {
+        console.error("Error in invitation fetch:", error);
+        setError(`Failed to load invitation: ${error.message}`);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -262,10 +279,10 @@ export default function CarrierBidResponsePage() {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
         <Card className="w-full max-w-5xl p-6">
-          <div className="flex justify-center items-center">
+          <CardContent className="flex flex-col items-center justify-center space-y-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <span className="ml-2 text-lg">Loading bid information...</span>
-          </div>
+            <p className="text-lg text-gray-600">Loading bid information...</p>
+          </CardContent>
         </Card>
       </div>
     );
