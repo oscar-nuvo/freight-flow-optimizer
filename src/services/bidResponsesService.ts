@@ -2,7 +2,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { BidResponseFormValues, BidResponseSubmission, BidResponseWithRates, RouteRateSubmission } from "@/types/bidResponse";
 import { CurrencyType } from "@/types/invitation";
 
-// Submit a new bid response or update an existing one
 export const submitBidResponse = async (
   bidId: string,
   carrierId: string,
@@ -130,7 +129,6 @@ export const submitBidResponse = async (
   }
 };
 
-// Get existing response with rates for a bid and carrier
 export const getExistingResponse = async (
   bidId: string,
   carrierId: string,
@@ -211,7 +209,6 @@ export const getExistingResponse = async (
   }
 };
 
-// Get all responses for a specific bid and organization
 export const getBidResponses = async (bidId: string) => {
   try {
     // Get bid for org_id scoping
@@ -253,7 +250,6 @@ export const getBidResponses = async (bidId: string) => {
   }
 };
 
-// Get full response details including rates for a specific response, with org filter
 export const getBidResponseDetails = async (responseId: string) => {
   try {
     // Get the response (pull org from parent bid)
@@ -293,7 +289,6 @@ export const getBidResponseDetails = async (responseId: string) => {
   }
 };
 
-// Export all responses for a bid to CSV format (org scoped, all columns)
 export const exportBidResponses = async (bidId: string, routes: any[]) => {
   try {
     // Get bid for org_id scoping

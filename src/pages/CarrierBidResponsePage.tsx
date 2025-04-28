@@ -22,7 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 
-export function CarrierBidResponsePage() {
+export default function CarrierBidResponsePage() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -45,14 +45,14 @@ export function CarrierBidResponsePage() {
   });
 
   useEffect(() => {
-    const loadInvitationData = async () => {
-      if (!token) {
-        setError("Invalid invitation link");
-        setIsLoading(false);
-        return;
-      }
-
+    const fetchInvitationDetails = async () => {
       try {
+        if (!token) {
+          setError("Invalid invitation link");
+          setIsLoading(false);
+          return;
+        }
+
         const invitationData = await getInvitationByToken(token);
 
         if (!invitationData) {
@@ -68,8 +68,7 @@ export function CarrierBidResponsePage() {
         const bidId = invitationData.bid_id;
         const carrierId = invitationData.carrier_id;
 
-        try {
-          // Set the invitation token in the header for this request
+        if (invitationData) {
           const { data: bidData, error: bidError } = await supabase
             .from("bids")
             .select("*")
@@ -125,21 +124,17 @@ export function CarrierBidResponsePage() {
           } catch (err) {
             console.log("No existing response found, starting fresh");
           }
-        } catch (err: any) {
-          console.error("Error loading bid data:", err);
-          setError(err.message || "Failed to load bid details");
-          setIsLoading(false);
         }
-      } catch (err: any) {
-        console.error("Error loading invitation data:", err);
-        setError(err.message || "Failed to load invitation details");
-      } finally {
-        setIsLoading(false);
+      } catch (error) {
+        console.error("Error:", error);
+        setError("Failed to load invitation details");
       }
     };
 
-    loadInvitationData();
-  }, [token]);
+    if (token) {
+      fetchInvitationDetails();
+    }
+  }, [token, navigate]);
 
   const handleResponderInfoChange = (info: { name: string, email: string }) => {
     setFormValues(prev => ({
@@ -484,5 +479,3 @@ export function CarrierBidResponsePage() {
     </div>
   );
 }
-
-export default CarrierBidResponsePage;

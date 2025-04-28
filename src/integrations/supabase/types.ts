@@ -748,6 +748,10 @@ export type Database = {
         }
         Returns: string
       }
+      get_accessible_bid_routes: {
+        Args: { bid_id: string }
+        Returns: string[]
+      }
       get_user_org_id: {
         Args: { user_id?: string }
         Returns: string
