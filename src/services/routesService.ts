@@ -1,3 +1,4 @@
+
 /**
  * @file Routes Service
  * 
@@ -60,6 +61,9 @@ export const getRoutesByBid = async (bidId: string) => {
           weekly_volume,
           distance,
           is_deleted,
+          organization_id,
+          created_at,
+          updated_at,
           route_bids!route_id (
             bid_id
           )
@@ -85,7 +89,7 @@ export const getRoutesByBid = async (bidId: string) => {
         ...route,
         equipment_type: mapToEquipmentType(route.equipment_type),
         route_bids: route.route_bids || []
-      }));
+      })) as Route[]; // Explicitly cast to Route[]
 
     console.log(`[getRoutesByBid] Returning ${routes.length} route(s) for bid`, bidId);
     return routes;
