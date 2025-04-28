@@ -1,6 +1,6 @@
 
 import { useQuery } from "@tanstack/react-query";
-import { getRoutesByBid } from "@/services/routeBidService";
+import { getRoutesByBid } from "@/services/routesService";
 
 export function useRouteBids(bidId: string | undefined) {
   return useQuery({

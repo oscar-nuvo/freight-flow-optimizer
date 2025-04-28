@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getRoutes } from "@/services/routeService";
+import { getRoutes } from "@/services/routesService";
 import { Route, RouteFilters, EquipmentType } from "@/types/route";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useToast } from "@/hooks/use-toast";
@@ -31,7 +31,7 @@ export function useRouteSearch() {
     queryKey: ["routes", combinedFilters()],
     queryFn: () => {
       setIsSearching(true);
-      return getRoutes();
+      return getRoutes(combinedFilters());
     },
   });
 
