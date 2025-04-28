@@ -1,3 +1,4 @@
+
 /**
  * @file Routes Service
  * 
@@ -46,7 +47,7 @@ export const getRoutes = async (filters?: RouteFilters) => {
 };
 
 export const getRoutesByBid = async (bidId: string, invitationToken?: string) => {
-  console.log("[getRoutesByBid] Fetching routes for bid:", bidId);
+  console.log("[getRoutesByBid] Starting fetch for bid:", bidId, "token:", invitationToken ? "provided" : "not provided");
 
   try {
     // First, get all route IDs associated with this bid from route_bids
@@ -57,18 +58,24 @@ export const getRoutesByBid = async (bidId: string, invitationToken?: string) =>
 
     // Add invitation token header if provided
     if (invitationToken) {
-      const headers = { 'invitation-token': invitationToken };
+      console.log("[getRoutesByBid] Adding invitation token to route_bids query");
       query = query.setHeader('invitation-token', invitationToken);
     }
 
     const { data: routeBidData, error: routeBidError } = await query;
 
-    if (routeBidError) throw routeBidError;
+    if (routeBidError) {
+      console.error("[getRoutesByBid] Error fetching route_bids:", routeBidError);
+      throw routeBidError;
+    }
+
+    console.log("[getRoutesByBid] Route bids found:", routeBidData?.length || 0);
 
     if (!routeBidData?.length) return [];
 
     // Extract route IDs
     const routeIds = routeBidData.map(rb => rb.route_id);
+    console.log("[getRoutesByBid] Route IDs:", routeIds);
 
     // Fetch route details for the found IDs
     let routesQuery = supabase
@@ -79,12 +86,18 @@ export const getRoutesByBid = async (bidId: string, invitationToken?: string) =>
 
     // Add invitation token header if provided
     if (invitationToken) {
+      console.log("[getRoutesByBid] Adding invitation token to routes query");
       routesQuery = routesQuery.setHeader('invitation-token', invitationToken);
     }
 
     const { data: routesData, error: routesError } = await routesQuery;
 
-    if (routesError) throw routesError;
+    if (routesError) {
+      console.error("[getRoutesByBid] Error fetching routes:", routesError);
+      throw routesError;
+    }
+
+    console.log("[getRoutesByBid] Routes fetched:", routesData?.length || 0);
 
     // Convert equipment_type to EquipmentType enum
     return routesData?.map(route => ({

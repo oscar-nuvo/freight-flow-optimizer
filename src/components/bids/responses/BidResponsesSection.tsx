@@ -10,6 +10,7 @@ import { getBidInvitationsCount } from '@/services/bidCarriersService';
 import { Route } from "@/types/route";
 import { useToast } from "@/hooks/use-toast";
 import { filterLatestCarrierResponses } from "./bidResponsesUtils";
+import { useLocation } from "react-router-dom";
 
 interface BidResponsesSectionProps {
   bidId: string;
@@ -29,12 +30,17 @@ export function BidResponsesSection({
   const [isExporting, setIsExporting] = useState(false);
   const [actualInvitationsCount, setActualInvitationsCount] = useState(invitationsCount);
   const { toast } = useToast();
+  const location = useLocation();
+  
+  // Extract token from URL if present
+  const searchParams = new URLSearchParams(location.search);
+  const invitationToken = searchParams.get('token') || undefined;
 
   useEffect(() => {
     const fetchResponses = async () => {
       try {
         setIsLoading(true);
-        const data = await getBidResponses(bidId);
+        const data = await getBidResponses(bidId, invitationToken);
         setResponses(data);
       } catch (error) {
         console.error("Error fetching responses:", error);
@@ -61,7 +67,7 @@ export function BidResponsesSection({
       fetchResponses();
       fetchInvitationsCount();
     }
-  }, [bidId, toast]);
+  }, [bidId, toast, invitationToken]);
 
   const handleExportResponses = async () => {
     try {
@@ -155,6 +161,7 @@ export function BidResponsesSection({
               responses={uniqueCarrierResponses} 
               routes={routes}
               currency={currency}
+              invitationToken={invitationToken}
             />
           )}
         </CardContent>

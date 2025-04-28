@@ -1,4 +1,5 @@
 
+import { useEffect } from "react";
 import { Route } from "@/types/route";
 import { useRouteBids } from "@/hooks/useRouteBids";
 import { 
@@ -11,13 +12,28 @@ import {
 } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
+import { useLocation } from "react-router-dom";
 
 interface BidRoutesDisplayProps {
   bidId: string;
+  invitationToken?: string;
 }
 
-export function BidRoutesDisplay({ bidId }: BidRoutesDisplayProps) {
-  const { data: routes, isLoading, isError, error } = useRouteBids(bidId);
+export function BidRoutesDisplay({ bidId, invitationToken: propsToken }: BidRoutesDisplayProps) {
+  const location = useLocation();
+  
+  // Extract token from URL if not provided in props
+  const searchParams = new URLSearchParams(location.search);
+  const urlToken = searchParams.get('token');
+  
+  // Use token from props if provided, otherwise from URL
+  const invitationToken = propsToken || urlToken || undefined;
+  
+  useEffect(() => {
+    console.log("BidRoutesDisplay: Using bidId:", bidId, "invitationToken:", invitationToken ? "present" : "none");
+  }, [bidId, invitationToken]);
+
+  const { data: routes, isLoading, isError, error } = useRouteBids(bidId, invitationToken);
 
   if (isLoading) {
     return (

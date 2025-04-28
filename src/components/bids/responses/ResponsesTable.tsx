@@ -11,6 +11,7 @@ interface ResponsesTableProps {
   responses: any[];
   routes: Route[];
   currency: string;
+  invitationToken?: string;
 }
 
 const PAGE_SIZE = 10;
@@ -19,6 +20,7 @@ export function ResponsesTable({
   responses,
   routes,
   currency,
+  invitationToken
 }: ResponsesTableProps) {
   const [openDrawer, setOpenDrawer] = useState(false);
   const [selectedResponse, setSelectedResponse] = useState<any | null>(null);
@@ -42,9 +44,10 @@ export function ResponsesTable({
     setOpenDrawer(true);
     setLoading(true);
     try {
-      const detail = await getBidResponseDetails(response.id);
+      const detail = await getBidResponseDetails(response.id, invitationToken);
       setDetails(detail);
     } catch (e) {
+      console.error("Error fetching response details:", e);
       setDetails(null);
     }
     setLoading(false);
@@ -163,6 +166,7 @@ export function ResponsesTable({
         routes={routes}
         currency={currency}
         loading={loading}
+        invitationToken={invitationToken}
       />
     </div>
   );

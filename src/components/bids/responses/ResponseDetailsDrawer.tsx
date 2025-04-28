@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { 
   Drawer, 
@@ -22,6 +21,7 @@ interface ResponseDetailsDrawerProps {
   routes: Route[];
   currency: string;
   loading?: boolean;
+  invitationToken?: string;
 }
 
 export function ResponseDetailsDrawer({ 
@@ -30,7 +30,8 @@ export function ResponseDetailsDrawer({
   response, 
   routes,
   currency,
-  loading = false
+  loading = false,
+  invitationToken
 }: ResponseDetailsDrawerProps) {
   const [routesWithRates, setRoutesWithRates] = useState<any[]>([]);
 
