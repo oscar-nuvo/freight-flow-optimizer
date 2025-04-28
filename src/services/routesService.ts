@@ -51,9 +51,16 @@ export const getRoutesByBid = async (bidId: string) => {
       .from("route_bids")
       .select(`
         route_id,
-        routes!route_id (
-          *,
-          route_bids (
+        routes:routes!route_id (
+          id,
+          origin_city,
+          destination_city,
+          commodity,
+          equipment_type,
+          weekly_volume,
+          distance,
+          is_deleted,
+          route_bids!route_id (
             bid_id
           )
         )
@@ -70,48 +77,19 @@ export const getRoutesByBid = async (bidId: string) => {
       return [];
     }
 
-    // Only return not-deleted valid routes
-    const rawRoutes = data
+    // Filter out deleted routes and transform the data structure
+    const routes = data
       .map(item => item.routes)
-      .filter(
-        route =>
-          !!route &&
-          route.is_deleted === false
-      );
-
-    if (!Array.isArray(rawRoutes)) {
-      const errMsg = "[getRoutesByBid] Non-array routes result!";
-      console.error(errMsg);
-      throw new Error(errMsg);
-    }
-
-    const routes = rawRoutes.map(route => {
-      if (!route) {
-        console.warn("[getRoutesByBid] Null route encountered");
-        return null;
-      }
-      
-      const mappedEquipmentType = mapToEquipmentType(route.equipment_type);
-      if (typeof mappedEquipmentType !== "string") {
-        console.warn("[getRoutesByBid] Invalid equipment_type for route:", route.id, route.equipment_type);
-      }
-      
-      return {
+      .filter(route => route && !route.is_deleted)
+      .map(route => ({
         ...route,
-        equipment_type: mappedEquipmentType,
-        // Ensure route_bids exists, even if it's empty
-        route_bids: route.route_bids || [{ bid_id: bidId }]
-      };
-    }).filter(Boolean) as Route[]; // Filter out null values and cast to Route[]
+        equipment_type: mapToEquipmentType(route.equipment_type),
+        route_bids: route.route_bids || []
+      }));
 
-    // Extra logging if empty result so error can be tracked
-    if (routes.length === 0) {
-      console.warn(`[getRoutesByBid] No valid, not-deleted routes returned for bid ${bidId}.`);
-    } else {
-      console.log(`[getRoutesByBid] Returning ${routes.length} route(s) for bid`, bidId);
-    }
-
+    console.log(`[getRoutesByBid] Returning ${routes.length} route(s) for bid`, bidId);
     return routes;
+
   } catch (err) {
     console.error("[getRoutesByBid] Exception:", err);
     throw err;
