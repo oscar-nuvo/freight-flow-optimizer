@@ -94,10 +94,29 @@ export const createRoute = async (routeData: RouteFormValues): Promise<Route> =>
     throw sessionError;
   }
 
+  // Get the user's organization_id from their profile
+  const { data: profileData } = await supabase
+    .from('profiles')
+    .select('org_id')
+    .eq('id', sessionData.session?.user.id)
+    .single();
+  
+  const orgId = profileData?.org_id;
+  
+  if (!orgId) {
+    throw new Error("No organization found for this user");
+  }
+
+  // Create a new object that includes organization_id
+  const routeWithOrg = {
+    ...routeData,
+    organization_id: orgId
+  };
+
   // Insert the route with organization_id
   const { data, error } = await supabase
     .from("routes")
-    .insert([routeData])
+    .insert(routeWithOrg)
     .select()
     .single();
 
