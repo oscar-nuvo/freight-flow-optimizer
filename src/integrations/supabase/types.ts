@@ -752,6 +752,12 @@ export type Database = {
         Args: { bid_id: string }
         Returns: string[]
       }
+      get_enum_values: {
+        Args: { enum_type: string }
+        Returns: {
+          enum_value: string
+        }[]
+      }
       get_user_org_id: {
         Args: { user_id?: string }
         Returns: string

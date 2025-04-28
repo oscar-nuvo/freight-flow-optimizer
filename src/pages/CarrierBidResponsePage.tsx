@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
@@ -53,6 +54,7 @@ export default function CarrierBidResponsePage() {
           return;
         }
 
+        // Step 1: Get invitation details
         const invitationData = await getInvitationByToken(token);
 
         if (!invitationData) {
@@ -67,6 +69,7 @@ export default function CarrierBidResponsePage() {
         const bidId = invitationData.bid_id;
         const carrierId = invitationData.carrier_id;
 
+        // Step 2: Get bid details
         try {
           const { data: bidData, error: bidError } = await supabase
             .from("bids")
@@ -87,17 +90,20 @@ export default function CarrierBidResponsePage() {
             return;
           }
 
+          // Step 3: Update invitation status if needed
           if (invitationData.status === 'pending' || invitationData.status === 'delivered') {
             try {
               await updateInvitationStatus(invitationData.id, 'opened');
               setInvitation(prev => prev ? { ...prev, status: 'opened' } : prev);
             } catch (statusError) {
               console.error("Error updating invitation status:", statusError);
+              // Don't fail the whole flow if this step fails
             }
           }
 
           setBidDetails(bidData);
 
+          // Step 4: Get routes for this bid
           try {
             const routesData = await getRoutesByBid(bidId);
             
@@ -109,14 +115,13 @@ export default function CarrierBidResponsePage() {
             }
 
             if (!Array.isArray(routesData) || routesData.length === 0) {
-              setError("No routes are currently available for this bid.");
               setRoutes([]);
-              setIsLoading(false);
-              return;
+              // Show warning but don't set error, as this is handled in the UI
+            } else {
+              setRoutes(routesData);
             }
 
-            setRoutes(routesData);
-
+            // Step 5: Get existing response if any
             try {
               const existingResponseData = await getExistingResponse(bidId, carrierId, invitationData.id);
               if (existingResponseData) {
@@ -129,6 +134,7 @@ export default function CarrierBidResponsePage() {
               }
             } catch (responseError) {
               console.log("No existing response found, starting fresh");
+              // This is not an error condition, just means no previous response
             }
 
           } catch (routesError: any) {
