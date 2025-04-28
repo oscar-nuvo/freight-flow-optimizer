@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
@@ -75,9 +74,7 @@ export function CarrierBidResponsePage() {
             .from("bids")
             .select("*")
             .eq("id", bidId)
-            .maybeSingle({
-              headers: { 'invitation-token': invitationData.id }
-            });
+            .maybeSingle();
 
           if (bidError) {
             console.error("Error fetching bid details:", bidError);

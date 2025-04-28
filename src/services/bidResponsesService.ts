@@ -11,11 +11,6 @@ export const submitBidResponse = async (
   isDraft: boolean = false
 ): Promise<BidResponseWithRates> => {
   try {
-    // Configure options with invitation token header
-    const options = {
-      headers: { 'invitation-token': invitationId }
-    };
-
     // Get bid org (still needed for org_id on write for integrity, but not enforced by RLS for public route)
     const { data: bidOrg, error: bidOrgError } = await supabase
       .from("bids")
@@ -71,7 +66,7 @@ export const submitBidResponse = async (
       .from("carrier_bid_responses")
       .insert(insertData)
       .select()
-      .single(options);
+      .single();
 
     if (responseError) {
       console.error("Error creating bid response:", responseError);
@@ -97,7 +92,7 @@ export const submitBidResponse = async (
       for (const rateInsert of rateInserts) {
         const { error: rateError } = await supabase
           .from("carrier_route_rates")
-          .insert(rateInsert, options);
+          .insert(rateInsert);
 
         if (rateError) {
           console.error("Error inserting route rate:", rateError);
@@ -142,11 +137,6 @@ export const getExistingResponse = async (
   invitationId: string
 ): Promise<BidResponseWithRates | null> => {
   try {
-    // Configure options with invitation token header
-    const options = {
-      headers: { 'invitation-token': invitationId }
-    };
-    
     // Get the bid/org to enforce org filter
     const { data: bidOrg, error: bidOrgError } = await supabase
       .from("bids")

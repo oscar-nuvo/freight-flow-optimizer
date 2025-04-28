@@ -1,4 +1,3 @@
-
 /**
  * @file Routes Service
  * 
@@ -56,9 +55,6 @@ export const getRoutesByBid = async (bidId: string, invitationId?: string) => {
   console.log("[getRoutesByBid] Fetching routes for bid:", bidId);
 
   try {
-    // Configure options with invitation token header if provided
-    const options = invitationId ? { headers: { 'invitation-token': invitationId } } : undefined;
-
     // Get all route-bid associations for this bid, plus the route details
     const { data, error } = await supabase
       .from("route_bids")
