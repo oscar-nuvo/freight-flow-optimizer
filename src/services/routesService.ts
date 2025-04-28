@@ -84,8 +84,17 @@ export const getRoutesByBid = async (bidId: string) => {
   }
 };
 
-// Add the missing functions that were previously in routeService.ts
+// Create a new route with organization_id from the current user's session
 export const createRoute = async (routeData: RouteFormValues): Promise<Route> => {
+  // Get the current session to extract organization_id
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  
+  if (sessionError) {
+    console.error("Error getting session:", sessionError);
+    throw sessionError;
+  }
+
+  // Insert the route with organization_id
   const { data, error } = await supabase
     .from("routes")
     .insert([routeData])

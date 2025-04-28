@@ -23,6 +23,7 @@ export interface RouteFormValues {
   commodity: string;
   weekly_volume: number;
   distance?: number;
+  organization_id?: string; // Make it optional in the form values
 }
 
 export interface RouteFilters {
