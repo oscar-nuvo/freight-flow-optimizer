@@ -46,7 +46,7 @@ export const getRoutesByBid = async (bidId: string) => {
   console.log("[getRoutesByBid] Fetching routes for bid:", bidId);
 
   try {
-    // First, get the route IDs associated with this bid
+    // First, get all route IDs associated with this bid from route_bids
     const { data: routeBidData, error: routeBidError } = await supabase
       .from("route_bids")
       .select("route_id")
@@ -54,45 +54,47 @@ export const getRoutesByBid = async (bidId: string) => {
 
     if (routeBidError) {
       console.error("[getRoutesByBid] Error fetching route_bids:", routeBidError);
-      throw new Error(`Failed to retrieve routes: ${routeBidError.message}`);
+      throw new Error(`Failed to retrieve route IDs: ${routeBidError.message}`);
     }
 
     if (!routeBidData || routeBidData.length === 0) {
-      console.log("[getRoutesByBid] No routes associated with bid:", bidId);
+      console.log("[getRoutesByBid] No routes found for bid:", bidId);
       return [];
     }
 
-    // Get the routes themselves in a separate query
+    // Extract route IDs
     const routeIds = routeBidData.map(rb => rb.route_id);
-    
+    console.log(`[getRoutesByBid] Found ${routeIds.length} route IDs for bid:`, bidId);
+
+    // Fetch route details for the found IDs
     const { data: routesData, error: routesError } = await supabase
       .from("routes")
-      .select(`
-        *,
-        route_bids!route_id (
-          bid_id
-        )
-      `)
-      .in('id', routeIds)
-      .eq('is_deleted', false);
+      .select("*, route_bids(bid_id)")
+      .in("id", routeIds)
+      .eq("is_deleted", false);
 
     if (routesError) {
       console.error("[getRoutesByBid] Error fetching routes:", routesError);
       throw new Error(`Failed to retrieve route details: ${routesError.message}`);
     }
 
-    // Transform the data to match the Route type
-    const routes = (routesData || []).map(route => ({
+    if (!routesData) {
+      console.log("[getRoutesByBid] No route details found");
+      return [];
+    }
+
+    // Transform and validate the data
+    const routes = routesData.map(route => ({
       ...route,
       equipment_type: mapToEquipmentType(route.equipment_type),
       route_bids: route.route_bids || []
-    })) as Route[]; // Explicitly cast to Route[]
+    })) as Route[];
 
-    console.log(`[getRoutesByBid] Returning ${routes.length} route(s) for bid`, bidId);
+    console.log(`[getRoutesByBid] Successfully processed ${routes.length} routes`);
     return routes;
 
   } catch (err) {
-    console.error("[getRoutesByBid] Exception:", err);
+    console.error("[getRoutesByBid] Unexpected error:", err);
     throw err;
   }
 };
