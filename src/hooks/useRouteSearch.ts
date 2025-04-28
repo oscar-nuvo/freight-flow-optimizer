@@ -40,7 +40,9 @@ export function useRouteSearch() {
 
     const typedRoutes = routesData.map(route => ({
       ...route,
-      equipment_type: route.equipment_type as EquipmentType
+      equipment_type: route.equipment_type as EquipmentType,
+      // Add empty route_bids array if it doesn't exist
+      route_bids: route.route_bids || []
     }));
 
     if (!debouncedSearchTerm) return typedRoutes;

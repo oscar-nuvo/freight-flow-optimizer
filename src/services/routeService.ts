@@ -10,7 +10,12 @@ import { Route, RouteFormValues } from "@/types/route";
 export const getRoutes = async () => {
   const { data, error } = await supabase
     .from("routes")
-    .select("*")
+    .select(`
+      *,
+      route_bids (
+        bid_id
+      )
+    `)
     .eq('is_deleted', false)
     .order('created_at', { ascending: false });
 
