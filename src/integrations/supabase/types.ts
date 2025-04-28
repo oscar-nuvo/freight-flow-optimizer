@@ -774,6 +774,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string[]
       }
+      has_valid_invitation_token: {
+        Args: { bid_id: string; token: string }
+        Returns: boolean
+      }
       is_admin_of_org: {
         Args: { org_id: string }
         Returns: boolean

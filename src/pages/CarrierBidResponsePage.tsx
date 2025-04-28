@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
@@ -22,6 +21,7 @@ import { BidResponseFormValues } from "@/types/bidResponse";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { useRouteBids } from "@/hooks/use-route-bids";
 
 export default function CarrierBidResponsePage() {
   const { token } = useParams<{ token: string }>();

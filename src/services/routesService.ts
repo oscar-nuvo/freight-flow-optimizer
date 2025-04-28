@@ -1,4 +1,3 @@
-
 /**
  * @file Routes Service
  * 
@@ -46,15 +45,24 @@ export const getRoutes = async (filters?: RouteFilters) => {
   })) || [];
 };
 
-export const getRoutesByBid = async (bidId: string) => {
+export const getRoutesByBid = async (bidId: string, invitationToken?: string) => {
   console.log("[getRoutesByBid] Fetching routes for bid:", bidId);
 
   try {
     // First, get all route IDs associated with this bid from route_bids
-    const { data: routeBidData, error: routeBidError } = await supabase
+    const query = supabase
       .from("route_bids")
       .select("route_id")
       .eq("bid_id", bidId);
+
+    // Add invitation token header if provided
+    if (invitationToken) {
+      query.headers({
+        'invitation-token': invitationToken
+      });
+    }
+
+    const { data: routeBidData, error: routeBidError } = await query;
 
     if (routeBidError) throw routeBidError;
 
@@ -64,11 +72,20 @@ export const getRoutesByBid = async (bidId: string) => {
     const routeIds = routeBidData.map(rb => rb.route_id);
 
     // Fetch route details for the found IDs
-    const { data: routesData, error: routesError } = await supabase
+    const routesQuery = supabase
       .from("routes")
       .select("*, route_bids(bid_id)")
       .in("id", routeIds)
       .eq("is_deleted", false);
+
+    // Add invitation token header if provided
+    if (invitationToken) {
+      routesQuery.headers({
+        'invitation-token': invitationToken
+      });
+    }
+
+    const { data: routesData, error: routesError } = await routesQuery;
 
     if (routesError) throw routesError;
 
@@ -84,7 +101,6 @@ export const getRoutesByBid = async (bidId: string) => {
   }
 };
 
-// Create a new route with organization_id from the current user's session
 export const createRoute = async (routeData: RouteFormValues): Promise<Route> => {
   // Get the current session to extract organization_id
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
