@@ -737,6 +737,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      carrier_has_bid_access: {
+        Args: { carrier_id: string; bid_id: string }
+        Returns: boolean
+      }
       create_audit_log: {
         Args: {
           p_entity_type: string
