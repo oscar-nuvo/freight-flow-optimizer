@@ -1,5 +1,7 @@
+
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import CarrierBidResponsePage from "../CarrierBidResponsePage";
 import * as invitationsService from "@/services/invitationsService";
@@ -62,7 +64,7 @@ describe("CarrierBidResponsePage", () => {
     vi.mocked(routesService.getRoutesByBid).mockResolvedValue(mockRoutes);
     vi.mocked(bidResponsesService.getExistingResponse).mockResolvedValue(null);
 
-    render(
+    const { getByText, queryByText } = render(
       <MemoryRouter initialEntries={["/bid/respond/token-123"]}>
         <Routes>
           <Route path="/bid/respond/:token" element={<CarrierBidResponsePage />} />
@@ -72,7 +74,7 @@ describe("CarrierBidResponsePage", () => {
 
     // Wait for data to load
     await waitFor(() => {
-      expect(screen.queryByText("Loading bid information...")).not.toBeInTheDocument();
+      expect(queryByText("Loading bid information...")).not.toBeInTheDocument();
     });
 
     // Verify services were called
@@ -80,16 +82,16 @@ describe("CarrierBidResponsePage", () => {
     expect(routesService.getRoutesByBid).toHaveBeenCalledWith("bid-123");
 
     // Verify UI elements
-    expect(screen.getByText("Carrier Bid Response Portal")).toBeInTheDocument();
-    expect(screen.getByText("Chicago")).toBeInTheDocument();
-    expect(screen.getByText("New York")).toBeInTheDocument();
+    expect(getByText("Carrier Bid Response Portal")).toBeInTheDocument();
+    expect(getByText("Chicago")).toBeInTheDocument();
+    expect(getByText("New York")).toBeInTheDocument();
   });
 
   it("should display error when invitation is invalid", async () => {
     // Mock invitation service to return null
     vi.mocked(invitationsService.getInvitationByToken).mockResolvedValue(null);
 
-    render(
+    const { getByText, queryByText } = render(
       <MemoryRouter initialEntries={["/bid/respond/invalid-token"]}>
         <Routes>
           <Route path="/bid/respond/:token" element={<CarrierBidResponsePage />} />
@@ -99,12 +101,12 @@ describe("CarrierBidResponsePage", () => {
 
     // Wait for error to show
     await waitFor(() => {
-      expect(screen.queryByText("Loading bid information...")).not.toBeInTheDocument();
+      expect(queryByText("Loading bid information...")).not.toBeInTheDocument();
     });
 
     // Verify error message
-    expect(screen.getByText("Invalid or expired invitation token")).toBeInTheDocument();
-    expect(screen.getByText("Return Home")).toBeInTheDocument();
+    expect(getByText("Invalid or expired invitation token")).toBeInTheDocument();
+    expect(getByText("Return Home")).toBeInTheDocument();
   });
 
   it("should pre-fill form when there's an existing response", async () => {
@@ -169,7 +171,7 @@ describe("CarrierBidResponsePage", () => {
     vi.mocked(routesService.getRoutesByBid).mockResolvedValue(mockRoutes);
     vi.mocked(bidResponsesService.getExistingResponse).mockResolvedValue(mockExistingResponse);
 
-    render(
+    const { getByDisplayValue, queryByText } = render(
       <MemoryRouter initialEntries={["/bid/respond/token-123"]}>
         <Routes>
           <Route path="/bid/respond/:token" element={<CarrierBidResponsePage />} />
@@ -179,10 +181,10 @@ describe("CarrierBidResponsePage", () => {
 
     // Wait for data to load
     await waitFor(() => {
-      expect(screen.queryByText("Loading bid information...")).not.toBeInTheDocument();
+      expect(queryByText("Loading bid information...")).not.toBeInTheDocument();
     });
 
     // Verify pre-filled form data
-    expect(screen.getByDisplayValue("John Doe")).toBeInTheDocument();
+    expect(getByDisplayValue("John Doe")).toBeInTheDocument();
   });
 });

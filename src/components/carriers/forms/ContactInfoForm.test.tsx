@@ -1,5 +1,7 @@
+
 import { describe, it, expect, beforeAll } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { ContactInfoForm } from "./ContactInfoForm";
 import { useForm } from "react-hook-form";
 import { CarrierFormValues } from "../CarrierDetailsForm";
@@ -21,15 +23,18 @@ function renderForm() {
 
 describe("ContactInfoForm", () => {
   it("renders the form fields", () => {
-    renderForm();
-    expect(screen.getByLabelText(/Primary Contact Name/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Primary Contact Email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Primary Contact Phone/i)).toBeInTheDocument();
+    const { getByLabelText } = renderForm();
+    expect(getByLabelText(/Primary Contact Name/i)).toBeInTheDocument();
+    expect(getByLabelText(/Primary Contact Email/i)).toBeInTheDocument();
+    expect(getByLabelText(/Primary Contact Phone/i)).toBeInTheDocument();
   });
+  
   it("shows validation error for empty name after blur", async () => {
-    renderForm();
-    const input = screen.getByLabelText(/Primary Contact Name/i);
-    fireEvent.blur(input);
-    expect(await screen.findByText(/Primary contact name required/i)).toBeInTheDocument();
+    const user = userEvent.setup();
+    const { getByLabelText, findByText } = renderForm();
+    const input = getByLabelText(/Primary Contact Name/i);
+    await user.click(input);
+    await user.tab();
+    expect(await findByText(/Primary contact name required/i)).toBeInTheDocument();
   });
 });

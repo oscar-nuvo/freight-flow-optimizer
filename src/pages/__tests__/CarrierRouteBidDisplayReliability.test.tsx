@@ -1,5 +1,6 @@
+
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import CarrierBidResponsePage from "../CarrierBidResponsePage";
 import * as invitationsService from "@/services/invitationsService";
@@ -73,7 +74,7 @@ describe("Carrier Bid Response route display reliability", () => {
     vi.mocked(routesService.getRoutesByBid).mockResolvedValue([...mockRoutes]);
     vi.mocked(bidResponsesService.getExistingResponse).mockResolvedValue(null);
 
-    render(
+    const { getByText, queryByText } = render(
       <MemoryRouter initialEntries={["/bid/respond/token-999"]}>
         <Routes>
           <Route path="/bid/respond/:token" element={<CarrierBidResponsePage />} />
@@ -82,13 +83,13 @@ describe("Carrier Bid Response route display reliability", () => {
     );
     // Wait for all data to be loaded and check
     await waitFor(() =>
-      expect(screen.queryByText("Loading bid information...")).not.toBeInTheDocument()
+      expect(queryByText("Loading bid information...")).not.toBeInTheDocument()
     );
     // Both valid routes should be present
-    expect(screen.getByText("Boston")).toBeInTheDocument();
-    expect(screen.getByText("Denver")).toBeInTheDocument();
-    expect(screen.getByText("Seattle")).toBeInTheDocument();
-    expect(screen.getByText("LA")).toBeInTheDocument();
+    expect(getByText("Boston")).toBeInTheDocument();
+    expect(getByText("Denver")).toBeInTheDocument();
+    expect(getByText("Seattle")).toBeInTheDocument();
+    expect(getByText("LA")).toBeInTheDocument();
     // Should not display deleted or orphaned routes—implicit by test data
   });
 
@@ -109,7 +110,7 @@ describe("Carrier Bid Response route display reliability", () => {
     vi.mocked(routesService.getRoutesByBid).mockResolvedValue([]);
     vi.mocked(bidResponsesService.getExistingResponse).mockResolvedValue(null);
 
-    render(
+    const { getByText, queryByText } = render(
       <MemoryRouter initialEntries={["/bid/respond/token-456"]}>
         <Routes>
           <Route path="/bid/respond/:token" element={<CarrierBidResponsePage />} />
@@ -117,10 +118,10 @@ describe("Carrier Bid Response route display reliability", () => {
       </MemoryRouter>
     );
     await waitFor(() =>
-      expect(screen.queryByText("Loading bid information...")).not.toBeInTheDocument()
+      expect(queryByText("Loading bid information...")).not.toBeInTheDocument()
     );
     // Should show warning about no available routes
-    expect(screen.getByText("No Routes Available")).toBeInTheDocument();
-    expect(screen.getByText("There are currently no routes available for this bid.")).toBeInTheDocument();
+    expect(getByText("No Routes Available")).toBeInTheDocument();
+    expect(getByText("There are currently no routes available for this bid.")).toBeInTheDocument();
   });
 });
