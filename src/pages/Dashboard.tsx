@@ -1,52 +1,17 @@
 
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DashboardStatCard } from "@/components/dashboard/DashboardStatCard";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { 
   Truck, 
   FileSpreadsheet, 
   Map, 
-  BarChart, 
-  TrendingUp,
-  TrendingDown
+  BarChart
 } from "lucide-react";
-import { Link } from "react-router-dom";
 
 const Dashboard = () => {
-  // Mock dashboard data
-  const stats = [
-    {
-      title: "Total Carriers",
-      value: "38",
-      change: "+12%",
-      trend: "up",
-      description: "Compared to last quarter",
-      path: "/carriers"
-    },
-    {
-      title: "Active Bids",
-      value: "5",
-      change: "+2",
-      trend: "up",
-      description: "New bids this month",
-      path: "/bids"
-    },
-    {
-      title: "Total Routes",
-      value: "156",
-      change: "+23",
-      trend: "up",
-      description: "New routes added",
-      path: "/routes"
-    },
-    {
-      title: "Avg. Cost per Mile",
-      value: "$2.25",
-      change: "-5.2%",
-      trend: "down",
-      description: "Savings from benchmark",
-      path: "/analysis"
-    },
-  ];
+  const { data: stats, isLoading, error } = useDashboardStats();
 
   return (
     <DashboardLayout>
@@ -57,42 +22,48 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat, index) => (
-            <Link to={stat.path} key={index} className="block transition-transform hover:scale-105">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    {index === 0 && <Truck className="h-4 w-4" />}
-                    {index === 1 && <FileSpreadsheet className="h-4 w-4" />}
-                    {index === 2 && <Map className="h-4 w-4" />}
-                    {index === 3 && <BarChart className="h-4 w-4" />}
-                    {stat.title}
-                  </CardTitle>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-2xl">{stat.value}</CardTitle>
-                    <span className={`flex items-center text-sm ${
-                      stat.trend === 'up' 
-                        ? (index === 3 ? 'text-red-500' : 'text-green-500')
-                        : (index === 3 ? 'text-green-500' : 'text-red-500')
-                    }`}>
-                      {stat.trend === 'up' ? (
-                        <TrendingUp className="h-4 w-4 mr-1" />
-                      ) : (
-                        <TrendingDown className="h-4 w-4 mr-1" />
-                      )}
-                      {stat.change}
-                    </span>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xs text-muted-foreground">
-                    {stat.description}
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+          <DashboardStatCard
+            title="Total Carriers"
+            value={stats?.totalCarriers ?? 0}
+            description="Carriers in your organization"
+            icon={Truck}
+            path="/carriers"
+            isLoading={isLoading}
+          />
+          
+          <DashboardStatCard
+            title="Active Bids"
+            value={stats?.activeBids ?? 0}
+            description="Currently active bids"
+            icon={FileSpreadsheet}
+            path="/bids"
+            isLoading={isLoading}
+          />
+          
+          <DashboardStatCard
+            title="Total Routes"
+            value="156"
+            description="New routes added"
+            icon={Map}
+            path="/routes"
+            isLoading={false}
+          />
+          
+          <DashboardStatCard
+            title="Avg. Cost per Mile"
+            value="$2.25"
+            description="Savings from benchmark"
+            icon={BarChart}
+            path="/analysis"
+            isLoading={false}
+          />
         </div>
+
+        {error && (
+          <div className="text-red-500 text-sm">
+            Error loading dashboard statistics. Please try refreshing the page.
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
