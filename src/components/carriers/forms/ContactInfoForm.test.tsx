@@ -1,7 +1,5 @@
-
 import { describe, it, expect, beforeAll } from "vitest";
-import { render } from "@testing-library/react";
-import { screen, fireEvent } from "@testing-library/dom";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { ContactInfoForm } from "./ContactInfoForm";
 import { useForm } from "react-hook-form";
 import { CarrierFormValues } from "../CarrierDetailsForm";
