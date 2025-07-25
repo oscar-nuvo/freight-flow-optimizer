@@ -75,12 +75,12 @@ export const generateBidTasks = async (orgId: string): Promise<QuickTask[]> => {
       for (const bid of draftBids) {
         tasks.push({
           id: `bid-draft-${bid.id}`,
-          title: `Complete ${bid.name}`,
-          description: 'Bid is still in draft status',
+          title: `Complete "${bid.name}" bid`,
+          description: 'This bid is still in draft status and needs to be published',
           priority: 'medium',
           category: 'bid',
           icon: getTaskIcon('bid'),
-          actionPath: `/edit-bid/${bid.id}`,
+          actionPath: `/bids/${bid.id}/edit`,
           entityId: bid.id,
           entityName: bid.name
         });
@@ -108,14 +108,15 @@ export const generateBidTasks = async (orgId: string): Promise<QuickTask[]> => {
         const responseRate = invitations > 0 ? (responses / invitations) * 100 : 0;
 
         if (invitations > 0 && responseRate < 50) {
+          const missingResponses = invitations - responses;
           tasks.push({
             id: `bid-low-response-${bid.id}`,
-            title: `Follow up on ${bid.name}`,
-            description: `${responses} of ${invitations} carriers responded`,
+            title: `Follow up on "${bid.name}" responses`,
+            description: `${missingResponses} of ${invitations} invited carriers haven't responded yet`,
             priority: responseRate < 25 ? 'high' : 'medium',
             category: 'bid',
             icon: getTaskIcon('bid'),
-            actionPath: `/bid-details/${bid.id}`,
+            actionPath: `/bids/${bid.id}`,
             progress: responseRate,
             entityId: bid.id,
             entityName: bid.name
@@ -142,12 +143,12 @@ export const generateBidTasks = async (orgId: string): Promise<QuickTask[]> => {
           const daysLeft = Math.ceil((submissionDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
           tasks.push({
             id: `bid-deadline-${bid.id}`,
-            title: `${bid.name} deadline approaching`,
-            description: `Submissions due in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}`,
+            title: `"${bid.name}" deadline approaching`,
+            description: `Submission deadline is in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}`,
             priority: daysLeft <= 1 ? 'critical' : 'high',
             category: 'bid',
             icon: getTaskIcon('bid'),
-            actionPath: `/bid-details/${bid.id}`,
+            actionPath: `/bids/${bid.id}`,
             dueDate: bid.submission_date,
             entityId: bid.id,
             entityName: bid.name
@@ -172,10 +173,11 @@ export const generateCarrierTasks = async (orgId: string): Promise<QuickTask[]> 
       .from('bid_carrier_invitations')
       .select(`
         id,
+        bid_id,
         status,
         invited_at,
-        bids(name),
-        carriers(name)
+        bids!bid_carrier_invitations_bid_id_fkey(id, name),
+        carriers!bid_carrier_invitations_carrier_id_fkey(name)
       `)
       .eq('organization_id', orgId)
       .eq('status', 'pending');
@@ -190,14 +192,15 @@ export const generateCarrierTasks = async (orgId: string): Promise<QuickTask[]> 
       }, {} as Record<string, any[]>);
 
       for (const [bidName, invitations] of Object.entries(bidGroups)) {
+        const bidId = invitations[0]?.bid_id;
         tasks.push({
           id: `invitations-pending-${bidName}`,
-          title: `Follow up on ${bidName} invitations`,
-          description: `${invitations.length} carrier${invitations.length !== 1 ? 's' : ''} haven't responded`,
+          title: `Follow up on "${bidName}" invitations`,
+          description: `${invitations.length} invited carrier${invitations.length !== 1 ? 's' : ''} haven't opened their invitation${invitations.length !== 1 ? 's' : ''} yet`,
           priority: 'medium',
           category: 'carrier',
           icon: getTaskIcon('carrier'),
-          actionPath: `/bid-details/${invitations[0]?.bid_id}`,
+          actionPath: `/bids/${bidId}`,
           count: invitations.length
         });
       }
@@ -219,7 +222,7 @@ export const generateCarrierTasks = async (orgId: string): Promise<QuickTask[]> 
         tasks.push({
           id: 'carriers-incomplete-profiles',
           title: 'Complete carrier profiles',
-          description: `${reallyIncomplete.length} carrier${reallyIncomplete.length !== 1 ? 's' : ''} missing key information`,
+          description: `${reallyIncomplete.length} carrier${reallyIncomplete.length !== 1 ? 's' : ''} need${reallyIncomplete.length === 1 ? 's' : ''} contact information or MC number`,
           priority: 'medium',
           category: 'carrier',
           icon: getTaskIcon('carrier'),
@@ -245,7 +248,7 @@ export const generateCarrierTasks = async (orgId: string): Promise<QuickTask[]> 
         tasks.push({
           id: 'carriers-missing-docs',
           title: 'Verify carrier documentation',
-          description: `${missingDocs.length} carrier${missingDocs.length !== 1 ? 's' : ''} require document verification`,
+          description: `${missingDocs.length} active carrier${missingDocs.length !== 1 ? 's' : ''} ${missingDocs.length === 1 ? 'is' : 'are'} missing required documents`,
           priority: 'high',
           category: 'compliance',
           icon: getTaskIcon('compliance'),
@@ -291,7 +294,7 @@ export const generateRouteTasks = async (orgId: string): Promise<QuickTask[]> =>
         tasks.push({
           id: 'routes-without-bids',
           title: 'Review new routes',
-          description: `${routesWithoutBids.length} route${routesWithoutBids.length !== 1 ? 's' : ''} added this week without bids`,
+          description: `${routesWithoutBids.length} route${routesWithoutBids.length !== 1 ? 's' : ''} added this week ${routesWithoutBids.length === 1 ? 'isn\'t' : 'aren\'t'} included in any bids yet`,
           priority: 'low',
           category: 'route',
           icon: getTaskIcon('route'),
