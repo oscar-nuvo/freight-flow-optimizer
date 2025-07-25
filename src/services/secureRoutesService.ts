@@ -12,7 +12,14 @@ export async function getRoutesByBidWithToken(
   try {
     console.log("SecureRoutesService: Fetching routes with token validation", { bidId, hasToken: !!invitationToken });
 
-    // Set the invitation-token header for RLS policy validation
+    // First validate the invitation token
+    const isValidToken = await validateInvitationAccess(bidId, invitationToken);
+    if (!isValidToken) {
+      console.error("SecureRoutesService: Invalid invitation token");
+      throw new Error("Invalid or expired invitation token");
+    }
+
+    // Fetch routes directly since token is validated
     const { data: routes, error } = await supabase
       .from('routes')
       .select(`
@@ -21,7 +28,6 @@ export async function getRoutesByBidWithToken(
       `)
       .eq('route_bids.bid_id', bidId)
       .eq('is_deleted', false)
-      .neq('weekly_volume', 0)
       .order('created_at', { ascending: true });
 
     if (error) {

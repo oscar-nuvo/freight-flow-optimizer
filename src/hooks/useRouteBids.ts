@@ -1,6 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { getRoutesByBid } from "@/services/routesService";
+import { getRoutesByBidWithToken } from "@/services/secureRoutesService";
 import { Route, EquipmentType } from "@/types/route";
 
 export function useRouteBids(bidId: string | undefined, invitationToken?: string) {
@@ -15,7 +16,10 @@ export function useRouteBids(bidId: string | undefined, invitationToken?: string
       console.log("UseRouteBids hook: Fetching routes with bidId:", bidId, "invitationToken:", invitationToken ? "present" : "none");
       
       try {
-        const routes = await getRoutesByBid(bidId, invitationToken);
+        // Use secure service when invitation token is provided
+        const routes = invitationToken 
+          ? await getRoutesByBidWithToken(bidId, invitationToken)
+          : await getRoutesByBid(bidId);
         
         // Log what we received
         console.log("UseRouteBids hook: Received routes:", routes?.length || 0);
