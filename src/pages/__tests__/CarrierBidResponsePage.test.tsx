@@ -1,18 +1,18 @@
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, waitFor } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import CarrierBidResponsePage from "../CarrierBidResponsePage";
 import * as invitationsService from "@/services/invitationsService";
-import * as routesService from "@/services/routesService";
+import * as secureRoutesService from "@/services/secureRoutesService";
 import * as bidResponsesService from "@/services/bidResponsesService";
 import { CarrierInvitation, InvitationStatus, CurrencyType } from "@/types/invitation";
 import { Route as RouteType, EquipmentType } from "@/types/route";
 
 // Mock the services
 vi.mock("@/services/invitationsService");
-vi.mock("@/services/routesService");
+vi.mock("@/services/secureRoutesService");
 vi.mock("@/services/bidResponsesService");
 vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({
@@ -61,7 +61,8 @@ describe("CarrierBidResponsePage", () => {
     // Setup mocks
     vi.mocked(invitationsService.getInvitationByToken).mockResolvedValue(mockInvitation);
     vi.mocked(invitationsService.updateInvitationStatus).mockResolvedValue(mockInvitation);
-    vi.mocked(routesService.getRoutesByBid).mockResolvedValue(mockRoutes);
+    vi.mocked(secureRoutesService.getRoutesByBidWithToken).mockResolvedValue(mockRoutes);
+    vi.mocked(secureRoutesService.validateInvitationAccess).mockResolvedValue(true);
     vi.mocked(bidResponsesService.getExistingResponse).mockResolvedValue(null);
 
     const { getByText, queryByText } = render(
@@ -72,14 +73,12 @@ describe("CarrierBidResponsePage", () => {
       </MemoryRouter>
     );
 
-    // Wait for data to load
-    await waitFor(() => {
-      expect(queryByText("Loading bid information...")).not.toBeInTheDocument();
-    });
+    // Allow time for data to load
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify services were called
     expect(invitationsService.getInvitationByToken).toHaveBeenCalledWith("token-123");
-    expect(routesService.getRoutesByBid).toHaveBeenCalledWith("bid-123");
+    expect(secureRoutesService.getRoutesByBidWithToken).toHaveBeenCalledWith("bid-123", "token-123");
 
     // Verify UI elements
     expect(getByText("Carrier Bid Response Portal")).toBeInTheDocument();
@@ -99,10 +98,8 @@ describe("CarrierBidResponsePage", () => {
       </MemoryRouter>
     );
 
-    // Wait for error to show
-    await waitFor(() => {
-      expect(queryByText("Loading bid information...")).not.toBeInTheDocument();
-    });
+    // Allow time for error to show
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify error message
     expect(getByText("Invalid or expired invitation token")).toBeInTheDocument();
@@ -168,7 +165,8 @@ describe("CarrierBidResponsePage", () => {
 
     // Setup mocks
     vi.mocked(invitationsService.getInvitationByToken).mockResolvedValue(mockInvitation);
-    vi.mocked(routesService.getRoutesByBid).mockResolvedValue(mockRoutes);
+    vi.mocked(secureRoutesService.getRoutesByBidWithToken).mockResolvedValue(mockRoutes);
+    vi.mocked(secureRoutesService.validateInvitationAccess).mockResolvedValue(true);
     vi.mocked(bidResponsesService.getExistingResponse).mockResolvedValue(mockExistingResponse);
 
     const { getByDisplayValue, queryByText } = render(
@@ -179,10 +177,8 @@ describe("CarrierBidResponsePage", () => {
       </MemoryRouter>
     );
 
-    // Wait for data to load
-    await waitFor(() => {
-      expect(queryByText("Loading bid information...")).not.toBeInTheDocument();
-    });
+    // Allow time for data to load
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify pre-filled form data
     expect(getByDisplayValue("John Doe")).toBeInTheDocument();

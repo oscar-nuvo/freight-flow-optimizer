@@ -4,7 +4,7 @@ import {
   getInvitationByToken, 
   updateInvitationStatus 
 } from "@/services/invitationsService";
-import { getRoutesByBid } from "@/services/routesService";
+import { getRoutesByBidWithToken, validateInvitationAccess } from "@/services/secureRoutesService";
 import { 
   submitBidResponse, 
   getExistingResponse 
@@ -103,9 +103,24 @@ export default function CarrierBidResponsePage() {
 
           setBidDetails(bidData);
 
-          // Step 4: Get routes for this bid
+          // Step 4: Validate invitation access and get routes for this bid
           try {
-            const routesData = await getRoutesByBid(bidId);
+            // First validate that the invitation token provides access to this bid
+            if (!token) {
+              setError("Missing invitation token");
+              setIsLoading(false);
+              return;
+            }
+
+            const hasAccess = await validateInvitationAccess(bidId, token);
+            if (!hasAccess) {
+              setError("Invalid or expired invitation token");
+              setIsLoading(false);
+              return;
+            }
+
+            // Get routes using secure token-validated service
+            const routesData = await getRoutesByBidWithToken(bidId, token);
             
             if (!routesData) {
               setError("Failed to load routes for this bid.");

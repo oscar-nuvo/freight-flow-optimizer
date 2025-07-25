@@ -1,17 +1,17 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, waitFor } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import CarrierBidResponsePage from "../CarrierBidResponsePage";
 import * as invitationsService from "@/services/invitationsService";
-import * as routesService from "@/services/routesService";
+import * as secureRoutesService from "@/services/secureRoutesService";
 import * as bidResponsesService from "@/services/bidResponsesService";
 import { CarrierInvitation } from "@/types/invitation";
 import { Route as RouteType } from "@/types/route";
 
 // Mock services as in other tests
 vi.mock("@/services/invitationsService");
-vi.mock("@/services/routesService");
+vi.mock("@/services/secureRoutesService");
 vi.mock("@/services/bidResponsesService");
 vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({
@@ -71,7 +71,8 @@ describe("Carrier Bid Response route display reliability", () => {
     ];
     // Will return only not-deleted, associated to the bid
     vi.mocked(invitationsService.getInvitationByToken).mockResolvedValue(mockInvitation);
-    vi.mocked(routesService.getRoutesByBid).mockResolvedValue([...mockRoutes]);
+    vi.mocked(secureRoutesService.getRoutesByBidWithToken).mockResolvedValue([...mockRoutes]);
+    vi.mocked(secureRoutesService.validateInvitationAccess).mockResolvedValue(true);
     vi.mocked(bidResponsesService.getExistingResponse).mockResolvedValue(null);
 
     const { getByText, queryByText } = render(
@@ -81,10 +82,8 @@ describe("Carrier Bid Response route display reliability", () => {
         </Routes>
       </MemoryRouter>
     );
-    // Wait for all data to be loaded and check
-    await waitFor(() =>
-      expect(queryByText("Loading bid information...")).not.toBeInTheDocument()
-    );
+    // Allow time for all data to be loaded and check
+    await new Promise(resolve => setTimeout(resolve, 100));
     // Both valid routes should be present
     expect(getByText("Boston")).toBeInTheDocument();
     expect(getByText("Denver")).toBeInTheDocument();
@@ -107,7 +106,8 @@ describe("Carrier Bid Response route display reliability", () => {
       organization_id: "org-empty"
     };
     vi.mocked(invitationsService.getInvitationByToken).mockResolvedValue(mockInvitation);
-    vi.mocked(routesService.getRoutesByBid).mockResolvedValue([]);
+    vi.mocked(secureRoutesService.getRoutesByBidWithToken).mockResolvedValue([]);
+    vi.mocked(secureRoutesService.validateInvitationAccess).mockResolvedValue(true);
     vi.mocked(bidResponsesService.getExistingResponse).mockResolvedValue(null);
 
     const { getByText, queryByText } = render(
@@ -117,9 +117,7 @@ describe("Carrier Bid Response route display reliability", () => {
         </Routes>
       </MemoryRouter>
     );
-    await waitFor(() =>
-      expect(queryByText("Loading bid information...")).not.toBeInTheDocument()
-    );
+    await new Promise(resolve => setTimeout(resolve, 100));
     // Should show warning about no available routes
     expect(getByText("No Routes Available")).toBeInTheDocument();
     expect(getByText("There are currently no routes available for this bid.")).toBeInTheDocument();
