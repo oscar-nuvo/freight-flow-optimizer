@@ -1,8 +1,8 @@
 
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardStatCard } from "@/components/dashboard/DashboardStatCard";
 import { RecentActivityFeed } from "@/components/dashboard/RecentActivityFeed";
+import { QuickTasksCard } from "@/components/dashboard/QuickTasksCard";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { 
   Truck, 
@@ -68,60 +68,7 @@ const Dashboard = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <RecentActivityFeed />
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Tasks</CardTitle>
-              <CardDescription>
-                Actions that need attention
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="p-4 border rounded-md bg-muted/50">
-                  <div className="flex items-start gap-4">
-                    <div className="bg-yellow-100 p-2 rounded-md">
-                      <FileSpreadsheet className="h-5 w-5 text-yellow-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium">Complete Q2 North America RFP</p>
-                      <p className="text-sm text-muted-foreground">Waiting on 5 carrier responses</p>
-                      <div className="mt-2">
-                        <div className="w-full bg-gray-200 rounded-full h-1.5">
-                          <div className="bg-yellow-500 h-1.5 rounded-full" style={{ width: "65%" }}></div>
-                        </div>
-                        <p className="text-xs text-right mt-1">65% complete</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 border rounded-md bg-muted/50">
-                  <div className="flex items-start gap-4">
-                    <div className="bg-red-100 p-2 rounded-md">
-                      <Truck className="h-5 w-5 text-red-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium">Verify Carrier Documentation</p>
-                      <p className="text-sm text-muted-foreground">3 carriers require insurance verification</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 border rounded-md bg-muted/50">
-                  <div className="flex items-start gap-4">
-                    <div className="bg-green-100 p-2 rounded-md">
-                      <Map className="h-5 w-5 text-green-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium">Review New Routes</p>
-                      <p className="text-sm text-muted-foreground">12 routes added in the last week</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <QuickTasksCard />
         </div>
       </div>
     </DashboardLayout>
