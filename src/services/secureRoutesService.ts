@@ -1,6 +1,21 @@
 import { supabase } from "@/integrations/supabase/client";
+import { createClient } from '@supabase/supabase-js';
 import { Route, EquipmentType } from "@/types/route";
 import { routeLogger } from "./routesServiceLogger";
+
+// Create Supabase client with invitation token header
+function createSupabaseWithToken(invitationToken: string) {
+  const SUPABASE_URL = "https://oqiuljtbildhwgsgnfbo.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xaXVsanRiaWxkaHdnc2duZmJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ2MDA4ODMsImV4cCI6MjA2MDE3Njg4M30.cTyNPALPFlimzEf2bj3pb1F3yeYecTqYwIs7jCTU9Uc";
+  
+  return createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+    global: {
+      headers: {
+        'invitation-token': invitationToken
+      }
+    }
+  });
+}
 
 /**
  * Secure service for fetching routes with invitation token validation
@@ -24,8 +39,12 @@ export async function getRoutesByBidWithToken(
       throw new Error(errorMsg);
     }
 
-    // Fetch routes directly since token is validated
-    const { data: routes, error } = await supabase
+    // Create Supabase client with invitation token header for RLS policy
+    const supabaseWithToken = createSupabaseWithToken(invitationToken);
+    console.log("SecureRoutesService: Using client with invitation token header");
+
+    // Fetch routes using client with header
+    const { data: routes, error } = await supabaseWithToken
       .from('routes')
       .select(`
         *,
