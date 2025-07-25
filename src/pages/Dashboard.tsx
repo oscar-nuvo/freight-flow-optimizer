@@ -42,11 +42,11 @@ const Dashboard = () => {
           
           <DashboardStatCard
             title="Total Routes"
-            value="156"
-            description="New routes added"
+            value={stats?.totalRoutes ?? 0}
+            description="Active routes in your organization"
             icon={Map}
             path="/routes"
-            isLoading={false}
+            isLoading={isLoading}
           />
           
           <DashboardStatCard
