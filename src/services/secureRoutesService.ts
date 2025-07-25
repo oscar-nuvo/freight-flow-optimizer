@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Route, EquipmentType } from "@/types/route";
+import { routeLogger } from "./routesServiceLogger";
 
 /**
  * Secure service for fetching routes with invitation token validation
@@ -14,9 +15,13 @@ export async function getRoutesByBidWithToken(
 
     // First validate the invitation token
     const isValidToken = await validateInvitationAccess(bidId, invitationToken);
+    routeLogger.logTokenValidation(bidId, invitationToken, isValidToken);
+    
     if (!isValidToken) {
-      console.error("SecureRoutesService: Invalid invitation token");
-      throw new Error("Invalid or expired invitation token");
+      const errorMsg = "Invalid or expired invitation token";
+      console.error("SecureRoutesService:", errorMsg);
+      routeLogger.logCarrierAccess(bidId, invitationToken, false, 0, errorMsg);
+      throw new Error(errorMsg);
     }
 
     // Fetch routes directly since token is validated
@@ -47,10 +52,13 @@ export async function getRoutesByBidWithToken(
     }));
 
     console.log("SecureRoutesService: Successfully fetched routes:", transformedRoutes.length);
+    routeLogger.logCarrierAccess(bidId, invitationToken, true, transformedRoutes.length);
     return transformedRoutes;
 
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
     console.error("SecureRoutesService: Error in getRoutesByBidWithToken:", error);
+    routeLogger.logCarrierAccess(bidId, invitationToken, false, 0, errorMsg);
     throw error;
   }
 }

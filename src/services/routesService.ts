@@ -56,11 +56,7 @@ export const getRoutesByBid = async (bidId: string, invitationToken?: string) =>
       .select("route_id")
       .eq("bid_id", bidId);
 
-    // Add invitation token header if provided
-    if (invitationToken) {
-      console.log("[getRoutesByBid] Adding invitation token to route_bids query");
-      query = query.setHeader('invitation-token', invitationToken);
-    }
+    // Note: invitation token validation is handled by RLS policies
 
     const { data: routeBidData, error: routeBidError } = await query;
 
@@ -84,11 +80,7 @@ export const getRoutesByBid = async (bidId: string, invitationToken?: string) =>
       .in("id", routeIds)
       .eq("is_deleted", false);
 
-    // Add invitation token header if provided
-    if (invitationToken) {
-      console.log("[getRoutesByBid] Adding invitation token to routes query");
-      routesQuery = routesQuery.setHeader('invitation-token', invitationToken);
-    }
+    // Note: invitation token validation is handled by RLS policies
 
     const { data: routesData, error: routesError } = await routesQuery;
 
