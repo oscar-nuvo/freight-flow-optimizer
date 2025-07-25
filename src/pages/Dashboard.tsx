@@ -2,6 +2,7 @@
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardStatCard } from "@/components/dashboard/DashboardStatCard";
+import { RecentActivityFeed } from "@/components/dashboard/RecentActivityFeed";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { 
   Truck, 
@@ -66,50 +67,7 @@ const Dashboard = () => {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>
-                Latest updates and changes
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-start gap-4">
-                  <div className="w-2 h-2 rounded-full bg-green-500 mt-2"></div>
-                  <div>
-                    <p className="font-medium">New bid created</p>
-                    <p className="text-sm text-muted-foreground">Q2 North America RFP was created</p>
-                    <p className="text-xs text-muted-foreground">1 hour ago</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <div className="w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
-                  <div>
-                    <p className="font-medium">Carrier added</p>
-                    <p className="text-sm text-muted-foreground">ABC Logistics was added to the system</p>
-                    <p className="text-xs text-muted-foreground">3 hours ago</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <div className="w-2 h-2 rounded-full bg-yellow-500 mt-2"></div>
-                  <div>
-                    <p className="font-medium">Route updated</p>
-                    <p className="text-sm text-muted-foreground">Los Angeles to Chicago rate updated</p>
-                    <p className="text-xs text-muted-foreground">5 hours ago</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <div className="w-2 h-2 rounded-full bg-purple-500 mt-2"></div>
-                  <div>
-                    <p className="font-medium">Bid completed</p>
-                    <p className="text-sm text-muted-foreground">Europe Q1 Bid was marked as completed</p>
-                    <p className="text-xs text-muted-foreground">1 day ago</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <RecentActivityFeed />
 
           <Card>
             <CardHeader>
